@@ -1,6 +1,6 @@
+defaultTargets = ["riddle-proofs"]
 name = "riddle-proofs"
 version = "0.1.0"
-defaultTargets = ["riddle-proofs"]
 
 [[lean_lib]]
 name = "RiddleProofs"
@@ -8,3 +8,8 @@ name = "RiddleProofs"
 [[lean_exe]]
 name = "riddle-proofs"
 root = "Main"
+
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"

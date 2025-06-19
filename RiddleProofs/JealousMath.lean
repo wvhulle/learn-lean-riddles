@@ -47,23 +47,23 @@ def flipBank : Bank → Bank := fun
 
 
 -- Initial state: everyone and everything on the left bank
-def initialState : State :=
+def initial_left : State :=
   { boat := left, maths := Vector.replicate 3 left, notebooks := Vector.replicate 3 left }
 
 -- Goal state: everyone and everything on the right bank
-def goalState : State :=
+def final_right : State :=
   { boat := right, maths := Vector.replicate 3 right, notebooks := Vector.replicate 3 right }
 
 -- Example: move mathematician 1 (A) alone across
-def move_one_math : State → State := fun
-  | s => if s = initialState then { s with maths := s.maths.set 0 right (by simp), notebooks := s.notebooks.set 0 right (by simp) } else s
+def move_one_mathematician : State → State := fun
+  | s => if s = initial_left then { s with maths := s.maths.set 0 right (by simp), notebooks := s.notebooks.set 0 right (by simp) } else s
 
 open Classical
 
 
 -- Proof that moving m1 alone preserves safety (details omitted)
-theorem move_one_math_safe : safe (move_one_math initialState) := by
-  simp [move_one_math, safe]
+theorem move_one_m_safe : safe (move_one_mathematician initial_left) := by
+  simp [move_one_mathematician, safe]
   intro i j ineqj
   intro h
   rw [<- h]
@@ -80,10 +80,10 @@ theorem move_one_math_safe : safe (move_one_math initialState) := by
 -- There exists a sequence of states from initial to goal (trivial version)
 theorem impossible_path_safe :
   ∃ (path : List State),
-    path.head? = some  initialState ∧
-    path.getLast? = some goalState ∧
+    path.head? = some  initial_left ∧
+    path.getLast? = some final_right ∧
     True :=
-  ⟨[initialState, goalState], rfl, rfl, trivial⟩
+  ⟨[initial_left, final_right], rfl, rfl, trivial⟩
 
 
 theorem length_more_one  {α: Type} (list: List α): (list.length > 1) -> (list ≠ []) := by
