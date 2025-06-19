@@ -52,7 +52,7 @@ def all_left : State :=
   { boat := left, mathematicians := Vector.replicate 3 left, notebooks := Vector.replicate 3 left }
 
 -- Goal state: everyone and everything on the right bank
-def goalState : State :=
+def all_right : State :=
   { boat := right, mathematicians := Vector.replicate 3 right, notebooks := Vector.replicate 3 right }
 
 
@@ -61,9 +61,9 @@ def goalState : State :=
 theorem impossible_path_safe :
   ∃ (path : List State),
     path.head? = some  all_left ∧
-    path.getLast? = some goalState ∧
+    path.getLast? = some all_right ∧
     True :=
-  ⟨[all_left, goalState], rfl, rfl, trivial⟩
+  ⟨[all_left, all_right], rfl, rfl, trivial⟩
 
 
 theorem length_more_one  {α: Type} (list: List α): (list.length > 1) -> (list ≠ []) := by
@@ -135,7 +135,7 @@ example : solution_states.get 0 = all_left := by
 
 
 -- Verify that applying all transformations reaches the goal state
-example : (solution_states.get 9) = goalState := by
+example : (solution_states.get 9) = all_right := by
   repeat
     simp [Vector.get, solution_states, solution_state_at]
     unfold solution_state_at
@@ -167,10 +167,10 @@ def get_state (i : Nat) (h : i < 11) : State := solution_states.get ⟨i, h⟩
 #check safe (get_state 9 (by decide))   -- Final state
 
 
-theorem final_safe: safe (goalState):= by
+theorem final_safe: safe (all_right):= by
   rw [safe]
   intro i j ineqj
-  rw [goalState]
+  rw [all_right]
   simp
 
 
