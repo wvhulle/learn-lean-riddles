@@ -111,17 +111,21 @@ def solution_cross_vec : Vector (State → State) 11 :=
     | 9 => move_math 0 left ▷ move_notebook 0 left ▷ move_boat left
     | 10 => move_math 0 right ▷ move_notebook 0 right)
 
--- Helper function to compute state at step i
-def solution_state_at : Fin 11 → State
-| ⟨0, _⟩ => all_left
-| ⟨n+1, h⟩ =>
+
+def solution_state_atAux : (n : Nat) → n < 11 → State
+| 0, _ => all_left
+| n+1, h =>
   have n_lt_9 : n < 11 := by
     have : n + 1 < 11 := h
     cases Nat.lt_or_ge n 11 with
     | inl hlt => exact hlt
     | inr hge =>
       exact Nat.lt_of_succ_lt h
-  (solution_cross_vec.get ⟨n, n_lt_9⟩) (solution_state_at ⟨n, Nat.lt_of_succ_lt h⟩)
+  (solution_cross_vec.get ⟨n, n_lt_9⟩) (solution_state_atAux n <| Nat.lt_of_succ_lt h)
+-- Helper function to compute state at step i
+def solution_state_at : Fin 11 → State := fun f => solution_state_atAux f.val f.isLt
+
+
 
 -- Vector of 10 states: initial state, 8 intermediate states, and goal state
 def solution_states : Vector State 11 := Vector.ofFn solution_state_at
@@ -145,16 +149,6 @@ example : (solution_states.get 9) = all_right := by
     dsimp
     simp [move_math, move_notebook, move_boat]
   congr
-  · simp [Vector.get, solution_cross_vec, move_notebook, move_boat]
-    unfold solution_state_at
-    simp [solution_cross_vec]
-    unfold solution_state_at
-    decide
-  · simp [Vector.get, solution_cross_vec, move_notebook, move_boat]
-    unfold solution_state_at
-    simp [solution_cross_vec]
-    unfold solution_state_at
-    decide
 
 
 -- Helper to examine specific states in the solution
@@ -174,5 +168,10 @@ theorem final_safe: safe (all_right):= by
   simp
 
 
+
+instance : DecidablePred safe := by
+  unfold safe
+  infer_instance
+
 theorem all_states_safe : ∀ i : Fin 11, safe (solution_states.get i) := by
-  sorry
+  decide
