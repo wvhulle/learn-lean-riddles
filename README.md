@@ -2,15 +2,23 @@
 
 This is a collection of riddles and puzzles implemented in Lean 4 for a [workshop](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
 
-## Getting started (for new users)
+## Introduction
 
-If you have never used Lean before, you will have to install some system dependencies and tools to get started.
+### Target audience
+
+This workshop is suitable for everyone who:
+
+- is not afraid of mathematics or theorem proving,
+- knows at least one functional programming language,
+- loves mathematical or logical puzzles.
 
 ### Editor
 
 Unfortunately, there is not that much choice for Lean editors. The recommended editor is [Visual Studio Code](https://code.visualstudio.com/), which has a [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4) that provides syntax highlighting, code completion, and other features.
 
 ### Installing toolchain
+
+If you have never used Lean before, you will have to install some system dependencies and tools to get started.
 
 Install [`elan`](https://github.com/leanprover/elan), to manage Lean toolchains. It provides the `lean` and `lake` commands.
 
