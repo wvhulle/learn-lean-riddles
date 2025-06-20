@@ -4,7 +4,6 @@ import Init.WF
 # River crossing puzzle:
 
 Three jealous mathematicians and their three secret notebooks must cross a river.
-
 - The boat carries at most two items (people or notebooks).
 - No mathematician may be left alone with another’s notebook unless the owner is present.
 
@@ -31,10 +30,10 @@ structure State where
 -- (i.e., notebook i cannot be with mathematician j unless mathematician i is also present, for i ≠ j)
 def no_notebook_left_behind (s : State) : Prop :=
   ∀ i j : Fin num_mathematicians, (i ≠ j) →
-    let Ni := s.notebooks[i]
-    let Mj := s.mathematicians[j]
-    let Mi := s.mathematicians[i]
-    Ni = Mj → Mi = Mj
+    let mathematician_i_note_bank := s.notebooks[i]
+    let mathematician_j_bank := s.mathematicians[j]
+    let mathematician_i_bank := s.mathematicians[i]
+    mathematician_i_note_bank = mathematician_j_bank → mathematician_i_bank = mathematician_j_bank
 
 /-
 ## Decidability
@@ -44,17 +43,15 @@ Whether a property is decidable depends on how it is defined. If it is built fro
 instance : DecidablePred no_notebook_left_behind := by
   unfold no_notebook_left_behind
   infer_instance
-
 -- unfold ...; infer_instance works if and only if the unfolded definition is built from decidable pieces and quantifies only over finite/enumerable types.
 
 -- Initial state: everyone and everything on the left bank
 def initial_state : State :=
   { boat := left, mathematicians := Vector.replicate 3 left, notebooks := Vector.replicate 3 left }
-
 -- Goal state: everyone and everything on the right bank
+
 def final_state : State :=
   { boat := right, mathematicians := Vector.replicate 3 right, notebooks := Vector.replicate 3 right }
-
 
 theorem final_safe: no_notebook_left_behind (final_state):= by
   rw [no_notebook_left_behind]
@@ -69,10 +66,6 @@ theorem impossible_path_safe :
     path.getLast? = some final_state ∧
     True :=
   ⟨[initial_state, final_state], rfl, rfl, trivial⟩
-
-
-
-
 
 section Helpers
 
@@ -91,21 +84,19 @@ def move_notebook (n : Fin num_mathematicians) (b : RiverBank) (s : State) : Sta
 def move_boat (b : RiverBank) (s : State) : State :=
 { s with boat := b }
 
-
 -- To be able to use numerals like 4 for creating terms of type `Fin 4`, we have to implement a procedure to automatically determine `4 < num_mathematicians`. In this case it is just `decide`.
 instance : OfNat (Fin num_mathematicians) n where
   ofNat := ⟨n % num_mathematicians, Nat.mod_lt n (by decide)⟩
 
-
 end Helpers
 
-
 section Solution
+/-
+**Warning!**: Do not read this section before you have made a few attempts.
+ -/
 
 def n_transfers : Nat := 11
--- Number of states includes an extra final state.
 def n_states := n_transfers + 1
-
 
 /-
 ## Obtaining solution
@@ -115,7 +106,6 @@ In each step we will transfer a mathematician or a notebook across the river.
 This problem is similar to the "jealous husbands" riddle. The solution is identical.
 See [Wikipedia](https://en.wikipedia.org/wiki/Missionaries_and_cannibals_problem).
  -/
-
 
 def transfers : Vector (State → State) n_states :=
   Vector.ofFn (fun ⟨ k, _ ⟩  => match k with
@@ -133,8 +123,6 @@ def transfers : Vector (State → State) n_states :=
     | _ => id)
 
 end Solution
-
-
 
 namespace StructuralRecursion
 
@@ -156,7 +144,6 @@ def intermediate_states_structural : Fin n_states → State := (fun n =>  interm
 
 end StructuralRecursion
 
-
 /-
 ## Well-founded recusion
 
@@ -167,14 +154,13 @@ The result of `measure` allows argument j := <n+1,_> to fix to be compared again
 
 noncomputable def intermediate_states : Fin n_states → State :=
   WellFounded.fix (measure (fun (i : Fin n_states) => i.val)).wf
-    (fun i rec =>
-      match i with
+    (fun i rec => match i with
       | ⟨0, _⟩ => initial_state
-      | ⟨n+1, h⟩ =>
+      | ⟨n + 1, h⟩ =>
         let prev := rec ⟨n, Nat.lt_of_succ_lt h⟩ (Nat.lt_succ_self n)
         (transfers.get ⟨n, Nat.lt_of_succ_lt h⟩) prev
     )
--- `noncomputable` means not executable code is compiled
+-- `noncomputable` exempts a definition from compilation
 
 
 -- Verify the start and end point are as expected.
