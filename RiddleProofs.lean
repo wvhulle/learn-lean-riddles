@@ -1,3 +1,1 @@
 import RiddleProofs.JealousMath
-import RiddleProofs.MathLibTest
-import RiddleProofs.StdTest
