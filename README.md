@@ -2,19 +2,21 @@
 
 This is a collection of riddles and puzzles implemented in Lean 4 for a [workshop](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
 
-_**Note**: This is a work in progress. The code is not complete yet, but the puzzles are mostly solvable._
-
 ## Getting started (for new users)
 
 If you have never used Lean before, you will have to install some system dependencies and tools to get started.
 
-### Toolchain
+### Editor
+
+Unfortunately, there is not that much choice for Lean editors. The recommended editor is [Visual Studio Code](https://code.visualstudio.com/), which has a [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4) that provides syntax highlighting, code completion, and other features.
+
+### Installing toolchain
 
 Install [`elan`](https://github.com/leanprover/elan), to manage Lean toolchains. It provides the `lean` and `lake` commands.
 
 _Remark: Installing `elan` installs two executables. The executable `lake` has a similar role as cargo and `lean` is similar to `rustc`._
 
-### Scaffolding
+### Initializing a project
 
 You can just continue with the rest of this workshop in the same folder, but you can also create a new project. To start a new Lean project, `cd` into a new empty directory and run:
 
@@ -22,13 +24,25 @@ You can just continue with the rest of this workshop in the same folder, but you
 lake init
 ```
 
-### Project structure
+After initialisation, the directory tree will look like this:
 
-Lean code is written inside Lean source files (indirectly) referenced in the `lakefile.toml` file. Extra dependencies will be added to `lakefile.toml`.
+```txt
+riddle-proofs/
+├── lakefile.toml         # Project configuration for Lake (Lean's build tool)
+├── lean-toolchain        # Specifies the Lean toolchain version to use
+├── README.md             # Project documentation and instructions
+├── Main.lean             # (Optional) Main entry point for the project, often imports or runs top-level code
+├── RiddleProofs.lean     # (Optional) Index file for the RiddleProofs/ folder, re-exports submodules
+├── RiddleProofs/
+│   ├── Basic.lean        # (Example) A Lean file for basic definitions or warm-up exercises
+│   └── JealousMath.lean  # A Lean file containing the code and proofs for the "Jealous Mathematicians" puzzle
+```
+
+Source files that are "top-level entrypoints" (like `/Main.lean` and `/RiddleProofs.lean`) have to be declared in the `lakefile.toml` file.
+
+Extra dependencies, needed later on during development, will also be added to `lakefile.toml`. For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
 
 _Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
-
-For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
 
 ### Language documentation
 
@@ -36,7 +50,9 @@ If you need a fast-paced introduction you can read [Hitchhiker's Guide to Logica
 
 While learning, you may have further questions. Consult the [reference manual](https://lean-lang.org/doc/reference/latest/) for information about the core language. Refer to it for information about the syntax, type system, and other language features.
 
-### Standard library
+If the reference manual is not enough, you can also ask questions on the [Lean Zulip chat](https://leanprover.zulipchat.com/). The community is very welcoming and helpful, so don't hesitate to ask questions.
+
+### Importing modules
 
 If you need data structures or things that live in the standard libraries, you have to import the definitions from the standard library.
 
@@ -48,11 +64,23 @@ import Std.Data.HashSet
 
 You might need to restart the language server of Lean in your editor after changing an import. Shortcut: `Ctrl + Shift + X`.
 
-You can find the **import paths** by look at the relative path of the module to the `src/std` directory in the [Lean 4 repository](https://github.com/leanprover/lean4/tree/master/src/Std).
+### Obtaining import paths
+
+The easiest way to find the import paths for modules in the standard library is to install `mathlib` and use its [API documentation site](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html). It also includes and re-exports the standard library of Lean. However, for completeness, this section explains how to find the import paths without installing `mathlib`.
+
+Let's say you need a certain module from the standard library called `Foo`. You don't know the fully-qualified import path to use it in your project.
+
+1. Open the `Std` sub-folder of the [Lean 4 repository](https://github.com/leanprover/lean4/tree/master/src/Std)
+2. Search for the module file `Foo.lean` in the `Std` folder using the [top search bar](https://github.com/search?q=repo%3Aleanprover%2Flean4%20Foo&type=code) of GitHub.
+3. Use the path of the module file, relative to the `src/Std` directory, to create a fully-qualified import statement in Lean. For example, if the file is located at `src/Std/Data/Foo.lean`, you can import it in your Lean source file like this:
+
+    ```lean
+    import Std.Data.Foo
+    ```
 
 _**Important**: References to the definitions in the standard library in the reference manual point to namespaces (not import paths for modules)._
 
-For example `HashSet` is defined in the namespace `Std.HashSet`, according to the reference manual, but you have to import it like `import Std.Data.HashSet`.
+> For example `HashSet` is defined in the namespace `Std.HashSet`, according to the reference manual, but you have to import it like `import Std.Data.HashSet`.
 
 ### Building the project
 
@@ -103,9 +131,9 @@ import Mathlib.Algebra.MonoidAlgebra.Basic
 #check AddMonoidAlgebra.lift_def
 ```
 
-### Mathematical learning resources
+### More learning resources
 
-Good resources to learn how to do (tranditional) formal mathematics in Lean:
+Good resources to learn how to do (traditional) formal software verification or mathematics in Lean:
 
 - [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean)
 
@@ -113,4 +141,6 @@ Good resources to learn how to do (tranditional) formal mathematics in Lean:
 
 In this workshop, we will solve some well-known puzzles and riddles using Lean.
 
-Problem statements and solutions are located in the[`RiddleProofs`](./RiddleProofs) sub-directory.
+Problem statements and solutions for this workshop are located in the [`RiddleProofs`](./RiddleProofs) sub-directory.
+
+_**Note**: This is a work in progress. The code is not complete yet, but the puzzles are mostly solvable. Still looking for more riddles!_
