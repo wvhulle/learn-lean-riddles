@@ -1,8 +1,8 @@
-# Collection of riddles and puzzles in Lean 4
+# Riddles in Lean
 
-This is a collection of riddles and puzzles implemented in Lean 4 for a workshop given on 17th of July 2025 at Ghent.
+This is a collection of riddles and puzzles implemented in Lean 4 for a [workshop](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
 
-_**Note**: This is a work in progress. The code is not complete yet, but the puzzles are solvable.
+_**Note**: This is a work in progress. The code is not complete yet, but the puzzles are mostly solvable._
 
 ## Getting started (for new users)
 
@@ -10,7 +10,13 @@ If you have never used Lean before, you will have to install some system depende
 
 ### Toolchain
 
-Install [`elan`](https://github.com/leanprover/elan), to manage Lean toolchains. It provides the `lean` and `lake` commands. `lake` is similar to cargo and `lean` is similar to `rustc`. To start a new project in the current directory:
+Install [`elan`](https://github.com/leanprover/elan), to manage Lean toolchains. It provides the `lean` and `lake` commands.
+
+_Remark: Installing `elan` installs two executables. The executable `lake` has a similar role as cargo and `lean` is similar to `rustc`._
+
+### Scaffolding
+
+You can just continue with the rest of this workshop in the same folder, but you can also create a new project. To start a new Lean project, `cd` into a new empty directory and run:
 
 ```bash
 lake init
@@ -18,11 +24,17 @@ lake init
 
 ### Project structure
 
-Lean code is written in side the files (indirectly) referenced in the `lakefile.toml` file.
+Lean code is written inside Lean source files (indirectly) referenced in the `lakefile.toml` file. Extra dependencies will be added to `lakefile.toml`.
 
-### General documentation
+_Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
 
-The [reference manual](https://lean-lang.org/doc/reference/latest/) contains information about the core language.
+For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
+
+### Language documentation
+
+If you need a fast-paced introduction you can read [Hitchhiker's Guide to Logical Verification (2023 Edition)](https://lean-forward.github.io/hitchhikers-guide/2023/).
+
+While learning, you may have further questions. Consult the [reference manual](https://lean-lang.org/doc/reference/latest/) for information about the core language. Refer to it for information about the syntax, type system, and other language features.
 
 ### Standard library
 
@@ -78,9 +90,11 @@ The collection of definitions and theorems in Mathlib is large, so it is useful 
 
 - Interactive [HTML pages](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) with cross-references and syntax highlighting.
 
-- Definition search engines provided by language server (and hosted online):
+- Definition search engines provided by the Lean language server in the editor (and hosted online):
   - Based on using meta-variables and the type system: [Loogle](https://loogle.lean-lang.org/).
   - Search using natural language: [Moogle](https://moogle.ai/).
+
+To open `loogle` in VS Code, you can use the command palette (`Ctrl + Shift + P`) and type `Loogle: Search for a definition`. You can also use the `#check` command to check the type of a definition or theorem.
 
 Example of an import for a mathematical definition from Mathlib:
 
@@ -97,4 +111,6 @@ Good resources to learn how to do (tranditional) formal mathematics in Lean:
 
 ## Puzzles
 
-Located inside the [`RiddleProofs`](./RiddleProofs) directory.
+In this workshop, we will solve some well-known puzzles and riddles using Lean.
+
+Problem statements and solutions are located in the[`RiddleProofs`](./RiddleProofs) sub-directory.
