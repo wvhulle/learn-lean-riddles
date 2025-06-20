@@ -1,16 +1,18 @@
 # Riddles in Lean
 
-This is a collection of riddles and puzzles implemented in Lean 4 for a [workshop](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
+This is a collection of riddles implemented in Lean 4 for a [workshop](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
 
-## Introduction
-
-### Target audience
+## Target audience
 
 This workshop is suitable for everyone who:
 
 - is not afraid of mathematics or theorem proving,
 - knows at least one functional programming language,
-- loves mathematical or logical puzzles.
+- loves mathematical or logical riddles.
+
+## Installation
+
+You choose to use the online instance at [Lean Web Editor](https://live.lean-lang.org/) or you can install Lean locally on your computer.
 
 ### Editor
 
@@ -23,6 +25,8 @@ If you have never used Lean before, you will have to install some system depende
 Install [`elan`](https://github.com/leanprover/elan), to manage Lean toolchains. It provides the `lean` and `lake` commands.
 
 _Remark: Installing `elan` installs two executables. The executable `lake` has a similar role as cargo and `lean` is similar to `rustc`._
+
+## Getting started
 
 ### Initializing a project
 
@@ -53,6 +57,10 @@ Extra dependencies, needed later on during development, will also be added to `l
 _Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
 
 ### Language documentation
+
+A basic introduction can be found on the [Introduction in the reference](https://lean-lang.org/doc/reference/latest/Introduction/#introduction):
+
+> Leonardo de Moura launched the Lean project when he was at Microsoft Research in 2013, and Lean 0.1 was officially released on June 16, 2014. The goal of the Lean project is to combine the high level of trust provided by a small, independently-implementable logical kernel with the convenience and automation of tools like SMT solvers, while scaling to large problems. This vision still guides the development of Lean, as we invest in improved automation, improved performance, and user-friendliness; the trusted core proof checker is still minimal and independent implementations exist.
 
 If you need a fast-paced introduction you can read [Hitchhiker's Guide to Logical Verification (2023 Edition)](https://lean-forward.github.io/hitchhikers-guide/2023/).
 
@@ -145,10 +153,18 @@ Good resources to learn how to do (traditional) formal software verification or 
 
 - [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean)
 
-## Puzzles
+## Riddles
 
-In this workshop, we will solve some well-known puzzles and riddles using Lean.
+In this workshop, we will solve some well-known riddles using Lean.
+
+### Problem statements and solutions
 
 Problem statements and solutions for this workshop are located in the [`RiddleProofs`](./RiddleProofs) sub-directory.
 
-_**Note**: This is a work in progress. The code is not complete yet, but the puzzles are mostly solvable. Still looking for more riddles!_
+_**Note**: This is a work in progress. The code is not complete yet, but the riddles are mostly solvable. Still looking for more riddles!_
+
+### References for new formalizations
+
+Simpler, step-wise educational puzzles for Lean can be found on [University Düsseldorf](https://adam.math.hhu.de/)
+
+More difficult mathematical (but unformalised in Lean) riddles can be found on [Reddit](https://www.reddit.com/r/mathriddles/).
