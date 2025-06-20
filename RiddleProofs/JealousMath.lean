@@ -103,6 +103,9 @@ end Helpers
 section Solution
 
 def n_transfers : Nat := 11
+-- Number of states includes an extra final state.
+def n_states := n_transfers + 1
+
 
 /-
 ## Obtaining solution
@@ -112,33 +115,40 @@ In each step we will transfer a mathematician or a notebook across the river.
 This problem is similar to the "jealous husbands" riddle. The solution is identical.
 See [Wikipedia](https://en.wikipedia.org/wiki/Missionaries_and_cannibals_problem).
  -/
+
+
 def transfers : Vector (State → State) n_states :=
-  Vector.ofFn (fun
-    | k => match k with
-      | _ => match k.val with
-        | 0 => move_boat right ∘ move_notebook 0  right ∘ move_mathematician 0 right
-        | 1 => move_boat left ∘ move_notebook 0 left ∘ move_mathematician 0 left
-        | 2 => move_boat right ∘ move_notebook 1 right ∘ move_mathematician 1 right
-        | 3 => move_boat right ∘ move_notebook 0 right ∘ move_mathematician 0 right
-        | 4 => move_boat right ∘ move_notebook 2 right ∘ move_mathematician 2 right
-        | 5 => move_boat left ∘ move_notebook 0 left ∘ move_mathematician 0 left
-        | 6 => move_boat right ∘ move_notebook 0 right ∘ move_mathematician 0 right
-        | 7 => move_boat left ∘ move_notebook 1 left ∘ move_mathematician 1 left
-        | 8 => move_boat right ∘ move_notebook 1 right ∘ move_mathematician 1 right
-        | 9 => move_boat left ∘ move_notebook 0 left ∘ move_mathematician 0 left
-        | 10 => move_boat right ∘ move_notebook 0 right ∘ move_mathematician 0 right
-        | _ => id)
+  Vector.ofFn (fun ⟨ k, _ ⟩  => match k with
+    | 0 => move_boat right ∘ move_notebook 0  right ∘ move_mathematician 0 right
+    | 1 => move_boat left ∘ move_notebook 0 left ∘ move_mathematician 0 left
+    | 2 => move_boat right ∘ move_notebook 1 right ∘ move_mathematician 1 right
+    | 3 => move_boat right ∘ move_notebook 0 right ∘ move_mathematician 0 right
+    | 4 => move_boat right ∘ move_notebook 2 right ∘ move_mathematician 2 right
+    | 5 => move_boat left ∘ move_notebook 0 left ∘ move_mathematician 0 left
+    | 6 => move_boat right ∘ move_notebook 0 right ∘ move_mathematician 0 right
+    | 7 => move_boat left ∘ move_notebook 1 left ∘ move_mathematician 1 left
+    | 8 => move_boat right ∘ move_notebook 1 right ∘ move_mathematician 1 right
+    | 9 => move_boat left ∘ move_notebook 0 left ∘ move_mathematician 0 left
+    | 10 => move_boat right ∘ move_notebook 0 right ∘ move_mathematician 0 right
+    | _ => id)
 
 end Solution
 
--- Number of states includes an extra final state.
-def n_states := n_transfers + 1
+
 
 namespace StructuralRecursion
 
+/-
+## Structural recursion
+
+A kind of recursion that is easy to check for termination. Termination can be checked by Lean automatically because the argument visibly and syntactically "erodes" (or shrinks) in the recursive call.
+
+In the following `n + 1` -> `n` in the recursive call at the end of the recursive function body.
+-/
+
 def intermediate_states_structural_rec : (n: Nat) -> n < n_states → State
   | 0, _ => initial_state
-  | n+1, h =>
+  | n + 1, h =>
     let prev := intermediate_states_structural_rec n (Nat.lt_of_succ_lt h)
     (transfers.get ⟨n, Nat.lt_of_succ_lt h⟩) prev
 
@@ -150,7 +160,7 @@ end StructuralRecursion
 /-
 ## Well-founded recusion
 
-Some types of recursion may lead to unterminated recursion. Well-founded recursion is a recursion closure together with a proof that a certain recursive definition terminates.
+Some types of recursion may lead to infinite loops. Well-founded recursion is a recursive closure with a proof that the recursive closure terminates.
 
 The result of `measure` allows argument j := <n+1,_> to fix to be compared against the recursive argument i:= <n,_> by mapping these arguments to the natural numbers.
 -/
