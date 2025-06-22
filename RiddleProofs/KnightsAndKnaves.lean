@@ -1,3 +1,5 @@
+import Std
+
 /-!
 # The Knights and Knaves Puzzle
 
@@ -22,35 +24,36 @@ open Person Role
 /-- A world assigns roles to people -/
 def World := Person → Role
 
-/-- Model statements: knights tell truth, knaves lie -/
-def says (w : World) (p : Person) (prop : Prop) : Prop :=
-  match w p with
-  | knight => prop
-  | knave => ¬prop
+/-- Helper to create a world from A's and B's roles -/
+def mkWorld (roleA roleB : Role) : World :=
+  fun p => match p with | Person.A => roleA | Person.B => roleB
 
-/-- Check if both statements are consistent in world w -/
-def statements (w : World) : Bool :=
-  match w A, w B with
-  | knight, knight => (w B = knave) ∧ (w A ≠ w B)
-  | knight, knave  => (w B = knave) ∧ ¬(w A ≠ w B)
-  | knave, knight  => ¬(w B = knave) ∧ (w A ≠ w B)
-  | knave, knave   => ¬(w B = knave) ∧ ¬(w A ≠ w B)
+/-- All possible role combinations -/
+def all_role_pairs : List (Role × Role) :=
+  [(knight, knight), (knight, knave), (knave, knight), (knave, knave)]
 
 /-- All 4 possible worlds -/
 def all_worlds : List World :=
-  [ fun p => match p with | A => knight | B => knight,
-    fun p => match p with | A => knight | B => knave,
-    fun p => match p with | A => knave | B => knight,
-    fun p => match p with | A => knave | B => knave ]
+  all_role_pairs.map (fun (rA, rB) => mkWorld rA rB)
+
+/-- Check if both statements are consistent in world w -/
+def statements (w : World) : Bool :=
+  let a_says := w Person.B = knave  -- A says "B is a knave"
+  let b_says := w Person.A ≠ w Person.B  -- B says "We are opposite types"
+  match w Person.A, w Person.B with
+  | knight, knight => a_says ∧ b_says
+  | knight, knave  => a_says ∧ ¬b_says
+  | knave, knight  => ¬a_says ∧ b_says
+  | knave, knave   => ¬a_says ∧ ¬b_says
 
 /-- Find consistent worlds -/
 def solutions : List World := all_worlds.filter statements
 
-instance : ToString Role where
-  toString r := match r with | knight => "knight" | knave => "knave"
-
 -- The answer: only one consistent world
-#eval solutions.map (fun w => (toString (w A), toString (w B)))
+#eval solutions.map fun w => (w Person.A, w Person.B)
+
+-- Alternative: show all worlds with their consistency status
+#eval all_worlds.map fun w => ((w Person.A, w Person.B), statements w)
 
 /-!
 ## Step-by-Step Analysis
@@ -84,20 +87,40 @@ Let's work through each possible world to see why only one works:
 Let's verify our analysis by checking all four possible worlds:
 -/
 
--- Check if statements are consistent for each world
-#eval statements (fun p => match p with | A => knight | B => knight)  -- false
-#eval statements (fun p => match p with | A => knight | B => knave)   -- false
-#eval statements (fun p => match p with | A => knave | B => knight)   -- true
-#eval statements (fun p => match p with | A => knave | B => knave)    -- false
+-- Check if statements are consistent for each world using modern syntax
+#eval all_role_pairs.map fun (rA, rB) =>
+  let w := mkWorld rA rB
+  ((rA, rB), statements w)
+
+-- Alternative: show the reasoning for each world
+def analyze_world (roleA roleB : Role) : String :=
+  let w := mkWorld roleA roleB
+  let consistent := statements w
+  s!"World: A={repr roleA}, B={repr roleB} → Consistent: {consistent}"
+
+#eval String.join (all_role_pairs.map fun (rA, rB) =>
+  analyze_world rA rB ++ "\n")
 
 /-!
 ## Summary
 
 This demonstrates computational logic solving:
 1. **Model** the problem with types and constraints
-2. **Enumerate** all possibilities
+2. **Enumerate** all possibilities systematically
 3. **Filter** consistent solutions
 4. **Verify** the unique answer: A = knave, B = knight
 
 The approach scales to much larger Knights and Knaves puzzles!
 -/
+
+/-- The unique solution -/
+def the_solution : World := mkWorld knave knight
+
+/-- Verify there's exactly one solution -/
+example : solutions.length = 1 := by decide
+
+/-- Verify A is a knave and B is a knight in the solution -/
+example : the_solution Person.A = knave ∧ the_solution Person.B = knight := by decide
+
+/-- Show that the solution satisfies the constraints -/
+example : statements the_solution = true := by decide
