@@ -90,9 +90,9 @@ Let's say you need a certain module from the standard library called `Foo`. You 
 2. Search for the module file `Foo.lean` in the `Std` folder using the [top search bar](https://github.com/search?q=repo%3Aleanprover%2Flean4%20Foo&type=code) of GitHub.
 3. Use the path of the module file, relative to the `src/Std` directory, to create a fully-qualified import statement in Lean. For example, if the file is located at `src/Std/Data/Foo.lean`, you can import it in your Lean source file like this:
 
-    ```lean
-    import Std.Data.Foo
-    ```
+   ```lean
+   import Std.Data.Foo
+   ```
 
 _**Important**: References to the definitions in the standard library in the reference manual point to namespaces (not import paths for modules)._
 
@@ -107,6 +107,10 @@ lake build
 ```
 
 ## Mathematics
+
+### AlphaProof
+
+https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/
 
 ### Mathlib
 
