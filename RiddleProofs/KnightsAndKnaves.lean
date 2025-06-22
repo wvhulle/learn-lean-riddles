@@ -1,24 +1,34 @@
 /-!
 # The Knights and Knaves Puzzle
 
-On an island, knights always tell the truth and knaves always lie. You meet two inhabitants, A and B. A says, “B is a knave.” B says, “We are of opposite types.” What are A and B?
+**Problem**: On an island, knights always tell the truth, knaves always lie.
+You meet A and B who say:
+- A: "B is a knave"
+- B: "We are of opposite types"
+
+What are A and B?
+
+**Solution**: Model all possibilities, check which are consistent.
 -/
 
+/-- The two people in our puzzle -/
 inductive Person | A | B deriving DecidableEq, Repr
+
+/-- Knight (truth-teller) or knave (liar) -/
 inductive Role | knight | knave deriving DecidableEq, Repr
 
 open Person Role
 
-/-- A world assigns a role to each person. -/
+/-- A world assigns roles to people -/
 def World := Person → Role
 
-/-- A knight's statement is true, a knave's statement is false. -/
+/-- Model statements: knights tell truth, knaves lie -/
 def says (w : World) (p : Person) (prop : Prop) : Prop :=
   match w p with
   | knight => prop
   | knave => ¬prop
 
-/-- The statements: -/
+/-- Check if both statements are consistent in world w -/
 def statements (w : World) : Bool :=
   match w A, w B with
   | knight, knight => (w B = knave) ∧ (w A ≠ w B)
@@ -26,17 +36,68 @@ def statements (w : World) : Bool :=
   | knave, knight  => ¬(w B = knave) ∧ (w A ≠ w B)
   | knave, knave   => ¬(w B = knave) ∧ ¬(w A ≠ w B)
 
-/-- There are only four possible worlds. -/
+/-- All 4 possible worlds -/
 def all_worlds : List World :=
   [ fun p => match p with | A => knight | B => knight,
     fun p => match p with | A => knight | B => knave,
     fun p => match p with | A => knave | B => knight,
     fun p => match p with | A => knave | B => knave ]
 
-/-- Find all worlds where the statements are true. -/
+/-- Find consistent worlds -/
 def solutions : List World := all_worlds.filter statements
 
 instance : ToString Role where
   toString r := match r with | knight => "knight" | knave => "knave"
 
+-- The answer: only one consistent world
 #eval solutions.map (fun w => (toString (w A), toString (w B)))
+
+/-!
+## Step-by-Step Analysis
+
+Let's work through each possible world to see why only one works:
+
+**World 1: A = knight, B = knight**
+- A (knight) says "B is a knave": Since A tells truth, B must be knave. Contradiction! (B is knight)
+- This world is inconsistent.
+
+**World 2: A = knight, B = knave**
+- A (knight) says "B is a knave": Since A tells truth, B is knave ✓
+- B (knave) says "We are opposite types": Since B lies, we are NOT opposite. But A=knight, B=knave ARE opposite. Contradiction!
+- This world is inconsistent.
+
+**World 3: A = knave, B = knight**
+- A (knave) says "B is a knave": Since A lies, B is NOT a knave, so B is knight ✓
+- B (knight) says "We are opposite types": Since B tells truth, A and B ARE opposite types ✓
+- This world is consistent! ✓✓
+
+**World 4: A = knave, B = knave**
+- A (knave) says "B is a knave": Since A lies, B is NOT a knave. Contradiction! (B is knave)
+- This world is inconsistent.
+
+**Conclusion**: Only World 3 works, so A is a knave and B is a knight.
+-/
+
+/-!
+## Verification: Check Each World
+
+Let's verify our analysis by checking all four possible worlds:
+-/
+
+-- Check if statements are consistent for each world
+#eval statements (fun p => match p with | A => knight | B => knight)  -- false
+#eval statements (fun p => match p with | A => knight | B => knave)   -- false
+#eval statements (fun p => match p with | A => knave | B => knight)   -- true
+#eval statements (fun p => match p with | A => knave | B => knave)    -- false
+
+/-!
+## Summary
+
+This demonstrates computational logic solving:
+1. **Model** the problem with types and constraints
+2. **Enumerate** all possibilities
+3. **Filter** consistent solutions
+4. **Verify** the unique answer: A = knave, B = knight
+
+The approach scales to much larger Knights and Knaves puzzles!
+-/
