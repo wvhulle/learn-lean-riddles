@@ -1,5 +1,3 @@
-import Std
-
 /-!
 # The Monty Hall Problem
 

@@ -16,11 +16,15 @@ You choose to use the online instance at [Lean Web Editor](https://live.lean-lan
 
 ### Editor
 
-Unfortunately, there is not that much choice for Lean editors. The recommended editor is [Visual Studio Code](https://code.visualstudio.com/), which has a [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4) that provides syntax highlighting, code completion, and other features.
+Unfortunately, there is not that much choice for Lean editors. The recommended editor is [Visual Studio Code](https://code.visualstudio.com/). Emacs and Vim are also supported, but the experience may be harder.
+
+A linter is available for VS Code as a [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4) that provides syntax highlighting, code completion, and other features. There is no formatter for Lean code available yet.
 
 ### Installing toolchain
 
 If you have never used Lean before, you will have to install some system dependencies and tools to get started.
+
+For Windows users, it is recommended to use the [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install) to run Lean. This way, you can use the same commands as on Linux and macOS.
 
 Install [`elan`](https://github.com/leanprover/elan), to manage Lean toolchains. It provides the `lean` and `lake` commands.
 
@@ -108,15 +112,28 @@ lake build
 
 ## Mathematics
 
-### AlphaProof
+Lean is both a functional programming language and a flexible proof assistant. 
 
-https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/
+The best learning resource for mathematics with Lean is the book [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean).
+
+An interactive tutorial / Lean learning game is available at  [University Düsseldorf](https://adam.math.hhu.de/)
+
+### AI / LLMs and Lean
+
+A team from Google managed to solve some of the International Mathematical Olympiad (IMO) problems using Lean 4 and the Mathlib library. See the blog post [AI solves IMO problems at silver medal level](https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/) for more information.
+
+As of June 2025, the status of LLMs and Lean for ordinary users is:
+
+- GPT4.1 is well integrated in VS Code.
+- Claude 4 is good at refactoring Lean4 code (using the Copilot Chat Agent). 
+
+One thing that is lacking is a fine-tuned LLM that is trained on the standard library code and the large Mathlib library. 
+
+_Remark: To build a fine-tuned Lean model, you need to start from a popular open model like LLama 3.1. First, you have to create good dataset with any language. Training / fine-tuning can only be done in Python and using a fine-tuning framework like [Unsloth](https://unsloth.ai/). Afterwards you can do inference with any inference engine._
 
 ### Mathlib
 
-A large superset of the standard library. It contains a lot of mathematical definitions and theorems, which are useful for writing mathematical proofs in Lean.
-
-### Mathlib installation
+All of undergraduate and graduate (even PhD) mathematics is formalized in Lean 4's Mathlib library. It contains a lot of mathematical definitions and theorems, which are useful for writing mathematical proofs in Lean.
 
 To install Mathlib as a dependency to your current project, follow [Mathlib installation instructions](https://github.com/leanprover-community/mathlib4/wiki/Using-mathlib4-as-a-dependency).
 
@@ -151,11 +168,6 @@ import Mathlib.Algebra.MonoidAlgebra.Basic
 #check AddMonoidAlgebra.lift_def
 ```
 
-### More learning resources
-
-Good resources to learn how to do (traditional) formal software verification or mathematics in Lean:
-
-- [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean)
 
 ## Riddles
 
@@ -167,8 +179,8 @@ Problem statements and solutions for this workshop are located in the [`RiddlePr
 
 _**Note**: This is a work in progress. The code is not complete yet, but the riddles are mostly solvable. Still looking for more riddles!_
 
-### References for new formalizations
+## Contributing
 
-Simpler, step-wise educational puzzles for Lean can be found on [University Düsseldorf](https://adam.math.hhu.de/)
+If you want to add formalizations of new riddles to this collection, you can find some on [Reddit/Mathriddles](https://www.reddit.com/r/mathriddles/).
 
-More difficult mathematical (but unformalised in Lean) riddles can be found on [Reddit](https://www.reddit.com/r/mathriddles/).
+

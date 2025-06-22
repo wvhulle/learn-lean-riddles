@@ -1,5 +1,3 @@
-import Std
-
 /-!
 # The Knights and Knaves Puzzle
 
