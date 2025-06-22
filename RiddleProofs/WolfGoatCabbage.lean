@@ -44,3 +44,12 @@ def possible_moves (s : State) : List (State) :=
 #eval safe initial
 /- Example: the goal state is safe. -/
 #eval safe goal
+
+/- Example: unsafe state (goat alone with wolf, farmer away) -/
+#eval safe { farmer := right, wolf := left, goat := left, cabbage := right } -- false
+
+/- Example: unsafe state (goat alone with cabbage, farmer away) -/
+#eval safe { farmer := right, wolf := right, goat := left, cabbage := left } -- false
+
+/- Example: safe state (farmer and goat away, wolf and cabbage left) -/
+#eval safe { farmer := right, wolf := left, goat := right, cabbage := left } -- true
