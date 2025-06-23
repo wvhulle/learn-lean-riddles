@@ -211,40 +211,13 @@ example : P H = 1 / 3 := by
   sorry
 
 theorem H_measurable : MeasurableSet H := by
- -- Since MontyOutcome is a finite type, we can use the fact that
-  -- the preimage of a measurable set under a measurable function is measurable
-  -- unfold H
-  -- H = {ω | ω.car = 1} = (fun ω => ω.car)⁻¹' {1}
   have : H = (fun ω : MontyOutcome => ω.car) ⁻¹' {1} := by
     ext ω
     simp [H, Set.mem_setOf_eq, Set.mem_preimage, Set.mem_singleton_iff]
   rw [this]
-
   apply MeasurableSet.preimage
-  -- Show that {1} is measurable in Door = Fin 3
-  · exact MeasurableSet.singleton _-- Show that (fun ω => ω.car) is measurable
-  · show Measurable (fun ω : MontyOutcome => ω.car)
-    rw [Measurable]
-
-    intro s hs
-    -- To show the preimage `(fun ω => ω.car) ⁻¹' s` is measurable, we need to find
-    -- a measurable set `t` in `Door × Door × Door` such that our set is the
-    -- preimage of `t` under `fun ω => (ω.car, ω.pick, ω.host)`.
-    -- We use `t := s ×ˢ Set.univ ×ˢ Set.univ`.
-    use s ×ˢ Set.univ ×ˢ Set.univ
-    constructor
-    · -- First, we prove that `t` is measurable.
-      -- A product of measurable sets is measurable. We apply this twice.
-      apply MeasurableSet.prod
-      case h.left.ht =>
-       apply MeasurableSet.prod
-       · exact hs
-       · exact MeasurableSet.univ
-      case h.left.hs =>
-        exact hs
-    · -- Second, we prove the equality of the sets.
-      ext ω
-      simp
+  · exact MeasurableSet.singleton _
+  · exact measurable_fst.comp (comap_measurable (fun (ω : MontyOutcome) => (ω.car, ω.pick, ω.host)))
 
 
 -- evidence that Monty has revealed a door with a goat behind it
