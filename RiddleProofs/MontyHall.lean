@@ -205,11 +205,6 @@ noncomputable def P  := p.toMeasure
 def H : Set MontyOutcome :=
   { ω | ω.car = 1 }
 
-
--- Prior probability that door 1 has the car
-example : P H = 1 / 3 := by
-  sorry
-
 theorem H_measurable : MeasurableSet H := by
   have : H = (fun ω : MontyOutcome => ω.car) ⁻¹' {1} := by
     ext ω
@@ -218,6 +213,22 @@ theorem H_measurable : MeasurableSet H := by
   apply MeasurableSet.preimage
   · exact MeasurableSet.singleton _
   · exact measurable_fst.comp (comap_measurable (fun (ω : MontyOutcome) => (ω.car, ω.pick, ω.host)))
+
+
+
+-- Prior probability that door 1 has the car
+example : P H = 1 / 3 := by
+  -- P H = ∑_{ω | ω.car = 1} probability_density_f ω
+  have : P H = (∑ ω in Finset.univ.filter (λ ω : MontyOutcome => ω.car = 1), probability_density_f ω) := by
+    simp [P]
+    rw [p.toMeasure_apply]
+    simp [H]
+    · sorry
+    · sorry
+  rw [this]
+  norm_num
+  sorry
+
 
 
 -- evidence that Monty has revealed a door with a goat behind it
