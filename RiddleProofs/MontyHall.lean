@@ -4,6 +4,7 @@ import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
 import Mathlib.MeasureTheory.Measure.Count
 import Mathlib.Probability.ProbabilityMassFunction.Basic
+import Mathlib.Data.Finset.Basic
 
 open ProbabilityTheory MeasureTheory
 open scoped ENNReal
@@ -116,6 +117,8 @@ open ProbabilityTheory Set
 
 abbrev Door : Type := Fin 3
 
+-- Ensure Door has a measurable space instance
+instance : MeasurableSpace Door := by infer_instance
 
 structure MontyOutcome where
   car   : Door
@@ -125,10 +128,10 @@ structure MontyOutcome where
 
 deriving instance Fintype for MontyOutcome
 
-
 instance : MeasurableSpace MontyOutcome :=
   letI := inferInstanceAs (MeasurableSpace (Door × Door × Door))
   MeasurableSpace.comap (fun (ω : MontyOutcome) => (ω.car, ω.pick, ω.host)) inferInstance
+
 
 def outcome_weight (ω : MontyOutcome) : ℕ :=
   if ω.host = ω.pick then 0     -- Host never opens the picked door.
@@ -143,9 +146,8 @@ def sum_weights : ℝ≥0∞ := ∑ ω : MontyOutcome, outcome_weight ω
 -- Prove that the sum equals 18
 theorem sum_weights_concrete : sum_weights = 18 := by
   unfold sum_weights
-  let ωs := Finset MontyOutcome
-  unfold Finset.sum
-  sorry
+  -- The sum over a finite type is computable
+  norm_cast
 
 
 noncomputable def probability_density_f (ω : MontyOutcome) : ℝ≥0∞ :=
@@ -153,6 +155,10 @@ noncomputable def probability_density_f (ω : MontyOutcome) : ℝ≥0∞ :=
 
 
 theorem pf_sum_one : HasSum probability_density_f 1 := by
+  -- For a finite type, we can convert HasSum to Finset.sum
+  rw [HasSum]
+  unfold probability_density_f
+  norm_cast
   sorry
 
 open PMF
@@ -193,14 +199,65 @@ instance : DecidablePred no_switch_win_pred := by
 
 noncomputable def P  := p.toMeasure
 
-theorem switch_win_chance :
-  P {ω | switch_win_pred ω} = (2 : ℝ≥0∞) / 3 := by
-  have total_switch_weight : ∑ ω in Finset.univ.filter switch_win_pred, outcome_weight ω = 12 := by decide
-  sorry
 
 
-theorem noswitch_win_chance :
-  P {ω | no_switch_win_pred ω} = (1 : ℝ≥0∞) / 3 := by
-  have total_noswitch_weight : ∑ ω in Finset.univ.filter no_switch_win_pred, outcome_weight ω = 6 := by decide
-  unfold P
+-- door 1 has a car behind it
+def H : Set MontyOutcome :=
+  { ω | ω.car = 1 }
+
+
+-- Prior probability that door 1 has the car
+example : P H = 1 / 3 := by
   sorry
+
+theorem H_measurable : MeasurableSet H := by
+ -- Since MontyOutcome is a finite type, we can use the fact that
+  -- the preimage of a measurable set under a measurable function is measurable
+  -- unfold H
+  -- H = {ω | ω.car = 1} = (fun ω => ω.car)⁻¹' {1}
+  have : H = (fun ω : MontyOutcome => ω.car) ⁻¹' {1} := by
+    ext ω
+    simp [H, Set.mem_setOf_eq, Set.mem_preimage, Set.mem_singleton_iff]
+  rw [this]
+
+  apply MeasurableSet.preimage
+  -- Show that {1} is measurable in Door = Fin 3
+  · exact MeasurableSet.singleton _-- Show that (fun ω => ω.car) is measurable
+  · show Measurable (fun ω : MontyOutcome => ω.car)
+    rw [Measurable]
+
+    intro s hs
+    -- To show the preimage `(fun ω => ω.car) ⁻¹' s` is measurable, we need to find
+    -- a measurable set `t` in `Door × Door × Door` such that our set is the
+    -- preimage of `t` under `fun ω => (ω.car, ω.pick, ω.host)`.
+    -- We use `t := s ×ˢ Set.univ ×ˢ Set.univ`.
+    use s ×ˢ Set.univ ×ˢ Set.univ
+    constructor
+    · -- First, we prove that `t` is measurable.
+      -- A product of measurable sets is measurable. We apply this twice.
+      apply MeasurableSet.prod
+      case h.left.ht =>
+       apply MeasurableSet.prod
+       · exact hs
+       · exact MeasurableSet.univ
+      case h.left.hs =>
+        exact hs
+    · -- Second, we prove the equality of the sets.
+      ext ω
+      simp
+
+
+-- evidence that Monty has revealed a door with a goat behind it
+def E : Set MontyOutcome :=
+  { ω | ω.pick = 1 ∧ ω.car ≠ 1 }
+
+
+-- Conditional probability that door 1 has car given we picked door 0 and car is not there
+theorem monty_hall_solution : P[H|E] = 2 / 3 := by
+  have : IsFiniteMeasure P := by sorry
+  rw [cond_eq_inv_mul_cond_mul _ _ P]
+  · sorry
+  · show MeasurableSet E
+    sorry
+  · show MeasurableSet H
+    exact H_measurable
