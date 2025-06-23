@@ -108,16 +108,15 @@ action of revealing a goat doesn't change the probability of your original choic
 concentrates the remaining 2/3 probability on the door you can switch to.
 -/
 
-open ProbabilityTheory Set
--- The three doors are represented by the finite type `Fin 3`.
 
 section Bayes
 
--- The three doors are represented by the finite type `Fin 3`.
+open ProbabilityTheory Set
+
+
 abbrev Door : Type := Fin 3
 
--- The sample space Ω represents all possible outcomes.
--- An outcome is a triple: (car location, player's initial pick, door opened by host).
+
 structure MontyOutcome where
   car   : Door
   pick  : Door
@@ -125,59 +124,83 @@ structure MontyOutcome where
   deriving DecidableEq, Repr
 
 deriving instance Fintype for MontyOutcome
-abbrev Ω : Type := MontyOutcome
 
 
-instance : MeasurableSpace Ω :=
+instance : MeasurableSpace MontyOutcome :=
   letI := inferInstanceAs (MeasurableSpace (Door × Door × Door))
-  MeasurableSpace.comap (fun (ω : Ω) => (ω.car, ω.pick, ω.host)) inferInstance
+  MeasurableSpace.comap (fun (ω : MontyOutcome) => (ω.car, ω.pick, ω.host)) inferInstance
 
-noncomputable def monty_hall_pmf (ω : Ω) : ℝ≥0∞ :=
-  let p_car_pick : ℝ≥0∞ := (1/3) * (1/3)
-  let p_host : ℝ≥0∞ :=
-    if ω.host = ω.pick then 0     -- Host never opens the picked door.
-    else if ω.host = ω.car then 0 -- Host never opens the car door.
-    else
-      if ω.car = ω.pick then (1/2) -- Contestant chose the car. Host chooses from 2 doors.
-      else 1                 -- Contestant chose a goat. Host is forced to open the only other goat door.
-  p_car_pick * p_host
+def outcome_weight (ω : MontyOutcome) : ℕ :=
+  if ω.host = ω.pick then 0     -- Host never opens the picked door.
+  else if ω.host = ω.car then 0 -- Host never opens the car door.
+  else
+    if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
+    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
+
+-- Calculate the normalization constant
+def sum_weights : ℝ≥0∞ := ∑ ω : MontyOutcome, outcome_weight ω
+
+-- Prove that the sum equals 18
+theorem sum_weights_concrete : sum_weights = 18 := by
+  unfold sum_weights
+  let ωs := Finset MontyOutcome
+  unfold Finset.sum
+  sorry
 
 
--- To define a probability measure, we first show the PMF sums to 1.
-theorem monty_hall_sum_one : HasSum monty_hall_pmf 1 := by
-  -- We can split the sum over car, pick, and host choices.
-  -- The probability of any specific (car, pick) is 1/9.
-  -- We show that for any (car, pick), the sum of host probabilities is 1.
+noncomputable def probability_density_f (ω : MontyOutcome) : ℝ≥0∞ :=
+  ((outcome_weight ω) : ℝ≥0∞) / sum_weights
+
+
+theorem pf_sum_one : HasSum probability_density_f 1 := by
   sorry
 
 open PMF
 
-
-noncomputable def monty_hall_pmf' : PMF Ω :=
-  { val := monty_hall_pmf,
-    property := monty_hall_sum_one
+noncomputable def p : PMF MontyOutcome :=
+  { val := probability_density_f,
+    property := pf_sum_one
   }
 
-noncomputable def μ  := monty_hall_pmf'.toMeasure
+lemma third_door_available (pick host : Door) : ((Finset.univ.erase pick).erase host).Nonempty := by
+  fin_cases pick <;> fin_cases host <;> decide
+
+ def remaining_door (pick host : Door) : Door :=
+  (Finset.univ.erase pick).erase host |>.min' (third_door_available pick host)
 
 
--- Define the unique other door to switch to
-noncomputable def otherDoor (pick host : Door) : Door :=
-  (((Finset.univ.erase pick).erase host).toList.head!)
+def switch_win_event : Set MontyOutcome :=
+  { ω | remaining_door ω.pick ω.host = ω.car }
 
-
--- Now define the two events:
-def switch_win_event : Set Ω :=
-  { ω | otherDoor ω.pick ω.host = ω.car }
-
-def noswitch_win_event : Set Ω :=
+def noswitch_win_event : Set MontyOutcome :=
   { ω | ω.pick = ω.car }
 
--- And the final statements of the theorems:
-theorem monty_hall_switch_wins :
-  μ switch_win_event = (2 : ℝ≥0∞) / 3 := by
+ def switch_win_pred (ω : MontyOutcome) : Prop := remaining_door ω.pick ω.host = ω.car
+ def no_switch_win_pred (ω : MontyOutcome) : Prop := ω.pick = ω.car
+
+instance : DecidablePred switch_win_pred :=  by
+  unfold switch_win_pred
+  infer_instance
+instance : DecidablePred no_switch_win_pred := by
+  unfold no_switch_win_pred
+  infer_instance
+
+
+#eval (Finset.univ.filter switch_win_pred).card
+#eval (Finset.univ.filter no_switch_win_pred).card
+#eval (Finset.univ : Finset MontyOutcome).card
+
+
+noncomputable def P  := p.toMeasure
+
+theorem switch_win_chance :
+  P {ω | switch_win_pred ω} = (2 : ℝ≥0∞) / 3 := by
+  have total_switch_weight : ∑ ω in Finset.univ.filter switch_win_pred, outcome_weight ω = 12 := by decide
   sorry
 
-theorem monty_hall_noswitch_wins :
-  μ noswitch_win_event = (1 : ℝ≥0∞) / 3 := by
+
+theorem noswitch_win_chance :
+  P {ω | no_switch_win_pred ω} = (1 : ℝ≥0∞) / 3 := by
+  have total_noswitch_weight : ∑ ω in Finset.univ.filter no_switch_win_pred, outcome_weight ω = 6 := by decide
+  unfold P
   sorry
