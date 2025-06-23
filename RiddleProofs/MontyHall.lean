@@ -218,16 +218,11 @@ theorem H_measurable : MeasurableSet H := by
 
 -- Prior probability that door 1 has the car
 example : P H = 1 / 3 := by
-  -- P H = ∑_{ω | ω.car = 1} probability_density_f ω
-  have : P H = (∑ ω in Finset.univ.filter (λ ω : MontyOutcome => ω.car = 1), probability_density_f ω) := by
-    simp [P]
-    rw [p.toMeasure_apply]
-    simp [H]
-    · sorry
-    · sorry
-  rw [this]
-  norm_num
+  simp [P]
+  rw [p.toMeasure_apply]
+  simp [H]
   sorry
+
 
 
 
