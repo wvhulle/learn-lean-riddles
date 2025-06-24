@@ -54,9 +54,9 @@ def final_state : State :=
   { boat := right, mathematicians := Vector.replicate 3 right, notebooks := Vector.replicate 3 right }
 
 theorem final_safe: no_notebook_left_behind (final_state):= by
-  rw [no_notebook_left_behind]
+  unfold no_notebook_left_behind
   intro i j ineqj
-  rw [final_state]
+  unfold final_state
   simp
 
 -- If we drop the constraint temporarily that all transfers have to happen step-wise and just look at the initial and final state, we should be able to prove that the two-state path is safe.

@@ -146,6 +146,8 @@ def outcome_weight (ω : MontyOutcome) : ℕ :=
 -- Calculate the normalization constant
 def sum_weights : ℝ≥0∞ := ∑ ω : MontyOutcome, outcome_weight ω
 
+
+
 -- Prove that the sum equals 18
 theorem sum_weights_concrete : sum_weights = 18 := by
   unfold sum_weights
@@ -157,18 +159,17 @@ noncomputable def probability_density_f (ω : MontyOutcome) : ℝ≥0∞ :=
   ((outcome_weight ω) : ℝ≥0∞) / sum_weights
 
 
-theorem pf_sum_one : HasSum probability_density_f 1 := by
-  -- For a finite type, we can convert HasSum to Finset.sum
-  rw [HasSum]
-  unfold probability_density_f
-  norm_cast
+open PMF
+
+theorem pf_sum_one :  HasSum probability_density_f 1 := by
+
   sorry
 
-open PMF
+
 
 noncomputable def p : PMF MontyOutcome :=
   { val := probability_density_f,
-    property := pf_sum_one
+    property :=  pf_sum_one
   }
 
 lemma third_door_available (pick host : Door) : ((Finset.univ.erase pick).erase host).Nonempty := by
@@ -194,15 +195,6 @@ instance : DecidablePred no_switch_win_pred := by
   unfold no_switch_win_pred
   infer_instance
 
-
-#eval (Finset.univ.filter switch_win_pred).card
-#eval (Finset.univ.filter no_switch_win_pred).card
-#eval (Finset.univ : Finset MontyOutcome).card
-
-
-
-
-
 -- door 1 has a car behind it
 def H : Set MontyOutcome :=
   { ω | ω.car = 1 }
@@ -220,13 +212,19 @@ theorem H_measurable : MeasurableSet H := by
 
 noncomputable def P  := p.toMeasure
 
+open ENNReal
+
 -- Prior probability that door 1 has the car
 example : P H = 1 / 3 := by
   simp [P]
   rw [p.toMeasure_apply]
   simp [H]
+  · show ∑' (ω : MontyOutcome), {ω | ω.car = 1}.indicator (p) ω = 3⁻¹
+    simp [indicator, p]
+
+    sorry
   · sorry
-  · sorry
+
 
 
 
