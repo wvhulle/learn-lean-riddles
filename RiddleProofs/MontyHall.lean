@@ -1,17 +1,8 @@
-import Mathlib.Probability.ConditionalProbability
-import Mathlib.Data.Fintype.Basic
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
-import Mathlib.MeasureTheory.Measure.Count
 import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Data.Finset.Basic
-import Mathlib.MeasureTheory.MeasurableSpace.Defs
 
+open  MeasureTheory ProbabilityMeasure ProbabilityTheory Set ENNReal
 
-
-
-open ProbabilityTheory MeasureTheory ProbabilityMeasure MeasurableSpace Fintype Finset
-open scoped ENNReal
 /-!
 # The Monty Hall Problem
 
@@ -21,94 +12,90 @@ open scoped ENNReal
 
 **Intuition**: Many people think it doesn't matter (50/50 chance), but switching actually gives you a 2/3 probability of winning versus 1/3 for staying with your original choice.
 
-**Key Insight**: When you first picked, you had a 1/3 chance of being right. The remaining 2/3 probability is concentrated on the other doors. When the host eliminates one losing door, that 2/3 probability transfers entirely to the remaining door.
+
+See https://brilliant.org/wiki/monty-hall-problem/
 -/
 
 
-/-!
-**Conclusion**: The formal verification confirms that switching wins in 6/9 = 2/3 of cases,
-while staying wins in 3/9 = 1/3 of cases. Always switch!
 
-This demonstrates that our intuition about probability can be misleading. The key insight is
-understanding that when you initially pick, you have a 1/3 chance of being right. The host's
-action of revealing a goat doesn't change the probability of your original choice, but
-concentrates the remaining 2/3 probability on the door you can switch to.
--/
+inductive Door : Type
+| left
+| middle
+| right
+deriving DecidableEq, Repr, Fintype
 
-
-section Bayes
-
-open ProbabilityTheory Set
+open Door
 
 
-abbrev Door : Type := Fin 3
+-- Basic measurable space instances
+instance : MeasurableSpace Door := ⊤
+instance : MeasurableSingletonClass Door := by infer_instance
 
--- Ensure Door has a measurable space instance
-instance : MeasurableSpace Door := by infer_instance
-
-structure MontyOutcome where
+structure ShowOutcome where
   car   : Door
   pick  : Door
   host  : Door
   deriving DecidableEq, Repr
+deriving instance Fintype for ShowOutcome
 
-deriving instance Fintype for MontyOutcome
-
-instance monty_meas : MeasurableSpace MontyOutcome :=
+instance  : MeasurableSpace ShowOutcome :=
   letI := inferInstanceAs (MeasurableSpace (Door × Door × Door))
-  MeasurableSpace.comap (fun (ω : MontyOutcome) => (ω.car, ω.pick, ω.host)) inferInstance
+  MeasurableSpace.comap (fun (ω : ShowOutcome) => (ω.car, ω.pick, ω.host)) inferInstance
 
-def outcome_weight (ω : MontyOutcome) : ℕ :=
+def outcome_weight (ω : ShowOutcome) : ℕ :=
   if ω.host = ω.pick then 0     -- Host never opens the picked door.
   else if ω.host = ω.car then 0 -- Host never opens the car door.
   else
     if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
     else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
 
--- Calculate the normalization constant
-def sum_weights : ℝ≥0∞ := ∑ ω : MontyOutcome, outcome_weight ω
+def sum_weights : ℝ≥0∞ := ∑ ω : ShowOutcome, outcome_weight ω
 
 
 
--- Prove that the sum equals 18
 theorem sum_weights_concrete : sum_weights = 18 := by
   unfold sum_weights
-  -- The sum over a finite type is computable
   norm_cast
 
 
-noncomputable def probability_density_f (ω : MontyOutcome) : ℝ≥0∞ :=
+noncomputable def density (ω : ShowOutcome) : ℝ≥0∞ :=
   ((outcome_weight ω) : ℝ≥0∞) / sum_weights
 
 
-open PMF
-
-theorem pf_sum_one :  HasSum probability_density_f 1 := by
-
+theorem density_sums_one : HasSum density 1 := by
+  --  I don't know how to compute sums of a normalized measure function. I have tried hundreds of lemmas, but none of them worked.
   sorry
 
 
-
-noncomputable def p : PMF MontyOutcome :=
-  { val := probability_density_f,
-    property :=  pf_sum_one
+noncomputable def p : PMF ShowOutcome :=
+  { val := density,
+    property :=  density_sums_one
   }
 
 lemma third_door_available (pick host : Door) : ((Finset.univ.erase pick).erase host).Nonempty := by
   fin_cases pick <;> fin_cases host <;> decide
 
- def remaining_door (pick host : Door) : Door :=
-  (Finset.univ.erase pick).erase host |>.min' (third_door_available pick host)
+-- This had to be deterministic.
+def remaining_door (pick host : Door) : Door :=
+  match pick, host with
+  | left, middle => right
+  | left, right => middle
+  | middle, left => right
+  | right, left => middle
+  | right, middle => left
+  | right, right => left
+  | middle, right => left
+  | middle, middle => left
+  | left, left => right
 
-
-def switch_win_event : Set MontyOutcome :=
+def switch_win_event : Set ShowOutcome :=
   { ω | remaining_door ω.pick ω.host = ω.car }
 
-def noswitch_win_event : Set MontyOutcome :=
+def noswitch_win_event : Set ShowOutcome :=
   { ω | ω.pick = ω.car }
 
- def switch_win_pred (ω : MontyOutcome) : Prop := remaining_door ω.pick ω.host = ω.car
- def no_switch_win_pred (ω : MontyOutcome) : Prop := ω.pick = ω.car
+ def switch_win_pred (ω : ShowOutcome) : Prop := remaining_door ω.pick ω.host = ω.car
+ def no_switch_win_pred (ω : ShowOutcome) : Prop := ω.pick = ω.car
 
 instance : DecidablePred switch_win_pred :=  by
   unfold switch_win_pred
@@ -117,51 +104,65 @@ instance : DecidablePred no_switch_win_pred := by
   unfold no_switch_win_pred
   infer_instance
 
--- door 1 has a car behind it
-def H : Set MontyOutcome :=
-  { ω | ω.car = 1 }
+
+noncomputable def Prob  := p.toMeasure
+
+instance: IsFiniteMeasure Prob := by
+  unfold Prob
+  infer_instance
+
+-- Assume that the participant always picks the left door and the host opens the right door.
+
+-- This is the event set that you win if you stay with your original choice.
+def H := { ω : ShowOutcome | ω.pick = left ∧ ω.car = left}
+
+-- I need to prove a lot of these probabilities. But I could not find a straightforward calculation of a user-define discrete probability measure.
+theorem H_p : Prob H = 1/3 := by
+  unfold H
+  rw [Prob, p,]
+  -- How to reduce this sum over a range to a sum of a finite amount of terms?
+  sorry
+
+-- Evidence that the host opened the right door.
+def E := { ω : ShowOutcome | ω.pick = left ∧  ω.host = right }
+
+instance H_m : MeasurableSet H := by
+  -- This is doable by looking at these sets as the pre-image of measurable element in the outcome space.
+  admit
+
+instance : MeasurableSet E := by
+  -- Also doable
+  admit
 
 
-theorem H_measurable : MeasurableSet H := by
-  have : H = (fun ω : MontyOutcome => ω.car) ⁻¹' {1} := by
-    ext ω
-    simp [H]
-  rw [this]
-  apply MeasurableSet.preimage
-  · exact MeasurableSet.singleton _
-  · exact measurable_fst.comp (comap_measurable _)
+theorem total_prob_eq: Prob E = Prob[E|H] * Prob H + Prob[E|Hᶜ] * Prob Hᶜ  := by
+  -- I could not find the law of total probability in mathlib, maybe I overlooked it.
+  sorry
 
 
-noncomputable def P  := p.toMeasure
 
-open ENNReal
-
--- Prior probability that door 1 has the car
-example : P H = 1 / 3 := by
-  simp [P]
-  rw [p.toMeasure_apply]
-  simp [H]
-  · show ∑' (ω : MontyOutcome), {ω | ω.car = 1}.indicator (p) ω = 3⁻¹
-    simp [indicator, p]
-
+theorem do_not_switch_eq : Prob[H|E]  = Prob switch_win_pred  := by
+  rw [cond_eq_inv_mul_cond_mul]
+  · rw [total_prob_eq, H_p]
     sorry
   · sorry
+  exact H_m
 
-
-
-
-
--- evidence that Monty has revealed a door with a goat behind it
-def E : Set MontyOutcome :=
-  { ω | ω.pick = 1 ∧ ω.car ≠ 1 }
-
-
--- Conditional probability that door 1 has car given we picked door 0 and car is not there
-theorem monty_hall_solution : P[H|E] = 2 / 3 := by
-  have : IsFiniteMeasure P := by sorry
-  rw [cond_eq_inv_mul_cond_mul _ _ P]
-  · sorry
-  · show MeasurableSet E
+theorem do_switch_eq : Prob[Hᶜ|E] = Prob no_switch_win_pred := by
+  -- It was kind of important for me to use Bayes theorem here, because I want to show the benefit of having Mathlib provided.
+  rw [cond_eq_inv_mul_cond_mul]
+  · rw [total_prob_eq, H_p]
     sorry
-  · show MeasurableSet H
-    exact H_measurable
+  · sorry
+  exact MeasurableSet.compl H_m
+
+-- The official solution to the Monty Hall problem is that switching gives you a 2/3 chance of winning compared to 1/3 for not switching.
+theorem monty_hall_solution: Prob switch_win_pred > Prob no_switch_win_pred := by
+  have switch_prob: Prob switch_win_pred = 2/3 := by
+    rw [<- do_not_switch_eq]
+    sorry
+  have noswitch_prob: Prob no_switch_win_pred = 1/3 := by
+    rw [<- do_switch_eq]
+    sorry
+  simp [switch_prob, noswitch_prob]
+  sorry
