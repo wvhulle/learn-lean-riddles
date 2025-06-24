@@ -1,0 +1,3 @@
+import RiddleProofs.BlueEyedIslanders
+import RiddleProofs.JealousMathematician
+import RiddleProofs.MontyHall

@@ -122,10 +122,7 @@ An interactive tutorial / Lean learning game is available at  [University Düsse
 
 A team from Google managed to solve some of the International Mathematical Olympiad (IMO) problems using Lean 4 and the Mathlib library. See the blog post [AI solves IMO problems at silver medal level](https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/) for more information.
 
-As of June 2025, the status of LLMs and Lean for ordinary users is:
-
-- GPT4.1 is well integrated in VS Code.
-- Claude 4 is good at refactoring Lean4 code (using the Copilot Chat Agent). 
+As of June 2025, there are a few AIs / LLMs available to write proofs for you. Have a look at [Vellum](https://www.vellum.ai/llm-leaderboard#). Claude 4 is the best at agentic coding on Lean4 code. 
 
 One thing that is lacking is a fine-tuned LLM that is trained on the standard library code and the large Mathlib library. 
 
