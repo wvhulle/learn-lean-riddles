@@ -5,8 +5,12 @@ import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
 import Mathlib.MeasureTheory.Measure.Count
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Data.Finset.Basic
+import Mathlib.MeasureTheory.MeasurableSpace.Defs
 
-open ProbabilityTheory MeasureTheory
+
+
+
+open ProbabilityTheory MeasureTheory ProbabilityMeasure MeasurableSpace Fintype Finset
 open scoped ENNReal
 /-!
 # The Monty Hall Problem
@@ -128,10 +132,9 @@ structure MontyOutcome where
 
 deriving instance Fintype for MontyOutcome
 
-instance : MeasurableSpace MontyOutcome :=
+instance monty_meas : MeasurableSpace MontyOutcome :=
   letI := inferInstanceAs (MeasurableSpace (Door × Door × Door))
   MeasurableSpace.comap (fun (ω : MontyOutcome) => (ω.car, ω.pick, ω.host)) inferInstance
-
 
 def outcome_weight (ω : MontyOutcome) : ℕ :=
   if ω.host = ω.pick then 0     -- Host never opens the picked door.
@@ -197,7 +200,6 @@ instance : DecidablePred no_switch_win_pred := by
 #eval (Finset.univ : Finset MontyOutcome).card
 
 
-noncomputable def P  := p.toMeasure
 
 
 
@@ -205,23 +207,26 @@ noncomputable def P  := p.toMeasure
 def H : Set MontyOutcome :=
   { ω | ω.car = 1 }
 
+
 theorem H_measurable : MeasurableSet H := by
   have : H = (fun ω : MontyOutcome => ω.car) ⁻¹' {1} := by
     ext ω
-    simp [H, Set.mem_setOf_eq, Set.mem_preimage, Set.mem_singleton_iff]
+    simp [H]
   rw [this]
   apply MeasurableSet.preimage
   · exact MeasurableSet.singleton _
-  · exact measurable_fst.comp (comap_measurable (fun (ω : MontyOutcome) => (ω.car, ω.pick, ω.host)))
+  · exact measurable_fst.comp (comap_measurable _)
 
 
+noncomputable def P  := p.toMeasure
 
 -- Prior probability that door 1 has the car
 example : P H = 1 / 3 := by
   simp [P]
   rw [p.toMeasure_apply]
   simp [H]
-  sorry
+  · sorry
+  · sorry
 
 
 
