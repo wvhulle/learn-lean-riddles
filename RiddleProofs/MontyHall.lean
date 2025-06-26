@@ -1,6 +1,7 @@
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.ProbabilityMassFunction.Basic
-
+import Mathlib.Probability.Notation
+import Mathlib.Topology.Algebra.InfiniteSum.Ring
 open  MeasureTheory ProbabilityMeasure ProbabilityTheory Set ENNReal
 
 /-!
@@ -35,11 +36,12 @@ structure ShowOutcome where
   car   : Door
   pick  : Door
   host  : Door
-  deriving DecidableEq, Repr
-deriving instance Fintype for ShowOutcome
+  deriving DecidableEq, Repr, Fintype
 
-instance  : MeasurableSpace ShowOutcome :=
-  letI := inferInstanceAs (MeasurableSpace (Door × Door × Door))
+instance fin_outcome: Finset ShowOutcome :=
+  Finset.univ
+
+instance measurableSpace : MeasurableSpace ShowOutcome :=
   MeasurableSpace.comap (fun (ω : ShowOutcome) => (ω.car, ω.pick, ω.host)) inferInstance
 
 def outcome_weight (ω : ShowOutcome) : ℕ :=
@@ -49,7 +51,7 @@ def outcome_weight (ω : ShowOutcome) : ℕ :=
     if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
     else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
 
-def sum_weights : ℝ≥0∞ := ∑ ω : ShowOutcome, outcome_weight ω
+def sum_weights : Nat := ∑ ω : ShowOutcome, outcome_weight ω
 
 
 
@@ -58,19 +60,33 @@ theorem sum_weights_concrete : sum_weights = 18 := by
   norm_cast
 
 
-noncomputable def density (ω : ShowOutcome) : ℝ≥0∞ :=
-  ((outcome_weight ω) : ℝ≥0∞) / sum_weights
+
+
+ def density (ω : ShowOutcome) : ENNReal :=
+  (ENNReal.ofReal (((outcome_weight ω) : ℚ) / (sum_weights: ℚ) : ℚ))
+
+
+-- #eval density {car := left, pick := left, host := middle} = 1/6 -- Should be 1/6
 
 
 theorem density_sums_one : HasSum density 1 := by
   --  I don't know how to compute sums of a normalized measure function. I have tried hundreds of lemmas, but none of them worked.
-  sorry
+  rw [Summable.hasSum_iff]
+  · simp [density, outcome_weight, sum_weights]
+    simp [ENNReal.ofReal,]
+    norm_cast
 
+    sorry
+
+
+  · sorry
 
 noncomputable def p : PMF ShowOutcome :=
   { val := density,
     property :=  density_sums_one
   }
+
+
 
 lemma third_door_available (pick host : Door) : ((Finset.univ.erase pick).erase host).Nonempty := by
   fin_cases pick <;> fin_cases host <;> decide
@@ -111,17 +127,41 @@ instance: IsFiniteMeasure Prob := by
   unfold Prob
   infer_instance
 
+instance : IsProbabilityMeasure Prob := by
+  unfold Prob
+  infer_instance
+
+
+local notation "‖" x "‖" => Fintype.card x
+
+
+open MeasureTheory ProbabilityTheory
+
+noncomputable instance measureSpace : MeasureSpace ShowOutcome :=
+  ⟨Prob⟩
+
+
+theorem FinFin.measure_apply (s : Set ShowOutcome) :
+    Prob s = ∑' i : s, density i  := by
+      sorry
+
+
 -- Assume that the participant always picks the left door and the host opens the right door.
 
+
+
 -- This is the event set that you win if you stay with your original choice.
-def H := { ω : ShowOutcome | ω.pick = left ∧ ω.car = left}
+def H := { ω : ShowOutcome | ω.car = left}
 
 -- I need to prove a lot of these probabilities. But I could not find a straightforward calculation of a user-define discrete probability measure.
-theorem H_p : Prob H = 1/3 := by
-  unfold H
-  rw [Prob, p,]
-  -- How to reduce this sum over a range to a sum of a finite amount of terms?
-  sorry
+-- theorem H_p : Prob H = 1/3 := by
+--   rw [FinFin.measure_apply H]
+--   simp [H]
+--   sorry
+
+
+-- #eval Prob H
+
 
 -- Evidence that the host opened the right door.
 def E := { ω : ShowOutcome | ω.pick = left ∧  ω.host = right }
@@ -143,16 +183,14 @@ theorem total_prob_eq: Prob E = Prob[E|H] * Prob H + Prob[E|Hᶜ] * Prob Hᶜ  :
 
 theorem do_not_switch_eq : Prob[H|E]  = Prob switch_win_pred  := by
   rw [cond_eq_inv_mul_cond_mul]
-  · rw [total_prob_eq, H_p]
-    sorry
+  ·     sorry
   · sorry
   exact H_m
 
 theorem do_switch_eq : Prob[Hᶜ|E] = Prob no_switch_win_pred := by
   -- It was kind of important for me to use Bayes theorem here, because I want to show the benefit of having Mathlib provided.
   rw [cond_eq_inv_mul_cond_mul]
-  · rw [total_prob_eq, H_p]
-    sorry
+  ·     sorry
   · sorry
   exact MeasurableSet.compl H_m
 
