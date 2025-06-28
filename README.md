@@ -58,11 +58,79 @@ name = "mathlib"
 scope = "leanprover-community"
 ```
 
-Then install the dependencies by running:
+Dependencies are installed and updated with:
 
 ```bash
 lake update mathlib
 ```
+
+### LLM
+
+
+Install an extension in your editor that can do inference of strong LLM AI models:
+
+- [Continue](https://docs.continue.dev)
+- [Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
+
+Ideally, the extension should support 
+- edit / agent mode
+- custom MCP servers
+
+
+### MCP server
+
+LLMs cannot see all proof context by default. For that, you need to install a local MCP server for the Lean language server (`lean-lsp`) and add it to the settings of your editor (see the installation instructions above).
+
+#### Ubuntu / Fedora / etc.
+
+Install the MCP server from [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp/tree/main). Follow the project's instructions or use the `shell.nix` provided with this project to install it. You have to add it to your  user `settings.json` file in VS Code, so that the Lean language server can use it:
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "lean-lsp": {
+                "command": "uvx",
+                "args": ["lean-lsp-mcp"],
+            }
+        }
+    }
+}
+```
+
+#### NixOS
+
+In case you use the `shell.nix` file, you can instead use this setting in your workspace's `settings.json` file (already included in this project):
+
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "lean-lsp": {
+                "command": "lean-lsp-mcp",
+            }
+        }
+    }
+}
+```
+
+For VS Code to discover this binary, you have to launch VS Code from the shell where you have installed the MCP server. 
+
+```bash
+nix-shell
+code .
+```
+
+### Enable in VS Code
+
+Open the Copilot Chat sidebar and click on the "tools" icon on the bottom left. Scroll down and toggle the Lean MCP server that you added previously to the settings.
+
+
+### Other tools
+
+To be able to let LLMs search online, you have install an extension in VS Code: `ms-vscode.vscode-websearchforcopilot`. Enable it in the context settings.
+
 
 ## Getting started
 
@@ -175,20 +243,25 @@ Successfull compilation of a project in Lean shows that all logical and mathemat
 lake build
 ```
 
-### AI / LLMs and Lean
+### Cloud LLM inference
 
-As of June 2025, there are a few AIs / LLMs available to write proofs for you. Have a look at [Vellum](https://www.vellum.ai/llm-leaderboard#). To be able to let  LLMs search online, you have install an extension in VS Code: `ms-vscode.vscode-websearchforcopilot`. Enable it in the context settings.
+Any LLM will fail when you provide too much context. Ideally, you should select fewer than 5 problematic Lean source code lines before you start any LLM in agentic coding mode. Errors that cover more than 10 source code lines will easily confuse the LLM and time-out or give up after > 10 frustrating minutes.
 
-**Important**: Any LLM will fail when you provide too much context. Ideally, you should select fewer than 5 problematic Lean source code lines before you start any LLM in agentic coding mode. Errors that cover more than 10 source code lines will easily confuse the LLM and time-out or give up after > 10 frustrating minutes.
+- The free included LLM GPT-4.1 can be used in agentic mode and may come up with creative solutions quickly (in case it uses the MCP server). 
+- Claude 4 is not completely free, but seems to be the best at agentic coding on Lean4 code, because it has a slightly deeper understanding of the APIs (and more consistently queries the MCP server). Claude does not have streaming output, so it might seem to hang. 
+- Gemini 2.5 Pro is quite smart given the right context. However, it is often slow and does not use the provided MCP server for Lean.
 
-- The fastest LLM is the GPT-4o model, but it is not very sofisticated for Lean and does not support agent mode. Use it for simple problems. 
-- Claude 4 seems to be the best at agentic coding on Lean4 code, because it has a slightly deeper understanding of the APIs. Claude does not have streaming output, so it might seem to hang. 
-- Gemini 2.5 Pro is also okay, but it is very slow.
-- Local LLMs hosted by `ollama` can also be used, but they are not as powerful as the cloud-based LLMs. You might have to fine-tune them on Lean code to get better results.
+Have a look at [Vellum](https://www.vellum.ai/llm-leaderboard#) for more models. 
 
+### Local inference
+
+Local LLMs such LLama 3.2 hosted by `ollama` can also be used, but they are not as powerful as the cloud-based LLMs and cannot be used in "agent mode" or with an MCP server. You might have to fine-tune them on Lean code to get better results.
 
 _Remark: To build a local fine-tuned Lean model, you need to start from a popular open model like LLama 3.2. First, you have to create good dataset with any language. Training / fine-tuning can only be done in Python and using a fine-tuning framework like [Unsloth](https://unsloth.ai/). Afterwards you can do inference with any inference engine._
 
+### Injecting prompts 
+
+When you use LLMs and repeat yourself often, you can add global or (workspace-local) prompts in VS Code for GitHub Copilot Chat inside [`.github/prompts`](./github/prompts). Search for the command `Chat: new prompt file` in the command palette (`Ctrl + Shift + P`). A few useful prompts were already added to this project as examples.
 
 ## Mathematics
 
@@ -196,45 +269,73 @@ Lean is not only a powerful functional programming language, but is also known f
 
 The best learning resource for mathematics with Lean is the book [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean). It is quite long, but has a lot of step-wise exercises to learn the language and the Mathlib library.
 
-
-
-
-### Searching mathematical facts
+### Searching mathematical patterns
 
 The collection of definitions and theorems in Mathlib is large. Sometimes the naming of the modules, namespaces and proofs is not entirly consistent. Use these resources to find the definitions and theorems you need:
 
-- Interactive [HTML pages](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) with cross-references and syntax highlighting.
-- Definition search engines provided by the Lean language server in the editor (and hosted online):
-  - Based on using meta-variables and the type system: [Loogle](https://loogle.lean-lang.org/).
-  - Search using natural language: [Moogle](https://moogle.ai/).
+You can use [Loogle](https://loogle.lean-lang.org/) to search for definitions that help to solve a particular open goal. To open `loogle` in VS Code, you can use the command palette (`Ctrl + Shift + P`) and type `Loogle: Search for a definition`.
 
-For example, to open `loogle` in VS Code, you can use the command palette (`Ctrl + Shift + P`) and type `Loogle: Search for a definition`. You can also use the `#check` command to check the type of a definition or theorem.
 
-Example of an import for a mathematical definition from Mathlib:
+Examples of Loogle searches:
 
-```lean
-import Mathlib.Algebra.MonoidAlgebra.Basic
-#check AddMonoidAlgebra.lift_def
-```
+- To find theorems about addition and less than:
+
+  ```lean
+  ?a + ?b < ?c
+  ```
+
+
+- To find theorems about multiplication being associative:
+  ```lean
+  ?a * (?b * ?c) = (?a * ?b) * ?c
+  ```
+
+
+- To find definitions involving lists and membership:
+  ```lean
+  ?a ∈ List ?b
+  ```
+
+- To find theorems about natural number induction:
+  ```lean
+  (?P 0) → (∀ n, ?P n → ?P (n + 1)) → ∀ n, ?P n
+  ```
+  
+### Searching mathematical concepts
+
+You can also search using English / natural language on [Moogle](https://moogle.ai/) or [Lean Explore](https://www.leanexplore.com). For natural language search, simply describe what you're looking for in plain English:
+
+- "addition is associative"
+- "if a function is continuous then it is measurable"
+- "natural number induction principle"
+- "Cauchy-Schwarz inequality"
+- "derivative of composition of functions"
+
+
+If you prefer reading documentation in your browser, you can search on the [HTML pages](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) with cross-references and syntax highlighting.
 
 ### Hints for certain math topics
 
-Abstract sets of subsets defined using properties, have to be mapped into more easily enumerable finite types by enumerating their elements and creating equivalences.
+(Work-in-progress)
 
-Avoid immediately using very specific types like `ENNReal` (extended non-negative real numbers) but use more general types like `Real` or even `Monoid` (a type with an associative binary operation and an identity element). This way, you can use the same definitions and theorems for different types of sets.
+For computing sums of weight functions explicitly as a real number, you might have to map the index set to an equivalent set that is easier to enumerate. This requires you to define an equivalent set and prove an equivalence relation.
+
+Unfinished proof states may suggest that you need complex types such as  `ENNReal` (extended non-negative real numbers)  for making a proof pass. However, avoid such specific types and use instead common types such as `Real`.
+
+When you become more proficient, it is recommended to replace mentions of `Nat` or `Real` by fields or other algebraic structures. Such concepts are encoded in Lean by using type classes. One of the simpler type classes is `Monoid` (a type with an associative binary operation and an identity element). When you use type classes instead of concrete types,  you can re-use the same definitions and theorems for different types of sets.
 
 ## Riddles
 
 In this workshop, we will try to solve some well-known riddles using Lean.
 
-### Simple computational problems
+### Simple
 
 Problem statements and solutions for this workshop are located in the [`RiddleProofs`](./RiddleProofs) sub-directory.
 
 _**Note**: This is a work in progress. The code is not complete yet, but the riddles are mostly solvable. Still looking for more riddles!_
 
 
-### Harder computational problems
+### Harder
 
 If you are ready for it, continue with more challenging problems. Use the techniques in the proofs to improve your skills.
 

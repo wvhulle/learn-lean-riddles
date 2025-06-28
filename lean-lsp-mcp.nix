@@ -1,7 +1,3 @@
-# lean-lsp-mcp.nix
-# This file defines how to build the lean-lsp-mcp Python package with Nix
-# using standard Python packaging, not uv2nix overlays.
-
 {
   pkgs ? import <nixpkgs> { },
 }:
@@ -23,31 +19,7 @@ let
     doCheck = false;
   };
 
-  mcp = pkgs.python3Packages.buildPythonPackage rec {
-    pname = "mcp";
-    version = "1.9.4";
-    format = "pyproject";
-    src = pkgs.python3Packages.fetchPypi {
-      inherit pname version;
-      sha256 = "sha256-z7C80alTW0LtrviZR7nhio/rSTYuHMBZ1uf8Y28ssJ8=";
-    };
-    propagatedBuildInputs = with pkgs.python3Packages; [
-      hatchling
-      uv-dynamic-versioning
-      anyio
-      httpx
-      httpx-sse
-      pydantic
-      pydantic-settings
-      python-multipart
-      sse-starlette
-      starlette
-      uvicorn
-      python-dotenv
-      typer
-    ];
-    doCheck = false;
-  };
+  mcp = pkgs.python3Packages.mcp;
 
 in
 pkgs.python3Packages.buildPythonApplication rec {

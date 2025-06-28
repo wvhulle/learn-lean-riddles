@@ -14,12 +14,14 @@ def all_things : Finset Thing :=
 
 
 theorem univ_eq_allThing : (Finset.univ : Finset Thing) = all_things := by
-  ext thing
-  simp [all_things]
-  use thing.a, thing.b
-  simp [pairs]
-  omega
+  rfl
 
+  -- Or use these tactics:
+  -- ext thing
+  -- simp [all_things]
+  -- use thing.a, thing.b
+  -- simp [pairs]
+  -- omega
 
 noncomputable def density (i : Thing) : ℝ  :=
   match i with
@@ -30,24 +32,6 @@ noncomputable def sum_density : ℝ := ∑ i: Thing, density i
 noncomputable def normalised_density (i : Thing) : ℝ :=
    density i / sum_density
 
--- theorem real_sum : sum_density = 18 := by
---     simp [sum_density, density]
---     simp [univ_eq_allThing]
---     simp [all_things, pairs]
---     simp [Finset.sum_product]
---     norm_cast
-
-
--- theorem normalised_sums_one : HasSum normalised_density 1 := by
---   have total_sum : HasSum density sum_density := by
---     apply hasSum_fintype
---   unfold normalised_density
---   rw [<- div_self]
---   · apply HasSum.div_const total_sum sum_density
---   · rw [real_sum]
---     linarith
-
--- open Finset
 
 theorem real_sum_one : HasSum normalised_density 1 := by
   convert hasSum_fintype normalised_density
