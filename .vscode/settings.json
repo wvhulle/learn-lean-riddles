@@ -6,5 +6,5 @@
             }
         }
     },
-    "chat.agent.maxRequests": 1000
+    "chat.agent.maxRequests": 100000
 }

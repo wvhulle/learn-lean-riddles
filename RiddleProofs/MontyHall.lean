@@ -1,19 +1,30 @@
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Probability.Notation
+import Mathlib.Probability.Distributions.Uniform
+import Mathlib.Data.Finset.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
-open  MeasureTheory ProbabilityMeasure ProbabilityTheory Set ENNReal
+open  MeasureTheory ProbabilityTheory Set ENNReal Finset
 /-!
 # The Monty Hall Problem
 
-**Problem**: You're on a game show with three doors. Behind one door is a car, behind the other two are goats. You pick a door (say door 1). The host, who knows what's behind each door, opens another door (say door 3) revealing a goat. The host then asks: "Do you want to switch to door 2?"
+This file formalizes the Monty Hall problem, a classic probability puzzle.
 
-**Question**: Should you switch doors to maximize your chance of winning the car?
+**The Problem**
 
-**Intuition**: Many people think it doesn't matter (50/50 chance), but switching actually gives you a 2/3 probability of winning versus 1/3 for staying with your original choice.
+You are a contestant on a game show. You are presented with three closed doors. Behind one door is a car (the prize), and behind the other two are goats. You complete the following steps:
+1. You choose one door.
+2. The host, who knows where the car is, opens one of the other two doors to reveal a goat.
+3. The host asks if you want to switch your choice to the remaining closed door.
 
+**The Question**
 
-See https://brilliant.org/wiki/monty-hall-problem/
+Is it to your advantage to switch doors?
+
+**The Solution**
+
+Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3. This proof demonstrates this result using probability theory.
+
+See also: https://en.wikipedia.org/wiki/Monty_Hall_problem
 -/
 
 
@@ -35,6 +46,15 @@ structure Game where
   pick  : Door
   host  : Door
   deriving DecidableEq, Repr, Fintype
+
+-- Extensionality for Game
+@[ext]
+theorem Game.ext {g₁ g₂ : Game} : g₁.car = g₂.car → g₁.pick = g₂.pick → g₁.host = g₂.host → g₁ = g₂ := by
+  intro h₁ h₂ h₃
+  cases g₁ with | mk c₁ p₁ h₁ =>
+  cases g₂ with | mk c₂ p₂ h₂ =>
+  simp at h₁ h₂ h₃
+  simp [h₁, h₂, h₃]
 
 
 def door_to_fin (d : Door) : Fin 3 :=
@@ -78,81 +98,25 @@ instance measurableSpace : MeasurableSpace Game := ⊤
 
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
 
-def game_weight (ω : Game) : ℝ :=
-  if ω.host = ω.pick then 0     -- Host never opens the picked door.
-  else if ω.host = ω.car then 0 -- Host never opens the car door.
-  else
-    if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
-    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
+def is_valid_game : Game → Prop := fun (ω : Game) => ω.host ≠ ω.pick ∧ ω.host ≠ ω.car
 
-def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
+instance : DecidablePred is_valid_game := by
+  unfold is_valid_game
+  infer_instance
 
+def valid_games_finset : Finset Game :=
+  Finset.filter is_valid_game (Finset.univ : Finset Game)
 
-theorem total_weight_value: total_game_weights = 18 := by
-  simp [total_game_weights, game_weight]
-  simp [equivalence_game_repr, game_enumeration, pairs]
-  simp [Finset.sum_product]
-  norm_cast
-
-
-
-
-noncomputable def real_density (ω : Game) : ℝ  :=
-  game_weight ω / total_game_weights
-
-
-def non_zero_event : Game := {car := left, pick := left, host := middle}
-
-
-theorem real_sum_one : HasSum real_density 1 := by
-  convert hasSum_fintype real_density
-  unfold real_density
-  unfold total_game_weights
-  have ne_zero : ∑ a, game_weight a ≠ 0 := by
-    intro sum_zero
-    have : game_weight non_zero_event ≤ 0 := by
-      rw [← sum_zero]
-      apply Finset.single_le_sum
-      · intro i _
-        simp [game_weight]
-        split_ifs <;> norm_num
-      · exact Finset.mem_univ _
-    simp [game_weight, non_zero_event] at this
-    norm_num at this
-  rw [<- Finset.sum_div]
-  rw [div_self ne_zero]
-
-
-noncomputable def prob_density (i : Game) : ENNReal :=
-  ENNReal.ofReal (real_density i)
-
-theorem density_sums_to_one : HasSum prob_density 1 := by
-  apply ENNReal.hasSum_coe.mpr
-  apply NNReal.hasSum_coe.mp
-  convert real_sum_one using 1
-  have dpos: ∀ i, game_weight i ≥ 0 := by
-    intro i
-    simp [game_weight]
-    split_ifs <;> norm_num
-  have: ∀ i, real_density i >= 0 := by
-    intro i
-    simp [real_density]
-    apply div_nonneg
-    · exact dpos i
-    · rw [total_game_weights]
-      exact Finset.sum_nonneg (fun i _ => dpos i)
-  ext i
-  rw [Real.coe_toNNReal (real_density i) (this i)]
+lemma valid_games_nonempty : valid_games_finset.Nonempty := by
+  use {car := left, pick := left, host := middle}
+  simp [valid_games_finset, Finset.mem_filter, Finset.mem_univ, is_valid_game]
 
 noncomputable def p : PMF Game :=
-  { val := prob_density,
-    property :=  density_sums_to_one
-  }
+  PMF.uniformOfFinset valid_games_finset valid_games_nonempty
 
 
 lemma third_door_available (pick host : Door) : ((Finset.univ.erase pick).erase host).Nonempty := by
   fin_cases pick <;> fin_cases host <;> decide
-
 -- This had to be deterministic.
 def remaining_door (pick host : Door) : Door :=
   match pick, host with
@@ -165,6 +129,7 @@ def remaining_door (pick host : Door) : Door :=
   | middle, right => left
   | middle, middle => left
   | left, left => right
+
 
 def switch_win_event : Set Game :=
   { ω | remaining_door ω.pick ω.host = ω.car }
@@ -198,70 +163,38 @@ instance : IsProbabilityMeasure Prob := by
 noncomputable instance measureSpace : MeasureSpace Game :=
   ⟨Prob⟩
 
+def host_opens (d : Door) : Set Game := {ω | ω.host = d}
 
-def H := { ω : Game | ω.car = left}
+def car_at (d : Door) : Set Game := {ω | ω.car = d}
 
+def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
-instance  : MeasurableSet H :=
-  DiscreteMeasurableSpace.forall_measurableSet H
+instance (d : Door) : MeasurableSet (host_opens d) :=
+  DiscreteMeasurableSpace.forall_measurableSet _
 
+instance (d : Door) : MeasurableSet (car_at d) :=
+  DiscreteMeasurableSpace.forall_measurableSet _
 
-example : Prob H = 1/3 := by
-  -- Use PMF.toMeasure_apply_fintype to convert to sum over Game
-  unfold Prob H
-  rw [PMF.toMeasure_apply_fintype]
-
-  -- Convert indicator to conditional sum
-  simp only [Set.indicator_apply, H, Set.mem_setOf_eq]
-
-  -- Now we have ∑ x, if x.car = left then p x else 0
-  -- Use definition of p in terms of real_density
-  have h_pmf : ∀ ω, p ω = ENNReal.ofReal (real_density ω) := by
-    intro ω
-    rfl
-  simp [h_pmf]
-
-  -- Convert to real sum using symmetry
-  have h_nonneg : ∀ x, 0 ≤ real_density x := by
-    intro x
-    simp [real_density]
-    apply div_nonneg
-    · simp [game_weight]; split_ifs <;> norm_num
-    · rw [total_weight_value]; norm_num
-
-  sorry
-
-def E := { ω : Game | ω.pick = left ∧  ω.host = right }
-
-
-instance : MeasurableSet E :=
-  DiscreteMeasurableSpace.forall_measurableSet E
+instance (d : Door) : MeasurableSet (pick_door d) :=
+  DiscreteMeasurableSpace.forall_measurableSet _
 
 
 
 
-theorem total_prob_eq: Prob E = Prob[E|H] * Prob H + Prob[E|Hᶜ] * Prob Hᶜ  := by
-  -- I could not find the law of total probability in mathlib, maybe I overlooked it.
-  sorry
-
-
-
-theorem do_not_switch_eq : Prob[H|E]  = Prob switch_win_pred  := by
-  -- This should use conditional probability and relate to switching probabilities
-  sorry
-
-theorem do_switch_eq : Prob[Hᶜ|E] = Prob no_switch_win_pred := by
-  -- It was kind of important for me to use Bayes theorem here, because I want to show the benefit of having Mathlib provided.
-  -- This should use conditional probability and relate to non-switching probabilities
-  sorry
-
--- The official solution to the Monty Hall problem is that switching gives you a 2/3 chance of winning compared to 1/3 for not switching.
-theorem monty_hall_solution: Prob switch_win_pred > Prob no_switch_win_pred := by
-  have switch_prob: Prob switch_win_pred = 2/3 := by
-    rw [<- do_not_switch_eq]
-    sorry
-  have noswitch_prob: Prob no_switch_win_pred = 1/3 := by
-    rw [<- do_switch_eq]
-    sorry
-  simp [switch_prob, noswitch_prob]
+theorem bayes_monty_hall_mathlib (pick_d host_d : Door) (h_ne : pick_d ≠ host_d) :
+  let remaining_d := remaining_door pick_d host_d
+  let evidence := host_opens host_d ∩ pick_door pick_d
+  Prob[car_at remaining_d | evidence] > Prob[car_at pick_d | evidence] := by
+  set remaining_d := remaining_door pick_d host_d
+  set evidence := host_opens host_d ∩ pick_door pick_d
+  have bayes_remaining : Prob[car_at remaining_d | evidence] =
+    (Prob evidence)⁻¹ * Prob[evidence | car_at remaining_d] * Prob (car_at remaining_d) := by
+    rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul]
+    · exact DiscreteMeasurableSpace.forall_measurableSet _
+    · exact DiscreteMeasurableSpace.forall_measurableSet _
+  have bayes_pick : Prob[car_at pick_d | evidence] =
+    (Prob evidence)⁻¹ * Prob[evidence | car_at pick_d] * Prob (car_at pick_d) := by
+    rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul]
+    · exact DiscreteMeasurableSpace.forall_measurableSet _
+    · exact DiscreteMeasurableSpace.forall_measurableSet _
   sorry
