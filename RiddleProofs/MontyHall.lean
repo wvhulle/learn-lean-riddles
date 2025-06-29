@@ -342,24 +342,17 @@ theorem monty_hall_stay_probability:
     rw [h_filter_explicit]
     unfold p
     simp only [PMF.ofFinset_apply]
-    have h_sum_values :
-      ∑ x ∈ {({car := left, pick := left, host := right} : Game),
-             ({car := middle, pick := left, host := right} : Game),
-             ({car := right, pick := left, host := right} : Game)}, prob_density x =
-      prob_density {car := left, pick := left, host := right} +
-      prob_density {car := middle, pick := left, host := right} +
-      prob_density {car := right, pick := left, host := right} := by
-      simp [Finset.sum_insert, Finset.sum_singleton]
-      ring
-
-    rw [h_sum_values, prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
-    simp only [add_zero]
-    rw [← ENNReal.add_div]
-    ring_nf
-    rw [show (3 : ENNReal) / 18 = (1 * 3) / (6 * 3) by norm_num]
-    rw [ENNReal.mul_div_mul_right]
-    · norm_num
-    · norm_num
+    rw [Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
+    · rw [prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
+      simp only [add_zero]
+      rw [← ENNReal.add_div]
+      ring_nf
+      rw [show (3 : ENNReal) / 18 = (1 * 3) / (6 * 3) by norm_num]
+      rw [ENNReal.mul_div_mul_right]
+      · norm_num
+      · norm_num
+    · simp
+    · simp
 
   rw [num_eq, denom_eq]
   simp only [one_div]
