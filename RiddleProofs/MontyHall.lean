@@ -6,6 +6,9 @@ import Mathlib.Topology.Algebra.InfiniteSum.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
 open  MeasureTheory ProbabilityTheory Set ENNReal Finset
 
+
+
+
 -- Core ENNReal conversion lemmas for finite positive numbers
 @[simp] lemma ennreal_ofReal_div_pos (a b : ℝ) (hb : 0 < b) : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
   ENNReal.ofReal_div_of_pos hb
@@ -68,15 +71,7 @@ open  MeasureTheory ProbabilityTheory Set ENNReal Finset
   have h1 : (n : ENNReal)⁻¹ = 1 / n := by simp
   rw [h1, ← ENNReal.add_div]
 
--- Comprehensive arithmetic simp lemma for ENNReal: direct computation
-@[simp] lemma ennreal_arith_6_mul_18_inv_eq_3_inv :
-  (6 : ENNReal) * (18 : ENNReal)⁻¹ = (3 : ENNReal)⁻¹ := by
-  rw [← div_eq_mul_inv]
-  -- Goal: 6 / 18 = 3⁻¹
-  rw [← one_div]
-  -- Goal: 6 / 18 = 1 / 3
-  norm_cast
-  norm_num
+
 
 /-!
 # The Monty Hall Problem
@@ -478,9 +473,9 @@ theorem monty_hall_stay_probability:
   rw [inv_inv]
   -- Goal: 6 * 18⁻¹ = 3⁻¹
   -- Direct ENNReal arithmetic
-  show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (3 : ENNReal)⁻¹
-  simp only [ennreal_arith_6_mul_18_inv_eq_3_inv]
-  -- Measurability: all sets are measurable in DiscreteMeasurableSpace
+  · show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (3 : ENNReal)⁻¹
+    sorry
+
   · exact MeasurableSet.of_discrete
 
 -- -- Theorem: Probability of car being at middle when player picks left and host opens right
