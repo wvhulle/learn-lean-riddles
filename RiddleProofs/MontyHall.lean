@@ -271,10 +271,25 @@ theorem pmf_structure_correct (player_door host_door car_door : Door) :
   · rfl
 
 -- Express the key relationship between PMF and manual calculation
-theorem pmf_equivalence (player_door host_door : Door) (h : host_door ≠ player_door) :
+theorem pmf_equivalence (player_door host_door : Door) :
   evidence_pmf_val player_door host_door = ENNReal.ofReal (general_evidence player_door host_door) := by
   simp only [evidence_pmf_val, general_evidence, car_pmf, PMF.ofFintype_apply, car_prior, likelihood_ennreal]
-  sorry
+  -- Use that ENNReal.ofReal distributes over multiplication and sums
+  conv_lhs => rw [Finset.sum_congr rfl (fun x _ => (ENNReal.ofReal_mul (by norm_num : (0 : ℝ) ≤ 1/3)).symm)]
+  rw [← ENNReal.ofReal_sum_of_nonneg]
+  · -- The finite sum over Door equals the expanded sum
+    congr 1
+    have : (Finset.univ : Finset Door) = {Door.left, Door.middle, Door.right} := by
+      ext d; cases d <;> simp
+    rw [this, Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
+    · ring
+    · simp
+    · simp
+  · -- All terms are non-negative
+    intro car_door _
+    apply mul_nonneg
+    · norm_num
+    · exact general_likelihood_nonneg player_door host_door car_door
 
 -- Key insight: Our manual calculation implements proper Bayesian updating
 theorem manual_implements_bayes (player_door host_door car_door : Door) :
