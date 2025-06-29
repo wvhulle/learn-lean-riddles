@@ -29,6 +29,14 @@ Is it to your advantage to switch doors?
 
 Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3. This proof demonstrates this result using probability theory.
 
+**The Key Insight**
+
+The probability model assigns different weights to different game scenarios:
+- When contestant picks correctly (car=pick): weight = 1 (host has 2 doors to choose from)
+- When contestant picks incorrectly (car≠pick): weight = 2 (host is forced to open specific door)
+
+This weighting reflects the host's constraint: the host must always open a door with a goat.
+
 See also: https://en.wikipedia.org/wiki/Monty_Hall_problem
 -/
 
@@ -278,153 +286,132 @@ lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_v
   unfold game_weight
   simp [h_ne, h_valid.1, h_valid.2]
 
+-- When car = pick (staying wins): probability density = 1/18 (weight 1, divided by total weight 18)
 lemma prob_density_left_left_right :
   prob_density {car := left, pick := left, host := right} = (1 : ENNReal) / 18 := by
   apply prob_density_car_eq_pick
   · rfl
   · simp
 
+-- When car ≠ pick (switching wins): probability density = 2/18 (weight 2, divided by total weight 18)
 lemma prob_density_middle_left_right :
   prob_density {car := middle, pick := left, host := right} = (2 : ENNReal) / 18 := by
   apply prob_density_car_ne_pick
   · simp
   · simp
 
+-- When host opens car door: impossible (probability density = 0)
 lemma prob_density_right_left_right :
   prob_density {car := right, pick := left, host := right} = 0 := by
   unfold prob_density real_density game_weight
   simp
 
+-- Common denominator lemma: P(pick=left ∩ host=right) = 1/6
+-- This represents the total probability of the conditioning event across all car positions
+lemma prob_pick_left_host_right :
+  p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}) = 1/6 := by
+  -- Convert intersection to explicit condition
+  have h_inter_eq : ({ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right}) =
+                    {ω : Game | ω.pick = left ∧ ω.host = right} := by
+    ext ω; simp [Set.mem_inter_iff]
+
+  rw [h_inter_eq]
+  -- Convert to finite set representation
+  have h_filter_eq : {ω : Game | ω.pick = left ∧ ω.host = right} =
+    ↑(game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right)) := by
+      rw [← equivalence_game_repr]
+      ext ω; simp [Finset.mem_filter]
+
+  rw [h_filter_eq, PMF.toMeasure_apply_finset]
+  -- Explicitly enumerate the three valid games
+  have h_filter_explicit :
+    game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right) =
+    {({car := left, pick := left, host := right} : Game),
+     ({car := middle, pick := left, host := right} : Game),
+     ({car := right, pick := left, host := right} : Game)} := by
+    simp [game_enumeration]; decide
+
+  rw [h_filter_explicit]
+  unfold p
+  simp only [PMF.ofFinset_apply]
+  -- Sum the three probabilities: 1/18 + 2/18 + 0 = 3/18 = 1/6
+  rw [Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
+  · rw [prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
+    simp only [add_zero]
+    rw [← ENNReal.add_div]
+    ring_nf
+    rw [show (3 : ENNReal) / 18 = (1 * 3) / (6 * 3) by norm_num]
+    rw [ENNReal.mul_div_mul_right]
+    · norm_num
+    · norm_num
+  · simp
+  · simp
+
+-- Numerator lemma for staying strategy: P(car=left ∩ pick=left ∩ host=right) = 1/18
+lemma prob_car_left_pick_left_host_right :
+  p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = left}) = 1/18 := by
+  have h_singleton : {ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = left} =
+                    {({car := left, pick := left, host := right} : Game)} := by
+    ext ω
+    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
+    constructor
+    · intro ⟨⟨h1, h2⟩, h3⟩
+      exact Game.ext h3 h1 h2
+    · intro h
+      rw [h]; simp
+  rw [h_singleton, PMF.toMeasure_apply_singleton]
+  · exact prob_density_left_left_right
+  · exact MeasurableSet.singleton _
+
+-- Numerator lemma for switching strategy: P(car=middle ∩ pick=left ∩ host=right) = 2/18
+lemma prob_car_middle_pick_left_host_right :
+  p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) = 2/18 := by
+  have h_singleton : {ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle} =
+                    {({car := middle, pick := left, host := right} : Game)} := by
+    ext ω
+    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
+    constructor
+    · intro ⟨⟨h1, h2⟩, h3⟩
+      exact Game.ext h3 h1 h2
+    · intro h
+      rw [h]; simp
+  rw [h_singleton, PMF.toMeasure_apply_singleton]
+  · exact prob_density_middle_left_right
+  · exact MeasurableSet.singleton _
+
 
 -- Theorem: Probability of car being at left when player picks left and host opens right
+-- This represents the "STAY" strategy: staying with your original choice
+-- Mathematical insight: P(car=pick | valid game) = (1/18) / (1/6) = 1/3
 theorem monty_hall_stay_probability:
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
-  have num_eq : p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = left}) = 1/18 := by
 
-    have h_singleton : {ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = left} =
-                      {({car := left, pick := left, host := right} : Game)} := by
-      ext ω
-      simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
-      constructor
-      · intro ⟨⟨h1, h2⟩, h3⟩
-        exact Game.ext h3 h1 h2
-      · intro h
-        rw [h]
-        simp
-    rw [h_singleton]
-    rw [PMF.toMeasure_apply_singleton]
-    · exact prob_density_left_left_right
-    · exact MeasurableSet.singleton _
-  have denom_eq : p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}) = 1/6 := by
-    have h_inter_eq : ({ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right}) = {ω : Game | ω.pick = left ∧ ω.host = right} := by
-      ext ω
-      simp [Set.mem_inter_iff]
+  -- Use extracted lemmas for numerator and denominator
+  rw [prob_car_left_pick_left_host_right, prob_pick_left_host_right]
 
-    rw [h_inter_eq]
-    have h_filter_eq : {ω : Game | ω.pick = left ∧ ω.host = right} =
-      ↑(game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right)) := by
-        rw [← equivalence_game_repr]
-        ext ω
-        simp [Finset.mem_filter]
-
-    rw [h_filter_eq, PMF.toMeasure_apply_finset]
-    have h_filter_explicit :
-      game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right) =
-      {({car := left, pick := left, host := right} : Game),
-       ({car := middle, pick := left, host := right} : Game),
-       ({car := right, pick := left, host := right} : Game)} := by
-      simp [game_enumeration]; decide
-
-    rw [h_filter_explicit]
-    unfold p
-    simp only [PMF.ofFinset_apply]
-    rw [Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
-    · rw [prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
-      simp only [add_zero]
-      rw [← ENNReal.add_div]
-      ring_nf
-      rw [show (3 : ENNReal) / 18 = (1 * 3) / (6 * 3) by norm_num]
-      rw [ENNReal.mul_div_mul_right]
-      · norm_num
-      · norm_num
-    · simp
-    · simp
-
-  rw [num_eq, denom_eq]
+  -- Simplify: (1/18) / (1/6) = (1/18) * (6/1) = 6/18 = 1/3
   simp only [one_div]
   rw [inv_inv]
-  · show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (3 : ENNReal)⁻¹
-    rw [show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (6 : ENNReal) / (18 : ENNReal) by simp only [div_eq_mul_inv]]
-    rw [show (3 : ENNReal)⁻¹ = (1 : ENNReal) / (3 : ENNReal) by simp only [one_div]]
-    rw [ENNReal.div_eq_div_iff _ _ _ _]
-    · norm_cast
-    · norm_cast
-    · norm_cast
-    · norm_cast
-    norm_cast
-
-
-  · exact MeasurableSet.of_discrete
+  show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (3 : ENNReal)⁻¹
+  rw [show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (6 : ENNReal) / (18 : ENNReal) by simp only [div_eq_mul_inv]]
+  rw [show (3 : ENNReal)⁻¹ = (1 : ENNReal) / (3 : ENNReal) by simp only [one_div]]
+  rw [ENNReal.div_eq_div_iff _ _ _ _] <;> norm_cast
+  exact MeasurableSet.of_discrete
 
 -- Theorem: Probability of car being at middle when player picks left and host opens right
+-- This represents the "SWITCH" strategy: switching to the remaining door
+-- Mathematical insight: P(car≠pick | valid game) = (2/18) / (1/6) = 2/3
 theorem monty_hall_switch_probability:
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
-  have num_eq : p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) = 2/18 := by
 
-    have h_singleton : {ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle} =
-                      {({car := middle, pick := left, host := right} : Game)} := by
-      ext ω
-      simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
-      constructor
-      · intro ⟨⟨h1, h2⟩, h3⟩
-        exact Game.ext h3 h1 h2
-      · intro h
-        rw [h]
-        simp
-    rw [h_singleton]
-    rw [PMF.toMeasure_apply_singleton]
-    · exact prob_density_middle_left_right
-    · exact MeasurableSet.singleton _
-  have denom_eq : p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}) = 1/6 := by
-    have h_inter_eq : ({ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right}) = {ω : Game | ω.pick = left ∧ ω.host = right} := by
-      ext ω
-      simp [Set.mem_inter_iff]
+  -- Use extracted lemmas for numerator and denominator
+  rw [prob_car_middle_pick_left_host_right, prob_pick_left_host_right]
 
-    rw [h_inter_eq]
-    have h_filter_eq : {ω : Game | ω.pick = left ∧ ω.host = right} =
-      ↑(game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right)) := by
-        rw [← equivalence_game_repr]
-        ext ω
-        simp [Finset.mem_filter]
-
-    rw [h_filter_eq, PMF.toMeasure_apply_finset]
-    have h_filter_explicit :
-      game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right) =
-      {({car := left, pick := left, host := right} : Game),
-       ({car := middle, pick := left, host := right} : Game),
-       ({car := right, pick := left, host := right} : Game)} := by
-      simp [game_enumeration]; decide
-
-    rw [h_filter_explicit]
-    unfold p
-    simp only [PMF.ofFinset_apply]
-    rw [Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
-    · rw [prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
-      simp only [add_zero]
-      rw [← ENNReal.add_div]
-      ring_nf
-      rw [show (3 : ENNReal) / 18 = (1 * 3) / (6 * 3) by norm_num]
-      rw [ENNReal.mul_div_mul_right]
-      · norm_num
-      · norm_num
-    · simp
-    · simp
-
-  rw [num_eq, denom_eq]
+  -- Simplify: (2/18) / (1/6) = (2/18) * (6/1) = 12/18 = 2/3
   show (1 / 6)⁻¹ * (2 / 18) = 2 / 3
   simp only [one_div]
   rw [inv_inv]
@@ -434,8 +421,5 @@ theorem monty_hall_switch_probability:
   rw [show (6 : ENNReal) * 2 / 18 = (6 * 2) / 18 by rfl]
   rw [show (6 : ENNReal) * 2 = 12 by norm_num]
   rw [show (12 : ENNReal) / 18 = (2 * 6) / (3 * 6) by norm_num]
-  rw [ENNReal.mul_div_mul_right]
-  · norm_num
-  · norm_num
-
-  · exact MeasurableSet.of_discrete
+  rw [ENNReal.mul_div_mul_right] <;> norm_num
+  exact MeasurableSet.of_discrete
