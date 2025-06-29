@@ -1,6 +1,5 @@
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Probability.Notation
-import Mathlib.Probability.Distributions.Uniform
 import Mathlib.Data.Finset.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
 open  MeasureTheory ProbabilityTheory Set ENNReal Finset
@@ -26,8 +25,6 @@ Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3
 
 See also: https://en.wikipedia.org/wiki/Monty_Hall_problem
 -/
-
-
 
 inductive Door : Type
 | left
@@ -98,6 +95,66 @@ instance measurableSpace : MeasurableSpace Game := ⊤
 
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
 
+def game_weight (ω : Game) : ℝ :=
+  if ω.host = ω.pick then 0     -- Host never opens the picked door.
+
+  else if ω.host = ω.car then 0 -- Host never opens the car door.
+  else
+    if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
+    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
+
+def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
+
+theorem total_weight_value: total_game_weights = 18 := by
+  simp [total_game_weights, game_weight]
+  simp [equivalence_game_repr, game_enumeration, pairs]
+  simp [Finset.sum_product]
+  norm_cast
+
+noncomputable def real_density (ω : Game) : ℝ  :=
+  game_weight ω / total_game_weights
+
+def non_zero_event : Game := {car := left, pick := left, host := middle}
+
+theorem real_sum_one : HasSum real_density 1 := by
+  convert hasSum_fintype real_density
+  unfold real_density
+  unfold total_game_weights
+  have ne_zero : ∑ a, game_weight a ≠ 0 := by
+    intro sum_zero
+    have : game_weight non_zero_event ≤ 0 := by
+      rw [← sum_zero]
+      apply Finset.single_le_sum
+      · intro i _
+        simp [game_weight]
+        split_ifs <;> norm_num
+      · exact Finset.mem_univ _
+    simp [game_weight, non_zero_event] at this
+    norm_num at this
+  rw [<- Finset.sum_div]
+  rw [div_self ne_zero]
+
+noncomputable def prob_density (i : Game) : ENNReal :=
+  ENNReal.ofReal (real_density i)
+
+theorem density_sums_to_one : HasSum prob_density 1 := by
+  apply ENNReal.hasSum_coe.mpr
+  apply NNReal.hasSum_coe.mp
+  convert real_sum_one using 1
+  have dpos: ∀ i, game_weight i ≥ 0 := by
+    intro i
+    simp [game_weight]
+    split_ifs <;> norm_num
+  have: ∀ i, real_density i >= 0 := by
+    intro i
+    simp [real_density]
+    apply div_nonneg
+    · exact dpos i
+    · rw [total_game_weights]
+      exact Finset.sum_nonneg (fun i _ => dpos i)
+  ext i
+  rw [Real.coe_toNNReal (real_density i) (this i)]
+
 def is_valid_game : Game → Prop := fun (ω : Game) => ω.host ≠ ω.pick ∧ ω.host ≠ ω.car
 
 instance : DecidablePred is_valid_game := by
@@ -112,10 +169,7 @@ lemma valid_games_nonempty : valid_games_finset.Nonempty := by
   simp [valid_games_finset, Finset.mem_filter, Finset.mem_univ, is_valid_game]
 
 noncomputable def p : PMF Game :=
-  PMF.uniformOfFinset valid_games_finset valid_games_nonempty
-
-
-
+    { val := prob_density,     property :=  density_sums_to_one  }
 
 noncomputable def Prob  := p.toMeasure
 
