@@ -13,16 +13,6 @@ open  MeasureTheory ProbabilityTheory Set ENNReal Finset
 @[simp] lemma ennreal_ofReal_div_pos (a b : ℝ) (hb : 0 < b) : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
   ENNReal.ofReal_div_of_pos hb
 
--- Convert ENNReal.ofReal (1/n) to n⁻¹ for positive natural numbers
-@[simp] lemma ennreal_ofReal_one_div_nat (n : ℕ) [NeZero n] : ENNReal.ofReal (1 / (n : ℝ)) = (n : ENNReal)⁻¹ := by
-  have h_pos : (0 : ℝ) < (n : ℝ) := Nat.cast_pos.mpr (NeZero.pos n)
-  rw [ENNReal.ofReal_div_of_pos h_pos]
-  simp
-
--- Convert ENNReal.ofReal ((n : ℝ)⁻¹) to n⁻¹ for positive natural numbers
-@[simp] lemma ennreal_ofReal_nat_inv (n : ℕ) [NeZero n] : ENNReal.ofReal ((n : ℝ)⁻¹) = (n : ENNReal)⁻¹ := by
-  rw [← one_div]
-  exact ennreal_ofReal_one_div_nat n
 
 @[simp] lemma ennreal_ofReal_mul_nonneg (a b : ℝ) (ha : 0 ≤ a) : ENNReal.ofReal (a * b) = ENNReal.ofReal a * ENNReal.ofReal b :=
   ENNReal.ofReal_mul ha
@@ -472,9 +462,24 @@ theorem monty_hall_stay_probability:
   -- This is: 6 * 18⁻¹ = 3⁻¹
   rw [inv_inv]
   -- Goal: 6 * 18⁻¹ = 3⁻¹
-  -- Direct ENNReal arithmetic
+  -- Direct ENNReal arithmetic: 6/18 = 1/3
   · show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (3 : ENNReal)⁻¹
-    sorry
+    -- Use the fact that multiplication and division should be equivalent
+    -- and that the numbers are finite naturals
+    rw [show (6 : ENNReal) * (18 : ENNReal)⁻¹ = (6 : ENNReal) / (18 : ENNReal) by simp only [div_eq_mul_inv]]
+    rw [show (3 : ENNReal)⁻¹ = (1 : ENNReal) / (3 : ENNReal) by simp only [one_div]]
+    -- Goal: 6 / 18 = 1 / 3
+    -- Convert right side back using 3⁻¹ = 1 / 3
+    rw [ENNReal.div_eq_div_iff _ _ _ _]
+    · norm_cast
+    · norm_cast
+    · norm_cast
+    · norm_cast
+    -- Goal: 6 / 18 = 3⁻¹
+    -- Simplify the left side: 6/18 = 1/3
+    norm_cast
+    -- Goal: 1 / 3 = 3⁻¹
+
 
   · exact MeasurableSet.of_discrete
 
