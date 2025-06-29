@@ -1,222 +1,254 @@
-import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Probability.Notation
 import Mathlib.Data.Finset.Basic
-import Mathlib.Topology.Algebra.InfiniteSum.Ring
-open  MeasureTheory ProbabilityTheory Set ENNReal Finset
+import Mathlib.Data.Fintype.Basic
+import Mathlib.Data.Real.Basic
+import Mathlib.Tactic.FinCases
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.NormNum
+
+open Finset
 
 /-!
-# The Monty Hall Problem
+# The Monty Hall Problem - Bayesian Approach
 
-This file formalizes the Monty Hall problem, a classic probability puzzle.
+This file demonstrates the superiority of the Bayesian approach to the Monty Hall problem.
+Rather than modeling the complex joint distribution, we focus on the unknown (car position)
+and use Bayes' theorem to compute posterior probabilities.
 
-**The Problem**
-
-You are a contestant on a game show. You are presented with three closed doors. Behind one door is a car (the prize), and behind the other two are goats. You complete the following steps:
-1. You choose one door.
-2. The host, who knows where the car is, opens one of the other two doors to reveal a goat.
-3. The host asks if you want to switch your choice to the remaining closed door.
-
-**The Question**
-
-Is it to your advantage to switch doors?
-
-**The Solution**
-
-Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3.
--/
-
-/-!
-## Section 1: Basic Types and Definitions
+**Key insight**: The sample space is just the car position (3 states), not all game configurations (27 states).
 -/
 
 inductive Door : Type
-| left
-| middle
-| right
-deriving DecidableEq, Repr, Fintype
+| left | middle | right
+deriving DecidableEq, Repr
+
+-- Manual Fintype instance for Door
+instance : Fintype Door := {
+  elems := {Door.left, Door.middle, Door.right}
+  complete := fun x => by cases x <;> simp
+}
 
 open Door
 
-inductive Strategy : Type
-| Switch
-| Stay
-deriving DecidableEq, Repr, Fintype
-
-open Strategy
-
-structure Game where
-  car      : Door
-  pick     : Door
-  host     : Door
-  deriving DecidableEq, Repr, Fintype
-
 /-!
-## Section 2: Game Validity and Probability Framework
+## Section 1: Prior Distribution (Before Any Evidence)
 -/
 
--- A valid game means host doesn't open the picked door or the car door
-def is_valid_game (g : Game) : Prop := g.host ≠ g.pick ∧ g.host ≠ g.car
+-- Prior: Each door equally likely to have the car
+noncomputable def car_prior : Door → ℝ := fun _ => 1/3
 
-instance : MeasurableSpace Game := ⊤
-instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
+theorem prior_uniform (d : Door) : car_prior d = 1/3 := rfl
 
--- Probability weights based on game logic
-def game_weight (ω : Game) : ℝ :=
-  if ω.host = ω.pick then 0     -- Host never opens the picked door
-  else if ω.host = ω.car then 0 -- Host never opens the car door
-  else
-    if ω.car = ω.pick then 1    -- Contestant chose the car. Host has 2 choices
-    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door
-
-def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
-
-theorem total_weight_value: total_game_weights = 18 := by
-  simp [total_game_weights, game_weight]
-  norm_cast
-
-noncomputable def real_density (ω : Game) : ℝ  :=
-  game_weight ω / total_game_weights
-
-def non_zero_event : Game := {car := left, pick := left, host := middle}
-
-theorem real_sum_one : HasSum real_density 1 := by
-  convert hasSum_fintype real_density
-  unfold real_density
-  unfold total_game_weights
-  have ne_zero : ∑ a, game_weight a ≠ 0 := by
-    intro sum_zero
-    have : game_weight non_zero_event ≤ 0 := by
-      rw [← sum_zero]
-      apply Finset.single_le_sum
-      · intro i _
-        simp [game_weight]
-        split_ifs <;> norm_num
-      · exact Finset.mem_univ _
-    simp [game_weight, non_zero_event] at this
-    norm_num at this
-  rw [<- Finset.sum_div]
-  rw [div_self ne_zero]
-
-noncomputable def prob_density (i : Game) : ENNReal :=
-  ENNReal.ofReal (real_density i)
-
-theorem density_sums_to_one : HasSum prob_density 1 := by
-  apply ENNReal.hasSum_coe.mpr
-  apply NNReal.hasSum_coe.mp
-  convert real_sum_one using 1
-  have dpos: ∀ i, game_weight i ≥ 0 := by
-    intro i
-    simp [game_weight]
-    split_ifs <;> norm_num
-  have: ∀ i, real_density i >= 0 := by
-    intro i
-    simp [real_density]
-    apply div_nonneg
-    · exact dpos i
-    · rw [total_game_weights]
-      exact Finset.sum_nonneg (fun i _ => dpos i)
-  ext i
-  rw [Real.coe_toNNReal (real_density i) (this i)]
-
-noncomputable def p : PMF Game :=
-  { val := prob_density, property := density_sums_to_one }
-
-noncomputable def Prob := p.toMeasure
-
-instance : IsProbabilityMeasure Prob := by
-  unfold Prob
-  infer_instance
+theorem prior_sums_to_one : car_prior left + car_prior middle + car_prior right = 1 := by
+  simp [car_prior]; norm_num
 
 /-!
-## Section 3: Strategy Framework
+## Section 2: Likelihood Function (Host Behavior Model)
 -/
 
--- Given a game state and strategy, what door does the player end up with?
-def final_door (g : Game) (s : Strategy) : Door :=
-  match s with
-  | Stay => g.pick
-  | Switch =>
-    -- Find the door that is neither picked nor opened by host
-    if g.pick ≠ left ∧ g.host ≠ left then left
-    else if g.pick ≠ middle ∧ g.host ≠ middle then middle
-    else right
+-- Scenario: Player chose left, host opened middle
+-- Likelihood: P(host opens middle | car at each door, player chose left)
+noncomputable def likelihood_player_left_host_middle (car_door : Door) : ℝ :=
+  match car_door with
+  | left => 1/2    -- Host can choose middle or right, picks randomly
+  | middle => 0    -- Host never opens car door
+  | right => 1     -- Host forced to open middle (can't open left=player, right=car)
 
--- Does the player win with a given strategy?
-def wins (g : Game) (s : Strategy) : Prop :=
-  final_door g s = g.car
-
--- Set of games where player wins with a given strategy
-def wins_with_strategy (s : Strategy) : Set Game := {g | wins g s}
+theorem likelihood_nonneg (d : Door) : likelihood_player_left_host_middle d ≥ 0 := by
+  cases d <;> simp [likelihood_player_left_host_middle]
 
 /-!
-## Section 4: Basic Strategy Properties
+## Section 3: Evidence (Normalization Factor)
 -/
 
-lemma final_door_stay (g : Game) : final_door g Stay = g.pick := by
-  simp [final_door]
+-- Evidence: P(host opens middle | player chose left)
+noncomputable def evidence_left_middle : ℝ :=
+  car_prior left * likelihood_player_left_host_middle left +
+  car_prior middle * likelihood_player_left_host_middle middle +
+  car_prior right * likelihood_player_left_host_middle right
 
-theorem stay_wins_iff_car_at_pick (g : Game) :
-  is_valid_game g → (wins g Stay ↔ g.car = g.pick) := by
-  intro hvalid
-  simp [wins, final_door_stay]
+theorem evidence_calculation : evidence_left_middle = 1/2 := by
+  simp [evidence_left_middle, car_prior, likelihood_player_left_host_middle]
+  norm_num
+
+theorem evidence_positive : evidence_left_middle > 0 := by
+  rw [evidence_calculation]; norm_num
+
+/-!
+## Section 4: Posterior Distribution via Bayes' Theorem
+-/
+
+-- Posterior: P(car at door | host opened middle, player chose left)
+noncomputable def posterior_left_middle (car_door : Door) : ℝ :=
+  car_prior car_door * likelihood_player_left_host_middle car_door / evidence_left_middle
+
+-- The main Monty Hall results
+theorem posterior_stay : posterior_left_middle left = 1/3 := by
+  simp [posterior_left_middle, car_prior, likelihood_player_left_host_middle, evidence_calculation]
+
+theorem posterior_switch : posterior_left_middle right = 2/3 := by
+  simp [posterior_left_middle, car_prior, likelihood_player_left_host_middle, evidence_calculation]
+  norm_num
+
+theorem posterior_opened_door : posterior_left_middle middle = 0 := by
+  simp [posterior_left_middle, likelihood_player_left_host_middle]
+
+-- Probabilities sum to 1 (sanity check)
+theorem posterior_sums_to_one :
+  posterior_left_middle left + posterior_left_middle middle + posterior_left_middle right = 1 := by
+  rw [posterior_stay, posterior_switch, posterior_opened_door]
+  norm_num
+
+/-!
+## Section 5: General Bayesian Framework
+-/
+
+-- General likelihood function for any scenario
+noncomputable def general_likelihood (player_door host_door car_door : Door) : ℝ :=
+  if host_door = player_door then 0  -- Invalid: host never opens player's door
+  else if host_door = car_door then 0  -- Host never opens car door
+  else if car_door = player_door then 1/2  -- Host has 2 choices
+  else 1  -- Host forced to open this door
+
+-- General evidence function
+noncomputable def general_evidence (player_door host_door : Door) : ℝ :=
+  car_prior left * general_likelihood player_door host_door left +
+  car_prior middle * general_likelihood player_door host_door middle +
+  car_prior right * general_likelihood player_door host_door right
+
+-- General posterior via Bayes' theorem
+noncomputable def general_posterior (player_door host_door car_door : Door) : ℝ :=
+  if general_evidence player_door host_door = 0 then 0
+  else car_prior car_door * general_likelihood player_door host_door car_door / general_evidence player_door host_door
+
+-- Helper lemmas for computing posteriors in specific scenarios
+
+lemma posterior_stay_left_middle : general_posterior left middle left = 1/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_switch_left_middle : general_posterior left middle right = 2/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_stay_left_right : general_posterior left right left = 1/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_switch_left_right : general_posterior left right middle = 2/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_stay_middle_left : general_posterior middle left middle = 1/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_switch_middle_left : general_posterior middle left right = 2/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_stay_middle_right : general_posterior middle right middle = 1/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_switch_middle_right : general_posterior middle right left = 2/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_stay_right_left : general_posterior right left right = 1/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_switch_right_left : general_posterior right left middle = 2/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_stay_right_middle : general_posterior right middle right = 1/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+lemma posterior_switch_right_middle : general_posterior right middle left = 2/3 := by
+  simp [general_posterior, general_evidence, general_likelihood, car_prior]
+  norm_num
+
+-- Key theorem: staying always gives 1/3, switching gives 2/3
+-- This is the core mathematical result that makes the Bayesian approach superior
+theorem general_monty_hall (player_door host_door : Door) (h : host_door ≠ player_door) :
+  let switch_door := if player_door ≠ left ∧ host_door ≠ left then left
+                     else if player_door ≠ middle ∧ host_door ≠ middle then middle
+                     else right
+  general_posterior player_door host_door player_door = 1/3 ∧
+  general_posterior player_door host_door switch_door = 2/3 := by
+  -- Enumerate all 6 valid cases explicitly
   constructor
-  · intro h; exact h.symm
-  · intro h; exact h.symm
-
-theorem switch_wins_iff_car_not_at_pick_or_host (g : Game) :
-  is_valid_game g → (wins g Switch ↔ g.car ≠ g.pick ∧ g.car ≠ g.host) := by
-  intro hvalid
-  -- Key insight: in a valid 3-door game, if car is not at pick and not at host,
-  -- then it must be at the remaining door, which is exactly where switching takes you
-  sorry
-
-/-!
-## Section 5: Prior Probabilities
--/
-
--- Each door has equal prior probability of having the car
-theorem prior_car_probability (d : Door) : Prob {g | g.car = d} = 1/3 := by
-  -- By the symmetry of the problem setup and our probability weights,
-  -- each door has equal probability of containing the car
-  unfold Prob
-  rw [PMF.toMeasure_apply_fintype]
-  simp [Set.indicator]
-  fin_cases d <;> norm_cast
-  sorry
-
+  · -- First prove staying probability = 1/3
+    fin_cases player_door <;> fin_cases host_door <;> (
+      try contradiction  -- Skip invalid cases where player_door = host_door
+      all_goals { simp [general_posterior, general_evidence, general_likelihood, car_prior]; norm_num }
+    )
+  · -- Then prove switching probability = 2/3
+    fin_cases player_door <;> fin_cases host_door <;> (
+      try contradiction  -- Skip invalid cases where player_door = host_door
+      all_goals { simp [general_posterior, general_evidence, general_likelihood, car_prior]; norm_num }
+    )
 
 /-!
-## Section 6: Main Probability Results
+## Section 6: Main Results
 -/
 
--- Probability of winning with each strategy
-noncomputable def prob_win_switch : ENNReal := Prob (wins_with_strategy Switch)
-noncomputable def prob_win_stay : ENNReal := Prob (wins_with_strategy Stay)
+-- Concrete example showing the simplicity
+example : posterior_left_middle left = 1/3 ∧ posterior_left_middle right = 2/3 := by
+  exact ⟨posterior_stay, posterior_switch⟩
 
--- Key insight: when you pick a door, probability that car is behind it remains 1/3
--- The remaining 2/3 probability concentrates on the other door after host opens one
-theorem prob_switch_wins : prob_win_switch = 2/3 := by
-  -- The core insight of the Monty Hall problem:
-  -- When you initially pick a door, P(car behind your door) = 1/3
-  -- After host opens a goat door, P(car behind remaining door) = 2/3
-  -- Switching always takes you to the remaining door
-  sorry
+-- The fundamental insight: Switching doubles your probability of winning
+theorem monty_hall_advantage : posterior_left_middle right = 2 * posterior_left_middle left := by
+  rw [posterior_switch, posterior_stay]; norm_num
 
-theorem prob_stay_wins : prob_win_stay = 1/3 := by
-  -- Staying wins exactly when you initially picked the car door
-  -- This happens with probability 1/3 by symmetry
-  sorry
+-- General switching advantage
+theorem general_switching_advantage (player_door host_door : Door) (h : host_door ≠ player_door) :
+  let switch_door := if player_door ≠ left ∧ host_door ≠ left then left
+                     else if player_door ≠ middle ∧ host_door ≠ middle then middle
+                     else right
+  general_posterior player_door host_door switch_door = 2 * general_posterior player_door host_door player_door := by
+  have ⟨stay_prob, switch_prob⟩ := general_monty_hall player_door host_door h
+  -- Apply the let definition first
+  show general_posterior player_door host_door
+    (if player_door ≠ left ∧ host_door ≠ left then left
+     else if player_door ≠ middle ∧ host_door ≠ middle then middle
+     else right) = 2 * general_posterior player_door host_door player_door
+  rw [switch_prob, stay_prob]
+  norm_num
 
 /-!
-## Section 7: The Main Monty Hall Result
+## Section 7: Advantages of the Bayesian Approach
+
+### Compared to Joint Distribution Approach:
+
+1. **Sample Space Complexity**:
+   - Joint approach: 3³ = 27 game states (car, pick, host)
+   - Bayesian approach: 3 car positions
+
+2. **Mathematical Framework**:
+   - Joint approach: Custom probability measures and weighting functions
+   - Bayesian approach: Standard Bayes' theorem
+
+3. **Calculation Complexity**:
+   - Joint approach: Weighted sums over 27 states with validity constraints
+   - Bayesian approach: Simple 3-term Bayes calculation
+
+4. **Conceptual Clarity**:
+   - Joint approach: Mixes unknowns and observations in same probability space
+   - Bayesian approach: Clear separation of unknowns vs evidence
+
+5. **Extensibility**:
+   - Joint approach: 4-door version requires 4³ = 64 states
+   - Bayesian approach: 4-door version requires 4 states
+
+### Key Mathematical Insight:
+
+The Bayesian approach recognizes that we only need to model the **unknown** (car position).
+Everything else (player choice, host action) is **evidence** that updates our beliefs.
+
+This is exactly what the commenter meant by focusing on "the unknown state of the world"
+and using "likelihood functions" rather than "weighting functions".
 -/
-
-theorem monty_hall_switch_better :
-  prob_win_switch = 2/3 ∧ prob_win_stay = 1/3 := by
-  exact ⟨prob_switch_wins, prob_stay_wins⟩
-
-theorem monty_hall_switch_advantage :
-  prob_win_switch > prob_win_stay := by
-  rw [prob_switch_wins, prob_stay_wins]
-  -- Show that 2/3 > 1/3 (obviously true)
-  sorry
