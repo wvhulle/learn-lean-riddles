@@ -115,53 +115,13 @@ noncomputable def p : PMF Game :=
   PMF.uniformOfFinset valid_games_finset valid_games_nonempty
 
 
-lemma third_door_available (pick host : Door) : ((Finset.univ.erase pick).erase host).Nonempty := by
-  fin_cases pick <;> fin_cases host <;> decide
--- This had to be deterministic.
-def remaining_door (pick host : Door) : Door :=
-  match pick, host with
-  | left, middle => right
-  | left, right => middle
-  | middle, left => right
-  | right, left => middle
-  | right, middle => left
-  | right, right => left
-  | middle, right => left
-  | middle, middle => left
-  | left, left => right
-
-
-def switch_win_event : Set Game :=
-  { ω | remaining_door ω.pick ω.host = ω.car }
-
-def noswitch_win_event : Set Game :=
-  { ω | ω.pick = ω.car }
-
- def switch_win_pred (ω : Game) : Prop := remaining_door ω.pick ω.host = ω.car
- def no_switch_win_pred (ω : Game) : Prop := ω.pick = ω.car
-
-instance : DecidablePred switch_win_pred :=  by
-  unfold switch_win_pred
-  infer_instance
-instance : DecidablePred no_switch_win_pred := by
-  unfold no_switch_win_pred
-  infer_instance
 
 
 noncomputable def Prob  := p.toMeasure
 
-instance: IsFiniteMeasure Prob := by
-  unfold Prob
-  infer_instance
-
 instance : IsProbabilityMeasure Prob := by
   unfold Prob
   infer_instance
-
-
-
-noncomputable instance measureSpace : MeasureSpace Game :=
-  ⟨Prob⟩
 
 def host_opens (d : Door) : Set Game := {ω | ω.host = d}
 
@@ -169,32 +129,60 @@ def car_at (d : Door) : Set Game := {ω | ω.car = d}
 
 def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
-instance (d : Door) : MeasurableSet (host_opens d) :=
-  DiscreteMeasurableSpace.forall_measurableSet _
+theorem simplified_monty_hall: Prob[car_at left | pick_door left ∩ host_opens right ∪ pick_door left ∩ host_opens middle] = 1/3 := by
+    set H := car_at left
+    set E := pick_door left ∩ host_opens right ∪ pick_door left ∩ host_opens middle
 
-instance (d : Door) : MeasurableSet (car_at d) :=
-  DiscreteMeasurableSpace.forall_measurableSet _
+    have prior_car_left: Prob H   = 1/3  := by
+      unfold H car_at Prob
+      simp [PMF.toMeasure_apply_finset]
+      show ∑ x, {ω | ω.car = left}.indicator (⇑p) x = 3⁻¹
+      /-
+      How can convert this into an expression that is computable?
+      Should I change the index set to  `game_enumeration`? I have encountered that transforming the index set into  something that is more easily enumerable may help in reducing the sum.
+      -/
+      sorry
+    have prior_car_not_left: Prob Hᶜ = 2/3 := by
+      rw [MeasureTheory.prob_compl_eq_one_sub (DiscreteMeasurableSpace.forall_measurableSet H)]
+      simp [prior_car_left]
+      rw [<- ENNReal.div_self (by norm_num : (3 : ENNReal) ≠ 0) (by norm_num : (3 : ENNReal) ≠ ⊤)]
+      have: (3 : ENNReal)⁻¹ = 1/3 := by
+        norm_num
+      rw [this]
+      rw [ENNReal.sub_eq_of_eq_add]
+      · rw [<- ENNReal.inv_ne_zero]
+        norm_num
+      · rw [ENNReal.div_add_div_same]
+        norm_num
 
-instance (d : Door) : MeasurableSet (pick_door d) :=
-  DiscreteMeasurableSpace.forall_measurableSet _
+    have shows_goat_left_car : Prob[E | H] = 1 := by
+      /-
+      This should be one according to the rules of the game. The host will always open a door with a goat behind it. If the car is at left, and we pick left, then the host will open middle or right.
+      -/
 
-
-
-
-theorem bayes_monty_hall_mathlib (pick_d host_d : Door) (h_ne : pick_d ≠ host_d) :
-  let remaining_d := remaining_door pick_d host_d
-  let evidence := host_opens host_d ∩ pick_door pick_d
-  Prob[car_at remaining_d | evidence] > Prob[car_at pick_d | evidence] := by
-  set remaining_d := remaining_door pick_d host_d
-  set evidence := host_opens host_d ∩ pick_door pick_d
-  have bayes_remaining : Prob[car_at remaining_d | evidence] =
-    (Prob evidence)⁻¹ * Prob[evidence | car_at remaining_d] * Prob (car_at remaining_d) := by
-    rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul]
-    · exact DiscreteMeasurableSpace.forall_measurableSet _
-    · exact DiscreteMeasurableSpace.forall_measurableSet _
-  have bayes_pick : Prob[car_at pick_d | evidence] =
-    (Prob evidence)⁻¹ * Prob[evidence | car_at pick_d] * Prob (car_at pick_d) := by
-    rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul]
-    · exact DiscreteMeasurableSpace.forall_measurableSet _
-    · exact DiscreteMeasurableSpace.forall_measurableSet _
-  sorry
+      simp [ProbabilityTheory.cond_apply]
+      rw [prior_car_left]
+      norm_num
+      have: Prob (H ∩ E) = 1 / 3 := by
+        sorry
+      rw [this]
+      norm_num
+      exact ENNReal.mul_inv_cancel (by norm_num) (by norm_num)
+    have shows_goat_no_left_car : Prob[E | H ᶜ ] = 1 := by
+      /-
+      The probability that the host shows a goat when the care is not at the left. It should be 1, because the host will always open a door with a goat behind it.
+      -/
+      simp [ProbabilityTheory.cond_apply]
+      rw [prior_car_not_left]
+      sorry
+    have:  Prob[H | E] = 1/3 := by
+      rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul (DiscreteMeasurableSpace.forall_measurableSet _) (DiscreteMeasurableSpace.forall_measurableSet _) Prob]
+      rw [<- cond_add_cond_compl_eq (DiscreteMeasurableSpace.forall_measurableSet H)]
+      rw [shows_goat_left_car, shows_goat_no_left_car, prior_car_left, prior_car_not_left]
+      simp only [one_mul]
+      rw [ENNReal.div_add_div_same]
+      norm_num
+      simp only [ENNReal.div_self (by norm_num : (3 : ENNReal) ≠ 0) (by norm_num : (3 : ENNReal) ≠ ⊤)]
+      simp only [inv_one, one_mul]
+    unfold H E at this
+    exact this
