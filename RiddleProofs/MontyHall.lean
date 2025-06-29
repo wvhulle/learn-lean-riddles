@@ -3,6 +3,7 @@ import Mathlib.Probability.Notation
 import Mathlib.Data.Finset.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
 open  MeasureTheory ProbabilityTheory Set ENNReal Finset
+
 /-!
 # The Monty Hall Problem
 
@@ -21,9 +22,11 @@ Is it to your advantage to switch doors?
 
 **The Solution**
 
-Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3. This proof demonstrates this result using probability theory.
+Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3.
+-/
 
-See also: https://en.wikipedia.org/wiki/Monty_Hall_problem
+/-!
+## Section 1: Basic Types and Definitions
 -/
 
 inductive Door : Type
@@ -34,81 +37,41 @@ deriving DecidableEq, Repr, Fintype
 
 open Door
 
+inductive Strategy : Type
+| Switch
+| Stay
+deriving DecidableEq, Repr, Fintype
 
-instance : MeasurableSpace Door := ⊤
-instance : MeasurableSingletonClass Door := by infer_instance
+open Strategy
 
 structure Game where
-  car   : Door
-  pick  : Door
-  host  : Door
+  car      : Door
+  pick     : Door
+  host     : Door
   deriving DecidableEq, Repr, Fintype
 
--- Extensionality for Game
-@[ext]
-theorem Game.ext {g₁ g₂ : Game} : g₁.car = g₂.car → g₁.pick = g₂.pick → g₁.host = g₂.host → g₁ = g₂ := by
-  intro h₁ h₂ h₃
-  cases g₁ with | mk c₁ p₁ h₁ =>
-  cases g₂ with | mk c₂ p₂ h₂ =>
-  simp at h₁ h₂ h₃
-  simp [h₁, h₂, h₃]
+/-!
+## Section 2: Game Validity and Probability Framework
+-/
 
+-- A valid game means host doesn't open the picked door or the car door
+def is_valid_game (g : Game) : Prop := g.host ≠ g.pick ∧ g.host ≠ g.car
 
-def door_to_fin (d : Door) : Fin 3 :=
-  match d with
-  | left => 0
-  | middle => 1
-  | right => 2
-
-def fin_to_door (f : Fin 3) : Door :=
-  match f with
-  | 0 => left
-  | 1 => middle
-  | 2 => right
-
-lemma fin_to_door_injective : Function.Injective fin_to_door := by
-  intro a b h
-  fin_cases a <;> fin_cases b <;> simp [fin_to_door] at h <;> rfl
-
-def pairs := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3 × Fin 3) )
-
-def game_enumeration: Finset Game :=
-  pairs.map ⟨(fun x => match x with
-    | (car_idx, pick_idx, host_idx) =>
-      {car := fin_to_door car_idx, pick := fin_to_door pick_idx, host := fin_to_door host_idx}),
-    by
-      intro ⟨a1, a2, a3⟩ ⟨b1, b2, b3⟩ h
-      simp at h
-      have h1 : a1 = b1 := fin_to_door_injective h.1
-      have h2 : a2 = b2 := fin_to_door_injective h.2.1
-      have h3 : a3 = b3 := fin_to_door_injective h.2.2
-      simp [h1, h2, h3]⟩
-
-
-theorem equivalence_game_repr : (Finset.univ : Finset Game) = game_enumeration := by
-  rfl
-
-instance fin_outcome: Finset Game :=
-  Finset.univ
-
-instance measurableSpace : MeasurableSpace Game := ⊤
-
+instance : MeasurableSpace Game := ⊤
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
 
+-- Probability weights based on game logic
 def game_weight (ω : Game) : ℝ :=
-  if ω.host = ω.pick then 0     -- Host never opens the picked door.
-
-  else if ω.host = ω.car then 0 -- Host never opens the car door.
+  if ω.host = ω.pick then 0     -- Host never opens the picked door
+  else if ω.host = ω.car then 0 -- Host never opens the car door
   else
-    if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
-    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
+    if ω.car = ω.pick then 1    -- Contestant chose the car. Host has 2 choices
+    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door
 
 def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
 
 theorem total_weight_value: total_game_weights = 18 := by
   simp [total_game_weights, game_weight]
-  simp [equivalence_game_repr, game_enumeration, pairs]
-  simp [Finset.sum_product]
   norm_cast
 
 noncomputable def real_density (ω : Game) : ℝ  :=
@@ -155,88 +118,105 @@ theorem density_sums_to_one : HasSum prob_density 1 := by
   ext i
   rw [Real.coe_toNNReal (real_density i) (this i)]
 
-def is_valid_game : Game → Prop := fun (ω : Game) => ω.host ≠ ω.pick ∧ ω.host ≠ ω.car
-
-instance : DecidablePred is_valid_game := by
-  unfold is_valid_game
-  infer_instance
-
-def valid_games_finset : Finset Game :=
-  Finset.filter is_valid_game (Finset.univ : Finset Game)
-
-lemma valid_games_nonempty : valid_games_finset.Nonempty := by
-  use {car := left, pick := left, host := middle}
-  simp [valid_games_finset, Finset.mem_filter, Finset.mem_univ, is_valid_game]
-
 noncomputable def p : PMF Game :=
-    { val := prob_density,     property :=  density_sums_to_one  }
+  { val := prob_density, property := density_sums_to_one }
 
-noncomputable def Prob  := p.toMeasure
+noncomputable def Prob := p.toMeasure
 
 instance : IsProbabilityMeasure Prob := by
   unfold Prob
   infer_instance
 
-def host_opens (d : Door) : Set Game := {ω | ω.host = d}
+/-!
+## Section 3: Strategy Framework
+-/
 
-def car_at (d : Door) : Set Game := {ω | ω.car = d}
+-- Given a game state and strategy, what door does the player end up with?
+def final_door (g : Game) (s : Strategy) : Door :=
+  match s with
+  | Stay => g.pick
+  | Switch =>
+    -- Find the door that is neither picked nor opened by host
+    if g.pick ≠ left ∧ g.host ≠ left then left
+    else if g.pick ≠ middle ∧ g.host ≠ middle then middle
+    else right
 
-def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
+-- Does the player win with a given strategy?
+def wins (g : Game) (s : Strategy) : Prop :=
+  final_door g s = g.car
 
-theorem simplified_monty_hall: Prob[car_at left | pick_door left ∩ host_opens right ∪ pick_door left ∩ host_opens middle] = 1/3 := by
-    set H := car_at left
-    set E := pick_door left ∩ host_opens right ∪ pick_door left ∩ host_opens middle
+-- Set of games where player wins with a given strategy
+def wins_with_strategy (s : Strategy) : Set Game := {g | wins g s}
 
-    have prior_car_left: Prob H   = 1/3  := by
-      unfold H car_at Prob
-      simp [PMF.toMeasure_apply_finset]
-      show ∑ x, {ω | ω.car = left}.indicator (⇑p) x = 3⁻¹
-      /-
-      How can convert this into an expression that is computable?
-      Should I change the index set to  `game_enumeration`? I have encountered that transforming the index set into  something that is more easily enumerable may help in reducing the sum.
-      -/
-      sorry
-    have prior_car_not_left: Prob Hᶜ = 2/3 := by
-      rw [MeasureTheory.prob_compl_eq_one_sub (DiscreteMeasurableSpace.forall_measurableSet H)]
-      simp [prior_car_left]
-      rw [<- ENNReal.div_self (by norm_num : (3 : ENNReal) ≠ 0) (by norm_num : (3 : ENNReal) ≠ ⊤)]
-      have: (3 : ENNReal)⁻¹ = 1/3 := by
-        norm_num
-      rw [this]
-      rw [ENNReal.sub_eq_of_eq_add]
-      · rw [<- ENNReal.inv_ne_zero]
-        norm_num
-      · rw [ENNReal.div_add_div_same]
-        norm_num
+/-!
+## Section 4: Basic Strategy Properties
+-/
 
-    have shows_goat_left_car : Prob[E | H] = 1 := by
-      /-
-      This should be one according to the rules of the game. The host will always open a door with a goat behind it. If the car is at left, and we pick left, then the host will open middle or right.
-      -/
+lemma final_door_stay (g : Game) : final_door g Stay = g.pick := by
+  simp [final_door]
 
-      simp [ProbabilityTheory.cond_apply]
-      rw [prior_car_left]
-      norm_num
-      have: Prob (H ∩ E) = 1 / 3 := by
-        sorry
-      rw [this]
-      norm_num
-      exact ENNReal.mul_inv_cancel (by norm_num) (by norm_num)
-    have shows_goat_no_left_car : Prob[E | H ᶜ ] = 1 := by
-      /-
-      The probability that the host shows a goat when the care is not at the left. It should be 1, because the host will always open a door with a goat behind it.
-      -/
-      simp [ProbabilityTheory.cond_apply]
-      rw [prior_car_not_left]
-      sorry
-    have:  Prob[H | E] = 1/3 := by
-      rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul (DiscreteMeasurableSpace.forall_measurableSet _) (DiscreteMeasurableSpace.forall_measurableSet _) Prob]
-      rw [<- cond_add_cond_compl_eq (DiscreteMeasurableSpace.forall_measurableSet H)]
-      rw [shows_goat_left_car, shows_goat_no_left_car, prior_car_left, prior_car_not_left]
-      simp only [one_mul]
-      rw [ENNReal.div_add_div_same]
-      norm_num
-      simp only [ENNReal.div_self (by norm_num : (3 : ENNReal) ≠ 0) (by norm_num : (3 : ENNReal) ≠ ⊤)]
-      simp only [inv_one, one_mul]
-    unfold H E at this
-    exact this
+theorem stay_wins_iff_car_at_pick (g : Game) :
+  is_valid_game g → (wins g Stay ↔ g.car = g.pick) := by
+  intro hvalid
+  simp [wins, final_door_stay]
+  constructor
+  · intro h; exact h.symm
+  · intro h; exact h.symm
+
+theorem switch_wins_iff_car_not_at_pick_or_host (g : Game) :
+  is_valid_game g → (wins g Switch ↔ g.car ≠ g.pick ∧ g.car ≠ g.host) := by
+  intro hvalid
+  -- Key insight: in a valid 3-door game, if car is not at pick and not at host,
+  -- then it must be at the remaining door, which is exactly where switching takes you
+  sorry
+
+/-!
+## Section 5: Prior Probabilities
+-/
+
+-- Each door has equal prior probability of having the car
+theorem prior_car_probability (d : Door) : Prob {g | g.car = d} = 1/3 := by
+  -- By the symmetry of the problem setup and our probability weights,
+  -- each door has equal probability of containing the car
+  unfold Prob
+  rw [PMF.toMeasure_apply_fintype]
+  simp [Set.indicator]
+  fin_cases d <;> norm_cast
+  sorry
+
+
+/-!
+## Section 6: Main Probability Results
+-/
+
+-- Probability of winning with each strategy
+noncomputable def prob_win_switch : ENNReal := Prob (wins_with_strategy Switch)
+noncomputable def prob_win_stay : ENNReal := Prob (wins_with_strategy Stay)
+
+-- Key insight: when you pick a door, probability that car is behind it remains 1/3
+-- The remaining 2/3 probability concentrates on the other door after host opens one
+theorem prob_switch_wins : prob_win_switch = 2/3 := by
+  -- The core insight of the Monty Hall problem:
+  -- When you initially pick a door, P(car behind your door) = 1/3
+  -- After host opens a goat door, P(car behind remaining door) = 2/3
+  -- Switching always takes you to the remaining door
+  sorry
+
+theorem prob_stay_wins : prob_win_stay = 1/3 := by
+  -- Staying wins exactly when you initially picked the car door
+  -- This happens with probability 1/3 by symmetry
+  sorry
+
+/-!
+## Section 7: The Main Monty Hall Result
+-/
+
+theorem monty_hall_switch_better :
+  prob_win_switch = 2/3 ∧ prob_win_stay = 1/3 := by
+  exact ⟨prob_switch_wins, prob_stay_wins⟩
+
+theorem monty_hall_switch_advantage :
+  prob_win_switch > prob_win_stay := by
+  rw [prob_switch_wins, prob_stay_wins]
+  -- Show that 2/3 > 1/3 (obviously true)
+  sorry
