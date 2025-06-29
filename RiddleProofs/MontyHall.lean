@@ -121,56 +121,6 @@ noncomputable def general_posterior (player_door host_door car_door : Door) : �
   if general_evidence player_door host_door = 0 then 0
   else car_prior car_door * general_likelihood player_door host_door car_door / general_evidence player_door host_door
 
--- Helper lemmas for computing posteriors in specific scenarios
-
-lemma posterior_stay_left_middle : general_posterior left middle left = 1/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_switch_left_middle : general_posterior left middle right = 2/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_stay_left_right : general_posterior left right left = 1/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_switch_left_right : general_posterior left right middle = 2/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_stay_middle_left : general_posterior middle left middle = 1/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_switch_middle_left : general_posterior middle left right = 2/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_stay_middle_right : general_posterior middle right middle = 1/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_switch_middle_right : general_posterior middle right left = 2/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_stay_right_left : general_posterior right left right = 1/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_switch_right_left : general_posterior right left middle = 2/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_stay_right_middle : general_posterior right middle right = 1/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
-lemma posterior_switch_right_middle : general_posterior right middle left = 2/3 := by
-  simp [general_posterior, general_evidence, general_likelihood, car_prior]
-  norm_num
-
 -- Key theorem: staying always gives 1/3, switching gives 2/3
 -- This is the core mathematical result that makes the Bayesian approach superior
 theorem general_monty_hall (player_door host_door : Door) (h : host_door ≠ player_door) :
@@ -179,18 +129,20 @@ theorem general_monty_hall (player_door host_door : Door) (h : host_door ≠ pla
                      else right
   general_posterior player_door host_door player_door = 1/3 ∧
   general_posterior player_door host_door switch_door = 2/3 := by
-  -- Enumerate all 6 valid cases explicitly
+  -- The power of the Bayesian approach: all cases reduce to the same computation
+  -- Key insight: The specific doors don't matter, only the logical relationships
+  -- - Evidence is always 1/2 in valid scenarios
+  -- - Staying gives (1/3)(1/2)/(1/2) = 1/3 (likelihood 1/2 when car=player door)
+  -- - Switching gives (1/3)(1)/(1/2) = 2/3 (likelihood 1 when car=switch door)
   constructor
-  · -- First prove staying probability = 1/3
-    fin_cases player_door <;> fin_cases host_door <;> (
-      try contradiction  -- Skip invalid cases where player_door = host_door
-      all_goals { simp [general_posterior, general_evidence, general_likelihood, car_prior]; norm_num }
-    )
-  · -- Then prove switching probability = 2/3
-    fin_cases player_door <;> fin_cases host_door <;> (
-      try contradiction  -- Skip invalid cases where player_door = host_door
-      all_goals { simp [general_posterior, general_evidence, general_likelihood, car_prior]; norm_num }
-    )
+  all_goals {
+    fin_cases player_door <;> fin_cases host_door <;> {
+      first | exfalso; exact h rfl | {
+        simp [general_posterior, general_evidence, general_likelihood, car_prior]
+        norm_num
+      }
+    }
+  }
 
 /-!
 ## Section 6: Main Results
