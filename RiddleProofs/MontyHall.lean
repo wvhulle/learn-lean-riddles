@@ -4,15 +4,9 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Topology.Algebra.InfiniteSum.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
-open  MeasureTheory ProbabilityTheory Set ENNReal Finset
+import Mathlib.Data.Fintype.Card
 
-
-
-
--- Core ENNReal conversion lemmas for finite positive numbers
-@[simp] lemma ennreal_ofReal_div_pos (a b : ℝ) (hb : 0 < b) : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
-  ENNReal.ofReal_div_of_pos hb
-
+open MeasureTheory ProbabilityTheory Set ENNReal Finset
 
 
 /-!
@@ -45,7 +39,6 @@ inductive Door : Type
 deriving DecidableEq, Repr, Fintype
 
 open Door
-
 
 structure Game where
   car   : Door
@@ -190,9 +183,14 @@ def car_at (d : Door) : Set Game := {ω | ω.car = d}
 def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
 
--- Helper lemmas for probability computations
 
--- Specific helper for Game type
+
+-- Core ENNReal conversion lemmas for finite positive numbers
+@[simp] lemma ennreal_ofReal_div_pos (a b : ℝ) (hb : 0 < b) : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
+  ENNReal.ofReal_div_of_pos hb
+
+
+
 lemma game_set_membership (car pick host : Door) :
   ({car := car, pick := pick, host := host} : Game) ∈
   ({ω : Game | ω.car = car ∧ ω.pick = pick ∧ ω.host = host} : Set Game) := by
@@ -370,21 +368,74 @@ theorem monty_hall_stay_probability:
 
   · exact MeasurableSet.of_discrete
 
--- -- Theorem: Probability of car being at middle when player picks left and host opens right
--- theorem monty_hall_switch_probability:
---   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
---   -- Similar approach to the stay probability
---   unfold Prob p car_at pick_door host_opens
---   simp only [ProbabilityTheory.cond_apply, PMF.ofFinset_apply]
+-- Theorem: Probability of car being at middle when player picks left and host opens right
+theorem monty_hall_switch_probability:
+  Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
+  unfold Prob car_at pick_door host_opens
+  rw [ProbabilityTheory.cond_apply]
+  have num_eq : p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) = 2/18 := by
 
---   have computation_numerator :
---     ∑ x, ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}).indicator prob_density x = 2/18 := by
---     sorry
+    have h_singleton : {ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle} =
+                      {({car := middle, pick := left, host := right} : Game)} := by
+      ext ω
+      simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
+      constructor
+      · intro ⟨⟨h1, h2⟩, h3⟩
+        exact Game.ext h3 h1 h2
+      · intro h
+        rw [h]
+        simp
+    rw [h_singleton]
+    rw [PMF.toMeasure_apply_singleton]
+    · exact prob_density_middle_left_right
+    · exact MeasurableSet.singleton _
+  have denom_eq : p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}) = 1/6 := by
+    have h_inter_eq : ({ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right}) = {ω : Game | ω.pick = left ∧ ω.host = right} := by
+      ext ω
+      simp [Set.mem_inter_iff]
 
---   have computation_denominator :
---     ∑ x, ({ω | ω.pick = left} ∩ {ω | ω.host = right}).indicator prob_density x = 1/6 := by
---     sorry
+    rw [h_inter_eq]
+    have h_filter_eq : {ω : Game | ω.pick = left ∧ ω.host = right} =
+      ↑(game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right)) := by
+        rw [← equivalence_game_repr]
+        ext ω
+        simp [Finset.mem_filter]
 
---   rw [computation_numerator, computation_denominator]
---   simp [ENNReal.div_def]
---   norm_num
+    rw [h_filter_eq, PMF.toMeasure_apply_finset]
+    have h_filter_explicit :
+      game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right) =
+      {({car := left, pick := left, host := right} : Game),
+       ({car := middle, pick := left, host := right} : Game),
+       ({car := right, pick := left, host := right} : Game)} := by
+      simp [game_enumeration]; decide
+
+    rw [h_filter_explicit]
+    unfold p
+    simp only [PMF.ofFinset_apply]
+    rw [Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
+    · rw [prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
+      simp only [add_zero]
+      rw [← ENNReal.add_div]
+      ring_nf
+      rw [show (3 : ENNReal) / 18 = (1 * 3) / (6 * 3) by norm_num]
+      rw [ENNReal.mul_div_mul_right]
+      · norm_num
+      · norm_num
+    · simp
+    · simp
+
+  rw [num_eq, denom_eq]
+  show (1 / 6)⁻¹ * (2 / 18) = 2 / 3
+  simp only [one_div]
+  rw [inv_inv]
+  show (6 : ENNReal) * (2 / 18) = 2 / 3
+  rw [← mul_div_assoc]
+  show (6 : ENNReal) * 2 / 18 = 2 / 3
+  rw [show (6 : ENNReal) * 2 / 18 = (6 * 2) / 18 by rfl]
+  rw [show (6 : ENNReal) * 2 = 12 by norm_num]
+  rw [show (12 : ENNReal) / 18 = (2 * 6) / (3 * 6) by norm_num]
+  rw [ENNReal.mul_div_mul_right]
+  · norm_num
+  · norm_num
+
+  · exact MeasurableSet.of_discrete
