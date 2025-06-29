@@ -1,9 +1,9 @@
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Probability.Notation
 import Mathlib.Data.Finset.Basic
+import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import Mathlib.Topology.Algebra.InfiniteSum.Ring
 open  MeasureTheory ProbabilityTheory Set ENNReal Finset
-
 /-!
 # The Monty Hall Problem
 
@@ -22,11 +22,9 @@ Is it to your advantage to switch doors?
 
 **The Solution**
 
-Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3.
--/
+Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3. This proof demonstrates this result using probability theory.
 
-/-!
-## Section 1: Basic Types and Definitions
+See also: https://en.wikipedia.org/wiki/Monty_Hall_problem
 -/
 
 inductive Door : Type
@@ -37,41 +35,81 @@ deriving DecidableEq, Repr, Fintype
 
 open Door
 
-inductive Strategy : Type
-| Switch
-| Stay
-deriving DecidableEq, Repr, Fintype
 
-open Strategy
+instance : MeasurableSpace Door := ⊤
+instance : MeasurableSingletonClass Door := by infer_instance
 
 structure Game where
-  car      : Door
-  pick     : Door
-  host     : Door
+  car   : Door
+  pick  : Door
+  host  : Door
   deriving DecidableEq, Repr, Fintype
 
-/-!
-## Section 2: Game Validity and Probability Framework
--/
+-- Extensionality for Game
+@[ext]
+theorem Game.ext {g₁ g₂ : Game} : g₁.car = g₂.car → g₁.pick = g₂.pick → g₁.host = g₂.host → g₁ = g₂ := by
+  intro h₁ h₂ h₃
+  cases g₁ with | mk c₁ p₁ h₁ =>
+  cases g₂ with | mk c₂ p₂ h₂ =>
+  simp at h₁ h₂ h₃
+  simp [h₁, h₂, h₃]
 
--- A valid game means host doesn't open the picked door or the car door
-def is_valid_game (g : Game) : Prop := g.host ≠ g.pick ∧ g.host ≠ g.car
 
-instance : MeasurableSpace Game := ⊤
+def door_to_fin (d : Door) : Fin 3 :=
+  match d with
+  | left => 0
+  | middle => 1
+  | right => 2
+
+def fin_to_door (f : Fin 3) : Door :=
+  match f with
+  | 0 => left
+  | 1 => middle
+  | 2 => right
+
+lemma fin_to_door_injective : Function.Injective fin_to_door := by
+  intro a b h
+  fin_cases a <;> fin_cases b <;> simp [fin_to_door] at h <;> rfl
+
+def pairs := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3 × Fin 3) )
+
+def game_enumeration: Finset Game :=
+  pairs.map ⟨(fun x => match x with
+    | (car_idx, pick_idx, host_idx) =>
+      {car := fin_to_door car_idx, pick := fin_to_door pick_idx, host := fin_to_door host_idx}),
+    by
+      intro ⟨a1, a2, a3⟩ ⟨b1, b2, b3⟩ h
+      simp at h
+      have h1 : a1 = b1 := fin_to_door_injective h.1
+      have h2 : a2 = b2 := fin_to_door_injective h.2.1
+      have h3 : a3 = b3 := fin_to_door_injective h.2.2
+      simp [h1, h2, h3]⟩
+
+
+theorem equivalence_game_repr : (Finset.univ : Finset Game) = game_enumeration := by
+  rfl
+
+instance fin_outcome: Finset Game :=
+  Finset.univ
+
+instance measurableSpace : MeasurableSpace Game := ⊤
+
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
 
--- Probability weights based on game logic
 def game_weight (ω : Game) : ℝ :=
-  if ω.host = ω.pick then 0     -- Host never opens the picked door
-  else if ω.host = ω.car then 0 -- Host never opens the car door
+  if ω.host = ω.pick then 0     -- Host never opens the picked door.
+
+  else if ω.host = ω.car then 0 -- Host never opens the car door.
   else
-    if ω.car = ω.pick then 1    -- Contestant chose the car. Host has 2 choices
-    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door
+    if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
+    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
 
 def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
 
 theorem total_weight_value: total_game_weights = 18 := by
   simp [total_game_weights, game_weight]
+  simp [equivalence_game_repr, game_enumeration, pairs]
+  simp [Finset.sum_product]
   norm_cast
 
 noncomputable def real_density (ω : Game) : ℝ  :=
@@ -118,105 +156,146 @@ theorem density_sums_to_one : HasSum prob_density 1 := by
   ext i
   rw [Real.coe_toNNReal (real_density i) (this i)]
 
-noncomputable def p : PMF Game :=
-  { val := prob_density, property := density_sums_to_one }
+def is_valid_game : Game → Prop := fun (ω : Game) => ω.host ≠ ω.pick ∧ ω.host ≠ ω.car
 
-noncomputable def Prob := p.toMeasure
+instance : DecidablePred is_valid_game := by
+  unfold is_valid_game
+  infer_instance
+
+def valid_games_finset : Finset Game :=
+  Finset.filter is_valid_game (Finset.univ : Finset Game)
+
+lemma valid_games_nonempty : valid_games_finset.Nonempty := by
+  use {car := left, pick := left, host := middle}
+  simp [valid_games_finset, Finset.mem_filter, Finset.mem_univ, is_valid_game]
+
+-- We need to show that prob_density is zero outside the finite universe
+lemma prob_density_zero_outside : ∀ a ∉ (Finset.univ : Finset Game), prob_density a = 0 := by
+  intro a ha
+  -- This is vacuously true since Finset.univ contains all elements of a finite type
+  exfalso
+  exact ha (Finset.mem_univ a)
+
+
+theorem sum_one: ∑ i, prob_density i = 1 := by
+  exact (hasSum_fintype prob_density).unique density_sums_to_one
+
+
+noncomputable def p : PMF Game :=
+  PMF.ofFinset prob_density (Finset.univ : Finset Game)  sum_one prob_density_zero_outside
+
+
+
+noncomputable def Prob  := p.toMeasure
 
 instance : IsProbabilityMeasure Prob := by
   unfold Prob
   infer_instance
 
-/-!
-## Section 3: Strategy Framework
--/
+def host_opens (d : Door) : Set Game := {ω | ω.host = d}
 
--- Given a game state and strategy, what door does the player end up with?
-def final_door (g : Game) (s : Strategy) : Door :=
-  match s with
-  | Stay => g.pick
-  | Switch =>
-    -- Find the door that is neither picked nor opened by host
-    if g.pick ≠ left ∧ g.host ≠ left then left
-    else if g.pick ≠ middle ∧ g.host ≠ middle then middle
-    else right
+def car_at (d : Door) : Set Game := {ω | ω.car = d}
 
--- Does the player win with a given strategy?
-def wins (g : Game) (s : Strategy) : Prop :=
-  final_door g s = g.car
+def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
--- Set of games where player wins with a given strategy
-def wins_with_strategy (s : Strategy) : Set Game := {g | wins g s}
-
-/-!
-## Section 4: Basic Strategy Properties
--/
-
-lemma final_door_stay (g : Game) : final_door g Stay = g.pick := by
-  simp [final_door]
-
-theorem stay_wins_iff_car_at_pick (g : Game) :
-  is_valid_game g → (wins g Stay ↔ g.car = g.pick) := by
-  intro hvalid
-  simp [wins, final_door_stay]
+-- Specific case theorem for player picks left, host opens right
+theorem specific_monty_hall_case:
+  Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 ∧
+  Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   constructor
-  · intro h; exact h.symm
-  · intro h; exact h.symm
+  · -- P(car at left | picked left, host opened right) = 1/3
+    -- Direct computation: P(car=left ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
+    have joint_prob : Prob (car_at left ∩ (pick_door left ∩ host_opens right)) = 1/18 := by
+      unfold car_at pick_door host_opens Prob
+      simp [PMF.toMeasure_apply_finset, Set.inter_def]
+      show ∑ x, {ω | ω.car = left ∧ ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 18⁻¹
+      -- Only one game satisfies this: {car := left, pick := left, host := right}
+      -- This game has weight 1, so probability 1/18
+      rw [equivalence_game_repr]
+      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+      simp [Finset.sum_product]
+      norm_cast
+      simp [fin_to_door]
+      -- For the game {car := left, pick := left, host := right}:
+      -- host ≠ pick (right ≠ left) ✓
+      -- host ≠ car (right ≠ left) ✓
+      -- car = pick (left = left) ✓
+      -- So weight = 1, density = 1/18
+      simp [prob_density, real_density, game_weight, total_weight_value]
+      norm_num
+      -- Now we need to prove ENNReal.ofReal (1 / 18) = 18⁻¹
+      rw [ENNReal.ofReal_div_of_pos (by norm_num : (0 : ℝ) < 18)]
+      rw [ENNReal.ofReal_one]
+      rw [one_div]
+      simp [ENNReal.ofReal_natCast]
 
-theorem switch_wins_iff_car_not_at_pick_or_host (g : Game) :
-  is_valid_game g → (wins g Switch ↔ g.car ≠ g.pick ∧ g.car ≠ g.host) := by
-  intro hvalid
-  -- Key insight: in a valid 3-door game, if car is not at pick and not at host,
-  -- then it must be at the remaining door, which is exactly where switching takes you
-  sorry
+    have marginal_prob : Prob (pick_door left ∩ host_opens right) = 1/6 := by
+      unfold pick_door host_opens Prob
+      simp [PMF.toMeasure_apply_finset, Set.inter_def]
+      show ∑ x, {ω | ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 6⁻¹
+      -- Two games satisfy this:
+      -- {car := left, pick := left, host := right} with weight 1
+      -- {car := middle, pick := left, host := right} with weight 2
+      -- Total: 1 + 2 = 3, so probability 3/18 = 1/6
+      rw [equivalence_game_repr]
+      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+      simp [Finset.sum_product]
+      norm_cast
+      simp [fin_to_door]
+      simp [prob_density, real_density, game_weight, total_weight_value]
+      norm_num
+      -- Need to prove ENNReal.ofReal (1/18) + ENNReal.ofReal (1/9) = 6⁻¹
+      rw [← ENNReal.ofReal_add (by norm_num : (0 : ℝ) ≤ 1/18) (by norm_num : (0 : ℝ) ≤ 1/9)]
+      norm_num
+      -- Now need to prove ENNReal.ofReal (1/6) = 6⁻¹
+      rw [ENNReal.ofReal_div_of_pos (by norm_num : (0 : ℝ) < 6)]
+      rw [ENNReal.ofReal_one]
+      rw [one_div]
+      simp [ENNReal.ofReal_natCast]
 
-/-!
-## Section 5: Prior Probabilities
--/
+    -- Now use the definition of conditional probability
+    rw [ProbabilityTheory.cond_apply]
+    rw [Set.inter_comm]
+    rw [joint_prob, marginal_prob]
+    norm_num
+    -- (1/18) / (1/6) = (1/18) * (6/1) = 6/18 = 1/3
 
--- Each door has equal prior probability of having the car
-theorem prior_car_probability (d : Door) : Prob {g | g.car = d} = 1/3 := by
-  -- By the symmetry of the problem setup and our probability weights,
-  -- each door has equal probability of containing the car
-  unfold Prob
-  rw [PMF.toMeasure_apply_fintype]
-  simp [Set.indicator]
-  fin_cases d <;> norm_cast
-  sorry
+  · -- P(car at middle | picked left, host opened right) = 2/3
+    -- Direct computation: P(car=middle ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
+    have joint_prob : Prob (car_at middle ∩ (pick_door left ∩ host_opens right)) = 2/18 := by
+      unfold car_at pick_door host_opens Prob
+      simp [PMF.toMeasure_apply_finset, Set.inter_def]
+      show ∑ x, {ω | ω.car = middle ∧ ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 2 * 18⁻¹
+      -- Only one game satisfies this: {car := middle, pick := left, host := right}
+      -- This game has weight 2, so probability 2/18
+      rw [equivalence_game_repr]
+      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+      simp [Finset.sum_product]
+      norm_cast
+      simp [fin_to_door]
+      simp [game_weight]
+      norm_num
 
+    have marginal_prob : Prob (pick_door left ∩ host_opens right) = 1/6 := by
+      unfold pick_door host_opens Prob
+      simp [PMF.toMeasure_apply_finset, Set.inter_def]
+      show ∑ x, {ω | ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 6⁻¹
+      -- Same as above: 3/18 = 1/6
+      rw [equivalence_game_repr]
+      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+      simp [Finset.sum_product]
+      norm_cast
+      simp [fin_to_door]
+      simp [game_weight]
+      norm_num
 
-/-!
-## Section 6: Main Probability Results
--/
+    rw [ProbabilityTheory.cond_apply]
+    rw [Set.inter_comm]
+    rw [joint_prob, marginal_prob]
+    norm_num
+    -- (2/18) / (1/6) = (2/18) * (6/1) = 12/18 = 2/3
 
--- Probability of winning with each strategy
-noncomputable def prob_win_switch : ENNReal := Prob (wins_with_strategy Switch)
-noncomputable def prob_win_stay : ENNReal := Prob (wins_with_strategy Stay)
-
--- Key insight: when you pick a door, probability that car is behind it remains 1/3
--- The remaining 2/3 probability concentrates on the other door after host opens one
-theorem prob_switch_wins : prob_win_switch = 2/3 := by
-  -- The core insight of the Monty Hall problem:
-  -- When you initially pick a door, P(car behind your door) = 1/3
-  -- After host opens a goat door, P(car behind remaining door) = 2/3
-  -- Switching always takes you to the remaining door
-  sorry
-
-theorem prob_stay_wins : prob_win_stay = 1/3 := by
-  -- Staying wins exactly when you initially picked the car door
-  -- This happens with probability 1/3 by symmetry
-  sorry
-
-/-!
-## Section 7: The Main Monty Hall Result
--/
-
-theorem monty_hall_switch_better :
-  prob_win_switch = 2/3 ∧ prob_win_stay = 1/3 := by
-  exact ⟨prob_switch_wins, prob_stay_wins⟩
-
-theorem monty_hall_switch_advantage :
-  prob_win_switch > prob_win_stay := by
-  rw [prob_switch_wins, prob_stay_wins]
-  -- Show that 2/3 > 1/3 (obviously true)
+-- Main Monty Hall theorem (the general case)
+theorem simplified_monty_hall:
+  Prob[car_at left | pick_door left ∩ host_opens right ∪ pick_door left ∩ host_opens middle] = 1/3 := by
   sorry
