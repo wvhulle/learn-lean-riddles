@@ -9,6 +9,17 @@ open  MeasureTheory ProbabilityTheory Set ENNReal Finset
 @[simp] lemma ennreal_ofReal_div_pos (a b : ℝ) (hb : 0 < b) : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
   ENNReal.ofReal_div_of_pos hb
 
+-- Convert ENNReal.ofReal (1/n) to n⁻¹ for positive natural numbers
+@[simp] lemma ennreal_ofReal_one_div_nat (n : ℕ) [NeZero n] : ENNReal.ofReal (1 / (n : ℝ)) = (n : ENNReal)⁻¹ := by
+  have h_pos : (0 : ℝ) < (n : ℝ) := Nat.cast_pos.mpr (NeZero.pos n)
+  rw [ENNReal.ofReal_div_of_pos h_pos]
+  simp
+
+-- Convert ENNReal.ofReal ((n : ℝ)⁻¹) to n⁻¹ for positive natural numbers
+@[simp] lemma ennreal_ofReal_nat_inv (n : ℕ) [NeZero n] : ENNReal.ofReal ((n : ℝ)⁻¹) = (n : ENNReal)⁻¹ := by
+  rw [← one_div]
+  exact ennreal_ofReal_one_div_nat n
+
 @[simp] lemma ennreal_ofReal_mul_nonneg (a b : ℝ) (ha : 0 ≤ a) : ENNReal.ofReal (a * b) = ENNReal.ofReal a * ENNReal.ofReal b :=
   ENNReal.ofReal_mul ha
 
@@ -17,25 +28,31 @@ open  MeasureTheory ProbabilityTheory Set ENNReal Finset
 
 @[simp] lemma ennreal_ofReal_one : ENNReal.ofReal 1 = 1 := ENNReal.ofReal_one
 
--- Inverse conversion for positive natural numbers
-@[simp] lemma ennreal_nat_inv (n : ℕ) [NeZero n] : (n : ENNReal)⁻¹ = ENNReal.ofReal (1 / (n : ℝ)) := by
-  have h_pos : (0 : ℝ) < (n : ℝ) := Nat.cast_pos.mpr (NeZero.pos n)
-  rw [← ENNReal.ofReal_natCast n]
-  rw [← ENNReal.ofReal_inv_of_pos h_pos]
-  simp [one_div]
+-- Convert addition of ENNReal.ofReal terms
+@[simp] lemma ennreal_ofReal_add_nonneg (a b : ℝ) (ha : 0 ≤ a) (hb : 0 ≤ b) :
+  ENNReal.ofReal a + ENNReal.ofReal b = ENNReal.ofReal (a + b) :=
+  (ENNReal.ofReal_add ha hb).symm
 
--- Multiplication with inverse simplification
-@[simp] lemma ennreal_nat_mul_inv (m n : ℕ) [NeZero n] : (m : ENNReal) * (n : ENNReal)⁻¹ = ENNReal.ofReal ((m : ℝ) / (n : ℝ)) := by
-  rw [ennreal_nat_inv, ← ennreal_ofReal_nat_cast m]
-  rw [← ennreal_ofReal_mul_nonneg (m : ℝ) (1 / (n : ℝ)) (Nat.cast_nonneg m)]
-  congr 1
-  field_simp
-
--- Direct fraction conversion
-@[simp] lemma ennreal_frac_simp (m n : ℕ) [NeZero n] : ENNReal.ofReal ((m : ℝ) / (n : ℝ)) = (m : ENNReal) / (n : ENNReal) := by
+-- Handle specific arithmetic combinations that arise in our proofs
+@[simp] lemma ennreal_fraction_simplify (m n : ℕ) [NeZero n] [NeZero m] :
+  ENNReal.ofReal ((m : ℝ) / (n : ℝ)) = (m : ENNReal) / (n : ENNReal) := by
   rw [ennreal_ofReal_div_pos]
   simp
   exact Nat.cast_pos.mpr (NeZero.pos n)
+
+-- General lemma for finite fraction sums (simplified)
+@[simp] lemma ennreal_finite_sum_basic (a b m : ℕ) [NeZero m] :
+  ENNReal.ofReal ((a : ℝ) / m) + ENNReal.ofReal ((b : ℝ) / m) = ENNReal.ofReal ((a + b : ℝ) / m) := by
+  have ha : (0 : ℝ) ≤ (a : ℝ) / m := by
+    apply div_nonneg
+    · exact Nat.cast_nonneg a
+    · exact Nat.cast_nonneg m
+  have hb : (0 : ℝ) ≤ (b : ℝ) / m := by
+    apply div_nonneg
+    · exact Nat.cast_nonneg b
+    · exact Nat.cast_nonneg m
+  rw [← ENNReal.ofReal_add ha hb]
+  rw [← add_div]
 
 /-!
 # The Monty Hall Problem
@@ -231,100 +248,182 @@ def car_at (d : Door) : Set Game := {ω | ω.car = d}
 
 def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
--- Specific case theorem for player picks left, host opens right
+-- Theorem: Probability of car being at left when player picks left and host opens right
+theorem monty_hall_stay_probability:
+  Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
+  -- P(car at left | picked left, host opened right) = 1/3
+  -- Direct computation: P(car=left ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
+  have joint_prob : Prob (car_at left ∩ (pick_door left ∩ host_opens right)) = 1/18 := by
+    unfold car_at pick_door host_opens Prob
+    simp [PMF.toMeasure_apply_finset, Set.inter_def]
+    show ∑ x, {ω | ω.car = left ∧ ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 18⁻¹
+    -- Only one game satisfies this: {car := left, pick := left, host := right}
+    -- This game has weight 1, so probability 1/18
+    rw [equivalence_game_repr]
+    simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+    simp [Finset.sum_product]
+    norm_cast
+    simp [fin_to_door]
+    -- For the game {car := left, pick := left, host := right}:
+    -- host ≠ pick (right ≠ left) ✓
+    -- host ≠ car (right ≠ left) ✓
+    -- car = pick (left = left) ✓
+    -- So weight = 1, density = 1/18
+    simp [prob_density, real_density, game_weight, total_weight_value]
+    norm_num
+
+  have marginal_prob : Prob (pick_door left ∩ host_opens right) = 1/6 := by
+    unfold pick_door host_opens Prob
+    simp [PMF.toMeasure_apply_finset, Set.inter_def]
+    show ∑ x, {ω | ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 6⁻¹
+    -- Two games satisfy this:
+    -- {car := left, pick := left, host := right} with weight 1
+    -- {car := middle, pick := left, host := right} with weight 2
+    -- Total: 1 + 2 = 3, so probability 3/18 = 1/6
+    rw [equivalence_game_repr]
+    simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+    simp [Finset.sum_product]
+    norm_cast
+    simp [fin_to_door]
+    simp [prob_density, real_density, game_weight, total_weight_value]
+    norm_num
+    -- ENNReal arithmetic will be handled by norm_num
+
+  -- Now use the definition of conditional probability
+  rw [ProbabilityTheory.cond_apply]
+  rw [Set.inter_comm]
+  rw [joint_prob, marginal_prob]
+  norm_num
+  -- (1/18) / (1/6) = (1/18) * (6/1) = 6/18 = 1/3
+
+-- Theorem: Probability of car being at middle when player picks left and host opens right
+theorem monty_hall_switch_probability:
+  Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
+  -- P(car at middle | picked left, host opened right) = 2/3
+  -- Direct computation: P(car=middle ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
+  have joint_prob : Prob (car_at middle ∩ (pick_door left ∩ host_opens right)) = 2 * 18⁻¹ := by
+    unfold car_at pick_door host_opens Prob
+    simp [PMF.toMeasure_apply_finset, Set.inter_def]
+    show ∑ x, {ω | ω.car = middle ∧ ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 2 * 18⁻¹
+    -- Only one game satisfies this: {car := middle, pick := left, host := right}
+    -- This game has weight 2, so probability 2/18
+    rw [equivalence_game_repr]
+    simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+    simp [Finset.sum_product]
+    norm_cast
+    simp [fin_to_door]
+    simp [game_weight]
+    norm_num
+    -- Use simp to handle ENNReal arithmetic automatically
+    simp
+
+  have marginal_prob : Prob (pick_door left ∩ host_opens right) = 1/6 := by
+    unfold pick_door host_opens Prob
+    simp [PMF.toMeasure_apply_finset, Set.inter_def]
+    show ∑ x, {ω | ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 6⁻¹
+    -- Same as above: 3/18 = 1/6
+    rw [equivalence_game_repr]
+    simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+    simp [Finset.sum_product]
+    norm_cast
+    simp [fin_to_door]
+    simp [game_weight]
+    norm_num
+
+  rw [ProbabilityTheory.cond_apply]
+  rw [Set.inter_comm]
+  rw [joint_prob, marginal_prob]
+  norm_num
+  -- (2/18) / (1/6) = (2/18) * (6/1) = 12/18 = 2/3
+
+-- Combined theorem showing both results together
 theorem specific_monty_hall_case:
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 ∧
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   constructor
-  · -- P(car at left | picked left, host opened right) = 1/3
-    -- Direct computation: P(car=left ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
-    have joint_prob : Prob (car_at left ∩ (pick_door left ∩ host_opens right)) = 1/18 := by
-      unfold car_at pick_door host_opens Prob
-      simp [PMF.toMeasure_apply_finset, Set.inter_def]
-      show ∑ x, {ω | ω.car = left ∧ ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 18⁻¹
-      -- Only one game satisfies this: {car := left, pick := left, host := right}
-      -- This game has weight 1, so probability 1/18
-      rw [equivalence_game_repr]
-      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
-      simp [Finset.sum_product]
-      norm_cast
-      simp [fin_to_door]
-      -- For the game {car := left, pick := left, host := right}:
-      -- host ≠ pick (right ≠ left) ✓
-      -- host ≠ car (right ≠ left) ✓
-      -- car = pick (left = left) ✓
-      -- So weight = 1, density = 1/18
-      simp [prob_density, real_density, game_weight, total_weight_value]
-      norm_num
-      -- Use our simp lemmas to handle ENNReal arithmetic automatically
-      simp
-
-    have marginal_prob : Prob (pick_door left ∩ host_opens right) = 1/6 := by
-      unfold pick_door host_opens Prob
-      simp [PMF.toMeasure_apply_finset, Set.inter_def]
-      show ∑ x, {ω | ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 6⁻¹
-      -- Two games satisfy this:
-      -- {car := left, pick := left, host := right} with weight 1
-      -- {car := middle, pick := left, host := right} with weight 2
-      -- Total: 1 + 2 = 3, so probability 3/18 = 1/6
-      rw [equivalence_game_repr]
-      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
-      simp [Finset.sum_product]
-      norm_cast
-      simp [fin_to_door]
-      simp [prob_density, real_density, game_weight, total_weight_value]
-      norm_num
-      -- Use simp to handle ENNReal arithmetic automatically
-      simp
-
-    -- Now use the definition of conditional probability
-    rw [ProbabilityTheory.cond_apply]
-    rw [Set.inter_comm]
-    rw [joint_prob, marginal_prob]
-    norm_num
-    -- (1/18) / (1/6) = (1/18) * (6/1) = 6/18 = 1/3
-
-  · -- P(car at middle | picked left, host opened right) = 2/3
-    -- Direct computation: P(car=middle ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
-    have joint_prob : Prob (car_at middle ∩ (pick_door left ∩ host_opens right)) = 2 * 18⁻¹ := by
-      unfold car_at pick_door host_opens Prob
-      simp [PMF.toMeasure_apply_finset, Set.inter_def]
-      show ∑ x, {ω | ω.car = middle ∧ ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 2 * 18⁻¹
-      -- Only one game satisfies this: {car := middle, pick := left, host := right}
-      -- This game has weight 2, so probability 2/18
-      rw [equivalence_game_repr]
-      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
-      simp [Finset.sum_product]
-      norm_cast
-      simp [fin_to_door]
-      simp [game_weight]
-      norm_num
-      -- Use simp to handle ENNReal arithmetic automatically
-      simp
-
-    have marginal_prob : Prob (pick_door left ∩ host_opens right) = 1/6 := by
-      unfold pick_door host_opens Prob
-      simp [PMF.toMeasure_apply_finset, Set.inter_def]
-      show ∑ x, {ω | ω.pick = left ∧ ω.host = right}.indicator (⇑p) x = 6⁻¹
-      -- Same as above: 3/18 = 1/6
-      rw [equivalence_game_repr]
-      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
-      simp [Finset.sum_product]
-      norm_cast
-      simp [fin_to_door]
-      simp [game_weight]
-      norm_num
-
-    rw [ProbabilityTheory.cond_apply]
-    rw [Set.inter_comm]
-    rw [joint_prob, marginal_prob]
-    norm_num
-    -- (2/18) / (1/6) = (2/18) * (6/1) = 12/18 = 2/3
+  · exact monty_hall_stay_probability
+  · exact monty_hall_switch_probability
 
 -- Main Monty Hall theorem (the general case)
 theorem simplified_monty_hall:
   Prob[car_at left | pick_door left ∩ host_opens right ∪ pick_door left ∩ host_opens middle] = 1/3 := by
-  sorry
+  -- Rewrite the union using set distributivity
+  have set_eq : pick_door left ∩ host_opens right ∪ pick_door left ∩ host_opens middle =
+                pick_door left ∩ (host_opens right ∪ host_opens middle) := by
+    rw [Set.inter_union_distrib_left]
+  rw [set_eq]
+
+  -- Use conditional probability definition
+  rw [ProbabilityTheory.cond_apply]
+
+  -- Calculate joint probability: P(car at left ∩ pick left ∩ (host opens right ∪ middle))
+  have joint_prob : Prob (car_at left ∩ (pick_door left ∩ (host_opens right ∪ host_opens middle))) = 1/9 := by
+    -- Rearrange sets: car_at left ∩ (pick_door left ∩ (host_opens right ∪ host_opens middle))
+    --                = (car_at left ∩ pick_door left) ∩ (host_opens right ∪ host_opens middle)
+    simp only [Set.inter_assoc]
+    -- Now distribute over union: (car_at left ∩ pick_door left) ∩ (host_opens right ∪ host_opens middle)
+    --                          = (car_at left ∩ pick_door left ∩ host_opens right) ∪ (car_at left ∩ pick_door left ∩ host_opens middle)
+    rw [Set.inter_union_distrib_left]
+
+    -- Use additivity of measure
+    rw [MeasureTheory.Measure.union_ae]
+
+    -- Calculate each piece
+    have piece1 : Prob (car_at left ∩ pick_door left ∩ host_opens right) = 1/18 := by
+      unfold car_at pick_door host_opens Prob
+      simp [PMF.toMeasure_apply_finset, Set.inter_def]
+      rw [equivalence_game_repr]
+      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+      simp [Finset.sum_product]
+      norm_cast
+      simp [fin_to_door, game_weight]
+      norm_num
+
+    have piece2 : Prob (car_at left ∩ pick_door left ∩ host_opens middle) = 1/18 := by
+      unfold car_at pick_door host_opens Prob
+      simp [PMF.toMeasure_apply_finset, Set.inter_def]
+      rw [equivalence_game_repr]
+      simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+      simp [Finset.sum_product]
+      norm_cast
+      simp [fin_to_door, game_weight]
+      norm_num
+
+    rw [piece1, piece2]
+    norm_num
+
+    -- Disjointness subgoal: the two events are disjoint (host can't open both right and middle)
+    · simp [car_at, pick_door, host_opens, Set.disjoint_left]
+      intro ω h1 h2
+      exact h1.2.2 h2.2.2.symm
+
+  -- Calculate marginal probability: P(pick left ∩ (host opens right ∪ middle))
+  have marginal_prob : Prob (pick_door left ∩ (host_opens right ∪ host_opens middle)) = 1/3 := by
+    rw [Set.inter_union_distrib_right]
+    unfold pick_door host_opens Prob
+    simp [PMF.toMeasure_apply_finset, Set.inter_def, Set.union_def]
+
+    -- Direct calculation: sum over all games where pick=left and host∈{right,middle}
+    rw [equivalence_game_repr]
+    simp [p, prob_density, real_density, game_weight, total_weight_value, game_enumeration, pairs]
+    simp [Finset.sum_product]
+    norm_cast
+    simp [fin_to_door, game_weight]
+    -- Six games satisfy this (car can be anywhere, pick=left, host∈{right,middle}):
+    -- When car=left: host can be right (weight 1) or middle (weight 1) → 2/18
+    -- When car=middle: host must be right (weight 2) → 2/18
+    -- When car=right: host must be middle (weight 2) → 2/18
+    -- Total: 2/18 + 2/18 + 2/18 = 6/18 = 1/3
+    norm_num
+
+  -- Apply the conditional probability calculation
+  simp only [Set.inter_assoc]
+  rw [joint_prob, marginal_prob]
+  -- Arithmetic: (1/9) / (1/3) = (1/9) * 3 = 3/9 = 1/3
+  norm_num
+
+  -- Measurability subgoal
+  · simp [pick_door, host_opens]
 
 /-!
 ## Summary

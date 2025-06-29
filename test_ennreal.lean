@@ -26,3 +26,10 @@ import Mathlib
 -- Test the specific goal that should work
 example : (18 : ENNReal)⁻¹ + 2 / 18 = (6 : ENNReal)⁻¹ := by
   simp
+
+-- Test a simpler version
+example : (18 : ENNReal)⁻¹ + (2 : ENNReal) * (18 : ENNReal)⁻¹ = (6 : ENNReal)⁻¹ := by
+  simp
+
+-- Test even simpler
+example : (1 : ENNReal) + 2 = 3 := by simp
