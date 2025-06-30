@@ -50,11 +50,14 @@ theorem Door.univ_eq : (Finset.univ : Finset Door) = {Door.left, Door.middle, Do
   ext d; cases d <;> simp
 
 -- Generic finite sum expansion for any function on Door
-theorem Door.sum_eq (f : Door → α) [AddCommMonoid α] : 
+theorem Door.sum_eq (f : Door → α) [AddCommMonoid α] :
   ∑ d : Door, f d = f left + f middle + f right := by
-  rw [Door.univ_eq, Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton] <;> simp
+  rw [Door.univ_eq, Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
+  · rw [add_assoc]
+  · simp [Door.left, Door.middle, Door.right]
+  · simp [Door.left, Door.middle, Door.right]
 
--- Car prior simplification lemmas  
+-- Car prior simplification lemmas
 @[simp] theorem car_prior_eval (d : Door) : car_prior d = 1/3 := rfl
 
 theorem prior_uniform (d : Door) : car_prior d = 1/3 := rfl
@@ -75,11 +78,11 @@ noncomputable def likelihood_player_left_host_middle (car_door : Door) : ℝ :=
   | right => 1     -- Host forced to open middle (can't open left=player, right=car)
 
 -- Specific likelihood simplification lemmas
-@[simp] theorem likelihood_player_left_host_middle_left : 
+@[simp] theorem likelihood_player_left_host_middle_left :
   likelihood_player_left_host_middle left = 1/2 := rfl
-@[simp] theorem likelihood_player_left_host_middle_middle : 
+@[simp] theorem likelihood_player_left_host_middle_middle :
   likelihood_player_left_host_middle middle = 0 := rfl
-@[simp] theorem likelihood_player_left_host_middle_right : 
+@[simp] theorem likelihood_player_left_host_middle_right :
   likelihood_player_left_host_middle right = 1 := rfl
 
 theorem likelihood_nonneg (d : Door) : likelihood_player_left_host_middle d ≥ 0 := by
@@ -150,13 +153,13 @@ noncomputable def general_likelihood (player_door host_door car_door : Door) : �
   else 1  -- Host forced to open this door
 
 -- General likelihood simplification lemmas for common patterns
-@[simp] theorem general_likelihood_host_eq_player (p c : Door) : 
+@[simp] theorem general_likelihood_host_eq_player (p c : Door) :
   general_likelihood p p c = 0 := by simp only [general_likelihood, if_true]
-@[simp] theorem general_likelihood_host_eq_car (p h : Door) : 
+@[simp] theorem general_likelihood_host_eq_car (p h : Door) :
   general_likelihood p h h = 0 := by simp only [general_likelihood]; split_ifs <;> simp
-@[simp] theorem general_likelihood_car_eq_player_ne_host (p h : Door) (hne : h ≠ p) : 
+@[simp] theorem general_likelihood_car_eq_player_ne_host (p h : Door) (hne : h ≠ p) :
   general_likelihood p h p = 1/2 := by simp only [general_likelihood, if_neg hne, if_true]
-@[simp] theorem general_likelihood_forced (p h c : Door) (h1 : h ≠ p) (h2 : h ≠ c) (h3 : c ≠ p) : 
+@[simp] theorem general_likelihood_forced (p h c : Door) (h1 : h ≠ p) (h2 : h ≠ c) (h3 : c ≠ p) :
   general_likelihood p h c = 1 := by simp only [general_likelihood, if_neg h1, if_neg h2, if_neg h3]
 
 -- General evidence function
@@ -386,7 +389,7 @@ theorem ennreal_sum_helper (player_door host_door : Door) :
 theorem pmf_equivalence (player_door host_door : Door) :
   evidence_pmf_val player_door host_door = ENNReal.ofReal (general_evidence player_door host_door) := by
   simp only [evidence_pmf_val, general_evidence, car_pmf, PMF.ofFintype_apply, likelihood_ennreal, car_prior_eval]
-  rw [ennreal_sum_helper, Door.sum_eq]; rfl
+  rw [ennreal_sum_helper, Door.sum_eq];
 
 -- Key insight: Our manual calculation implements proper Bayesian updating
 theorem manual_implements_bayes (player_door host_door car_door : Door) :
@@ -412,7 +415,7 @@ theorem pmf_bayes_equivalence (player_door host_door : Door) (h : host_door ≠ 
   general_posterior player_door host_door switch_door = 2/3 := by
   constructor
   · simp [car_pmf, PMF.ofFintype_apply, ENNReal.toReal_ofReal]
-  constructor  
+  constructor
   · simp [car_pmf, PMF.ofFintype_apply, ENNReal.toReal_ofReal]
   · exact general_monty_hall player_door host_door h
 
