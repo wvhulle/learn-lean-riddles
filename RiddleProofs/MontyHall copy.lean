@@ -194,68 +194,52 @@ def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
 
 -- Core ENNReal conversion lemmas for finite positive numbers
-@[simp] lemma ennreal_ofReal_div_pos (a b : ℝ) (hb : 0 < b) : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
+@[simp] lemma ennreal_ofReal_div_pos {a b : ℝ} {hb : 0 < b} : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
   ENNReal.ofReal_div_of_pos hb
 
 
 
--- General ENNReal arithmetic lemmas for positive natural numbers
-
--- Core lemma: fraction simplification by canceling common factors
-lemma ennreal_mul_div_mul_right_pos (a b c : ℕ) (hc_pos : 0 < c) :
+-- Remove @[simp] from redundant lemmas to avoid loops
+@[simp] lemma ennreal_mul_div_mul_right_pos {a b c : ℕ} {hc_pos : 0 < c} :
   (a * c : ENNReal) / (b * c) = (a : ENNReal) / b := by
   apply ENNReal.mul_div_mul_right
   · simp [Nat.cast_ne_zero, ne_of_gt hc_pos]
   · simp [ENNReal.natCast_ne_top]
 
--- Version that handles natural number product casting
-lemma ennreal_mul_div_mul_right_cast (a b c : ℕ) (hc_pos : 0 < c) :
-  (↑(a * c) : ENNReal) / (↑(b * c) : ENNReal) = (a / b) := by
+@[simp] lemma ennreal_mul_div_mul_right_cast {a b c : ℕ} {hc_pos : 0 < c} :
+  (↑(a * c) : ENNReal) / (↑(b * c) : ENNReal) = a / b := by
   rw [Nat.cast_mul, Nat.cast_mul]
-  exact ennreal_mul_div_mul_right_pos a b c hc_pos
+  exact @ennreal_mul_div_mul_right_pos a b c hc_pos
 
--- General lemma for converting division to multiplication by inverse
-lemma ennreal_div_eq_mul_inv (a b : ℕ) :
-  (a : ENNReal) / b = (a : ENNReal) * (b : ENNReal)⁻¹ :=
-  div_eq_mul_inv (a : ENNReal) (b : ENNReal)
+-- Keep only the most general fraction reduction rule as @[simp]
+@[simp]  lemma ennreal_frac_reduce {a b c : ℕ} {hc_pos : 0 < c} :
+  (a * c : ENNReal) / (b * c) = a / b := by
+  apply ENNReal.mul_div_mul_right
+  · simp [Nat.cast_ne_zero, ne_of_gt hc_pos]
+  · simp [ENNReal.natCast_ne_top]
 
--- Completely generic fraction reduction using the most direct approach
--- These eliminate magic numbers by demonstrating the general cancellation pattern
-
--- Use the existing working lemma directly with explicit factorizations
-@[simp] lemma ennreal_six_div_eighteen : (6 : ENNReal) / 18 = (1 : ENNReal) / (3: ENNReal) := by
-  -- Show this is the same as (1*6)/(3*6) = 1/3 using the general lemma
-  have h1 : (6 : ENNReal) = (1 * 6 : ℕ) := by norm_num
-  have h2 : (18 : ENNReal) = (3 * 6 : ℕ) := by norm_num
-  rw [h1, h2]
-  simp only [ennreal_mul_div_mul_right_cast]
-
-@[simp] lemma ennreal_twelve_div_eighteen : (12 : ENNReal) / 18 = 2 / 3 := by
-  -- Show this is the same as (2*6)/(3*6) = 2/3 using the general lemma
-  have h1 : (12 : ENNReal) = (2 * 6 : ℕ) := by norm_num
-  have h2 : (18 : ENNReal) = (3 * 6 : ℕ) := by norm_num
-  rw [h1, h2]
-  simp only [ennreal_mul_div_mul_right_cast]
-
-@[simp] lemma ennreal_three_div_eighteen : (3 : ENNReal) / 18 = 1 / 6 := by
-  -- Show this is the same as (1*3)/(6*3) = 1/6 using the general lemma
-  have h1 : (3 : ENNReal) = (1 * 3 : ℕ) := by norm_num
-  have h2 : (18 : ENNReal) = (6 * 3 : ℕ) := by norm_num
-  rw [h1, h2]
-  simp only [ennreal_mul_div_mul_right_cast]
-
-@[simp] lemma ennreal_six_mul_inv_eighteen : (6 : ENNReal) * (18 : ENNReal)⁻¹ = (3 : ENNReal)⁻¹ := by
-  -- Convert to division first, then use the lemma above
-  rw [← div_eq_mul_inv, ennreal_six_div_eighteen, one_div]
-
--- Additional computational automation for the specific patterns used in the Monty Hall proof
-@[simp] lemma ennreal_six_times_two : (6 : ENNReal) * 2 = 12 := by norm_num
-
-@[simp] lemma ennreal_six_mul_two_div_eighteen : (6 : ENNReal) * 2 / 18 = 2 / 3 := by
-  rw [ennreal_six_times_two, ennreal_twelve_div_eighteen]
+-- General lemma: (1/a)⁻¹ * (b/c) = (a*b)/c for natural numbers
+-- This is the core pattern underlying all conditional probability computations
+@[simp]  lemma ennreal_inv_frac_mul_frac_general {a b c : ℕ} :
+  (1 / (a : ENNReal))⁻¹ * ((b : ENNReal) / (c : ENNReal)) = ((a * b : ℕ) : ENNReal) / (c : ENNReal) := by
+  rw [one_div, inv_inv]  -- (1/a)⁻¹ = a
+  rw [← mul_div_assoc]   -- a * (b/c) = (a*b)/c
+  rw [Nat.cast_mul]      -- cast the multiplication
 
 
--- General lemma for singleton game sets (eliminates repetition of unique_game_* lemmas)
+
+
+
+-- Remove magic number helper lemmas - compute directly in main theorems
+
+-- Main theorem proofs using direct computation
+
+
+
+
+
+
+-- General lemma: singleton game sets (eliminates repetition of unique_game_* lemmas)
 lemma unique_game_set (car pick host : Door) :
   {ω : Game | ω.pick = pick ∧ ω.host = host ∧ ω.car = car} =
   {({car := car, pick := pick, host := host} : Game)} := by
@@ -368,30 +352,67 @@ lemma prob_car_middle_pick_left_host_right :
   rw [prob_car_at_given_pick_host, prob_density_middle_left_right]
 
 
--- Theorem: Probability of car being at left when player picks left and host opens right
--- This represents the "STAY" strategy: staying with your original choice
--- Mathematical insight: P(car=pick | valid game) = (1/18) / (1/6) = 1/3
+
+@[simp] lemma ennreal_inv_inv {a: ENNReal}: (a ⁻¹)⁻¹ = a := by
+  simp
+
+@[simp] lemma ennreal_div_inv {a : ENNReal}  {g: a ≠ ⊤ } : ENNReal.ofReal ( (1 / ENNReal.toReal a))⁻¹ = a  := by
+  refine (toReal_eq_toReal_iff' ?_ g).mp ?_
+  simp
+  simp
+
+@[simp] lemma ennreal_mul_inv {a b : ENNReal}  {h : b ≠ 0} {g: a ≠ ⊤}: a * (b⁻¹) = ENNReal.ofReal (ENNReal.toReal a / ENNReal.toReal b) := by
+  rw [← div_eq_mul_inv]
+  rw [← ENNReal.ofReal_toReal (ENNReal.div_ne_top g h)]
+  congr 1
+  exact ENNReal.toReal_div a b
+
+-- 6 * (2 / 18) = 2 / 3
+lemma ennreal_div_eq {a b : ENNReal} (h: b ≠ 0) (i: a ≠ ⊤): a / b = ENNReal.ofReal (ENNReal.toReal a / ENNReal.toReal b) := by
+  rw [← ENNReal.ofReal_toReal (ENNReal.div_ne_top i h)]
+  congr 1
+  exact ENNReal.toReal_div a b
+
+
+
+
+
 theorem monty_hall_stay_probability:
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
   -- Use extracted lemmas for numerator and denominator
   rw [prob_car_left_pick_left_host_right, prob_pick_left_host_right]
-  -- Automated computation: (1/18) / (1/6) = 1/3
-  simp only [one_div, inv_inv]
-  simp  -- This should now automate the entire computation
+  -- Direct computation: (1/18) / (1/6) = (1/18) * 6 = 6/18 = 1/3
+  rw [ennreal_div_eq]
+  norm_cast
+  simp [ennreal_div_inv]
+  rw [ennreal_div_eq]
+  norm_num
+  simp
+  simp
+  simp
+  simp
   exact MeasurableSet.of_discrete
 
--- Theorem: Probability of car being at middle when player picks left and host opens right
--- This represents the "SWITCH" strategy: switching to the remaining door
--- Mathematical insight: P(car≠pick | valid game) = (2/18) / (1/6) = 2/3
+
+
 theorem monty_hall_switch_probability:
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
   -- Use extracted lemmas for numerator and denominator
   rw [prob_car_middle_pick_left_host_right, prob_pick_left_host_right]
-  -- Automated computation: (2/18) / (1/6) = 2/3
-  simp only [one_div, inv_inv, ← mul_div_assoc]
-  simp  -- This should now automate the entire computation
+  -- Direct computation: (2/18) / (1/6) = (2/18) * 6 = 12/18 = 2/3
+  rw [ennreal_div_eq]
+  norm_cast
+  -- rw [ennreal_div_eq]
+  simp [ennreal_div_inv]
+  rw [ennreal_div_eq]
+  norm_num
+  simp
+  simp
+  simp
+  simp
+
   exact MeasurableSet.of_discrete
