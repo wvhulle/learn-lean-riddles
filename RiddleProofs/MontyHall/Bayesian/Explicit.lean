@@ -96,7 +96,7 @@ theorem posterior_sums_to_one :
   norm_num
 
 /-!
-## Section 5: General Bayesian Framework
+## General Bayesian Framework
 -/
 
 
@@ -159,7 +159,6 @@ theorem switching_probability (player_door host_door : Door) (h : host_door ≠ 
 /-!
 ## Main Results
 
-Now we can state our key insights clearly and concisely.
 -/
 
 -- Concrete example showing the simplicity
