@@ -1,4 +1,5 @@
 {
+    "lean4.automaticallyBuildDependencies": true,
     "mcp": {
         "servers": {
             "lean-lsp": {
