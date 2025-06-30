@@ -1,5 +1,8 @@
-import RiddleProofs.MontyHall.Classic.Statement
+import RiddleProofs.MontyHall.Statement
 import RiddleProofs.MontyHall.Classic.Enumeration
 import RiddleProofs.MontyHall.Classic.Arithmetic
 import RiddleProofs.MontyHall.Classic.Measure
 import RiddleProofs.MontyHall.Classic.Dilemma
+import RiddleProofs.MontyHall.Bayesian.Explicit
+import RiddleProofs.MontyHall.Bayesian.Formal
+import RiddleProofs.MontyHall.Bayesian.Common

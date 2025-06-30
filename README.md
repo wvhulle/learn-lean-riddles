@@ -58,6 +58,9 @@ name = "mathlib"
 scope = "leanprover-community"
 ```
 
+### Download / update dependencies
+
+
 Dependencies are installed and updated with:
 
 ```bash
@@ -168,6 +171,22 @@ Extra dependencies, needed later on during development, will also be added to `l
 
 _Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
 
+
+### Building the project
+
+The fastest way to get started is probably to just download a pre-built cache
+
+```bash
+lake exe cache get
+```
+
+The first time you open the project, you might have to compile the project:
+
+```bash
+lake build
+```
+
+
 ### Beginner documentation
 
 If you need a fast-paced introduction you can read [Hitchhiker's Guide to Logical Verification (2023 Edition)](https://lean-forward.github.io/hitchhikers-guide/2023/).
@@ -176,6 +195,12 @@ If you need a fast-paced introduction you can read [Hitchhiker's Guide to Logica
 While learning, you may have further questions. Consult the [reference manual](https://lean-lang.org/doc/reference/latest/) for information about the core language. Refer to it for information about the syntax, type system, and other language features.
 
 A few educational interactive problems are provided as games at [University Düsseldorf](https://adam.math.hhu.de/).
+
+### Linting
+
+Use `#lint` for catching stylistic issues. Seems to be unsupported by MCP
+
+There is no standard formatter as of June 2025.
 
 
 ### Community resources
@@ -212,8 +237,8 @@ theorem top_level_theorem : True := trivial
 In this case, you can import the module and open the `Bar` namespace like this:
 
 ```lean
-import Std.Data.Foo
-open Std.Data.Foo.Bar
+import Foo
+open Foo.Bar
 ```
 
 ### Obtaining import paths
@@ -239,15 +264,16 @@ It is easier to use the `Mathlib` dependency instead (which includes the standar
    import Std.Data.Foo
    ```
 
+### Finding syntax
 
+For finding special syntax, you can use:
 
-### Building the project
-
-Successfull compilation of a project in Lean shows that all logical and mathematical statements expressed the type system are valid. To compile (build) the project, run:
-
-```bash
-lake build
+```lean
+import Mathlib.Tactic.FindSyntax 
+#find_syntax "#lint"
 ```
+
+
 
 ### Cloud LLM inference
 

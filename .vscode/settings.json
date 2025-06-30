@@ -1,5 +1,4 @@
 {
-    "lean4.automaticallyBuildDependencies": true,
     "mcp": {
         "servers": {
             "lean-lsp": {
@@ -7,6 +6,5 @@
             }
         }
     },
-    "chat.agent.maxRequests": 100000,
-    "terminal.integrated.defaultProfile.linux": "bash",
+    "chat.agent.maxRequests": 100000
 }

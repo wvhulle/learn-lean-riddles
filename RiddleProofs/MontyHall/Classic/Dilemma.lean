@@ -1,6 +1,6 @@
 import RiddleProofs.MontyHall.Classic.Measure
 import RiddleProofs.MontyHall.Classic.Enumeration
-import RiddleProofs.MontyHall.Classic.Statement
+import RiddleProofs.MontyHall.Statement
 import RiddleProofs.MontyHall.Classic.Arithmetic
 
 open ProbabilityTheory ENNReal Door

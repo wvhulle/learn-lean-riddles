@@ -1,4 +1,4 @@
-import RiddleProofs.MontyHall.Classic.Statement
+import RiddleProofs.MontyHall.Statement
 
 open Door
 
