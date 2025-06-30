@@ -199,77 +199,17 @@ def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
 
 
-lemma game_set_membership (car pick host : Door) :
-  ({car := car, pick := pick, host := host} : Game) ∈
-  ({ω : Game | ω.car = car ∧ ω.pick = pick ∧ ω.host = host} : Set Game) := by
-  simp
-
--- Helper to convert intersection of conditions to explicit membership
-lemma game_intersection_membership (car pick host : Door) :
-  ({car := car, pick := pick, host := host} : Game) ∈
-  ({ω : Game | ω.pick = pick} ∩ {ω : Game | ω.host = host} ∩ {ω : Game | ω.car = car} : Set Game) := by
-  simp
-
--- Helper to show that certain game configurations are the only ones satisfying conditions
-lemma unique_game_left_left_right :
-  {ω : Game | ω.pick = left ∧ ω.host = right ∧ ω.car = left} =
-  {({car := left, pick := left, host := right} : Game)} := by
+-- General lemma for singleton game sets (eliminates repetition of unique_game_* lemmas)
+lemma unique_game_set (car pick host : Door) :
+  {ω : Game | ω.pick = pick ∧ ω.host = host ∧ ω.car = car} =
+  {({car := car, pick := pick, host := host} : Game)} := by
   ext ω
-  simp
+  simp only [Set.mem_setOf_eq, Set.mem_singleton_iff]
   constructor
   · intro ⟨h1, h2, h3⟩
     exact Game.ext h3 h1 h2
   · intro h
-    rw [h]
-    simp
-
-lemma unique_game_middle_left_right :
-  {ω : Game | ω.pick = left ∧ ω.host = right ∧ ω.car = middle} =
-  {({car := middle, pick := left, host := right} : Game)} := by
-  ext ω
-  simp
-  constructor
-  · intro ⟨h1, h2, h3⟩
-    exact Game.ext h3 h1 h2
-  · intro h
-    rw [h]
-    simp
-
-lemma unique_game_right_left_right :
-  {ω : Game | ω.pick = left ∧ ω.host = right ∧ ω.car = right} =
-  {({car := right, pick := left, host := right} : Game)} := by
-  ext ω
-  simp
-  constructor
-  · intro ⟨h1, h2, h3⟩
-    exact Game.ext h3 h1 h2
-  · intro h
-    rw [h]
-    simp
-
--- Helper for denominator computation (all valid games with pick=left, host=right)
-lemma games_pick_left_host_right :
-  {ω : Game | ω.pick = left ∧ ω.host = right} =
-  {({car := left, pick := left, host := right} : Game),
-   ({car := middle, pick := left, host := right} : Game),
-   ({car := right, pick := left, host := right} : Game)} := by
-  ext ω
-  simp
-  constructor
-  · intro ⟨h1, h2⟩
-    cases h_car : ω.car with
-    | left => left; exact Game.ext h_car h1 h2
-    | middle => right; left; exact Game.ext h_car h1 h2
-    | right => right; right; exact Game.ext h_car h1 h2
-  · intro h
-    cases h with
-    | inl h => rw [h]; constructor <;> rfl
-    | inr h =>
-      cases h with
-      | inl h => rw [h]; constructor <;> rfl
-      | inr h => rw [h]; constructor <;> rfl
-
-
+    rw [h]; simp
 
 lemma prob_density_car_eq_pick (car pick host : Door) (h_eq : car = pick) (h_valid : host ≠ pick ∧ host ≠ car) :
   prob_density {car := car, pick := pick, host := host} = (1 : ENNReal) / 18 := by
@@ -347,37 +287,29 @@ lemma prob_pick_left_host_right :
   · simp
   · simp
 
--- Numerator lemma for staying strategy: P(car=left ∩ pick=left ∩ host=right) = 1/18
+-- General numerator lemma for conditional probability calculation
+lemma prob_car_at_given_pick_host (car : Door) :
+  p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = car}) =
+  prob_density {car := car, pick := left, host := right} := by
+  have h_inter_eq : {ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right} ∩ {ω : Game | ω.car = car} =
+                    {ω : Game | ω.pick = left ∧ ω.host = right ∧ ω.car = car} := by
+    ext ω; simp only [Set.mem_inter_iff, Set.mem_setOf_eq]
+    constructor
+    · intro ⟨⟨h1, h2⟩, h3⟩; exact ⟨h1, h2, h3⟩
+    · intro ⟨h1, h2, h3⟩; exact ⟨⟨h1, h2⟩, h3⟩
+  have h_singleton := unique_game_set car left right
+  rw [h_inter_eq, h_singleton]
+  rw [PMF.toMeasure_apply_singleton]; rfl
+  exact MeasurableSet.singleton _
+
+-- Specific instances for our proofs
 lemma prob_car_left_pick_left_host_right :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = left}) = 1/18 := by
-  have h_singleton : {ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = left} =
-                    {({car := left, pick := left, host := right} : Game)} := by
-    ext ω
-    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
-    constructor
-    · intro ⟨⟨h1, h2⟩, h3⟩
-      exact Game.ext h3 h1 h2
-    · intro h
-      rw [h]; simp
-  rw [h_singleton, PMF.toMeasure_apply_singleton]
-  · exact prob_density_left_left_right
-  · exact MeasurableSet.singleton _
+  rw [prob_car_at_given_pick_host, prob_density_left_left_right]
 
--- Numerator lemma for switching strategy: P(car=middle ∩ pick=left ∩ host=right) = 2/18
 lemma prob_car_middle_pick_left_host_right :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) = 2/18 := by
-  have h_singleton : {ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle} =
-                    {({car := middle, pick := left, host := right} : Game)} := by
-    ext ω
-    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
-    constructor
-    · intro ⟨⟨h1, h2⟩, h3⟩
-      exact Game.ext h3 h1 h2
-    · intro h
-      rw [h]; simp
-  rw [h_singleton, PMF.toMeasure_apply_singleton]
-  · exact prob_density_middle_left_right
-  · exact MeasurableSet.singleton _
+  rw [prob_car_at_given_pick_host, prob_density_middle_left_right]
 
 
 -- Theorem: Probability of car being at left when player picks left and host opens right
