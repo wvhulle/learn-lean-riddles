@@ -48,3 +48,17 @@ def switch_door (player_door host_door : Door) : Door :=
   if player_door ≠ left ∧ host_door ≠ left then left
   else if player_door ≠ middle ∧ host_door ≠ middle then middle
   else right
+
+
+-- shows that the manual implementation with its edge case handling is mathematically equivalent to the textbook Bayes' formula
+theorem manual_implements_bayes (player_door host_door car_door : Door) :
+  general_posterior player_door host_door car_door =
+  (car_prior car_door * general_likelihood player_door host_door car_door) /
+  general_evidence player_door host_door := by
+  unfold general_posterior; split_ifs <;> simp [*]
+
+
+-- Helper theorem for likelihood non-negativity (used in formal PMF calculations)
+theorem general_likelihood_nonneg (player_door host_door car_door : Door) :
+  general_likelihood player_door host_door car_door ≥ 0 := by
+  simp [general_likelihood]; split_ifs <;> norm_num

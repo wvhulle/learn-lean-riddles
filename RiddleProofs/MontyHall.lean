@@ -6,3 +6,4 @@ import RiddleProofs.MontyHall.Classic.Dilemma
 import RiddleProofs.MontyHall.Bayesian.Explicit
 import RiddleProofs.MontyHall.Bayesian.Formal
 import RiddleProofs.MontyHall.Bayesian.Common
+import RiddleProofs.MontyHall.Bayesian.Equivalence

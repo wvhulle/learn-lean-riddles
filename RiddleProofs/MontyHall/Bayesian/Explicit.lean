@@ -1,22 +1,10 @@
-import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Data.Real.Basic
-import Mathlib.Tactic.FinCases
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
-import Mathlib.Tactic.NormNum
-import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Probability.ProbabilityMassFunction.Constructions
-import Mathlib.Probability.Distributions.Uniform
-import Mathlib.Probability.ConditionalProbability
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import RiddleProofs.MontyHall.Statement
 import RiddleProofs.MontyHall.Bayesian.Common
 
-open Finset Door
+open  Door
 
 /-!
-# The Monty Hall Problem - Bayesian Approach
+# Excplicit Bayesian Monty Hall Analysis
 
 This file demonstrates the superiority of the Bayesian approach to the Monty Hall problem.
 Rather than modeling the complex joint distribution, we focus on the unknown (car position)
@@ -26,24 +14,13 @@ and use Bayes' theorem to compute posterior probabilities.
 -/
 
 
-/-!
-## Section 1: Prior Distribution (Before Any Evidence)
--/
-
-
-
-/-!
-## Universal Simp Lemmas for Door enumeration and common patterns
--/
-
-
 theorem prior_uniform (d : Door) : car_prior d = 1/3 := rfl
 
 theorem prior_sums_to_one : car_prior left + car_prior middle + car_prior right = 1 := by
   simp; norm_num
 
 /-!
-## Section 2: Likelihood Function (Host Behavior Model)
+## Likelihood Function (Host Behavior Model)
 -/
 
 -- Scenario: Player chose left, host opened middle
@@ -66,7 +43,7 @@ theorem likelihood_nonneg (d : Door) : likelihood_player_left_host_middle d ≥ 
   cases d <;> simp
 
 /-!
-## Section 3: Evidence (Normalization Factor)
+## Evidence (Normalization Factor)
 -/
 
 -- Evidence: P(host opens middle | player chose left)
@@ -82,7 +59,7 @@ theorem evidence_positive : evidence_left_middle > 0 := by
   rw [evidence_calculation]; norm_num
 
 /-!
-## Section 4: Posterior Distribution via Bayes' Theorem
+## Posterior Distribution via Bayes' Theorem
 -/
 
 -- Posterior: P(car at door | host opened middle, player chose left)
@@ -178,30 +155,6 @@ theorem switching_probability (player_door host_door : Door) (h : host_door ≠ 
   }
 
 
-/-!
-## Interactive Examples
-
-Let's work through some concrete scenarios to build intuition.
--/
-
--- Example 1: Player picks left, host opens middle (the classic scenario)
-example : general_posterior left middle left = 1/3 ∧ general_posterior left middle right = 2/3 := by
-  constructor <;> {
-    simp [general_posterior, general_evidence]; norm_num
-  }
-
--- Example 2: Player picks right, host opens middle
-example : general_posterior right middle right = 1/3 ∧ general_posterior right middle left = 2/3 := by
-  constructor <;> {
-    simp [general_posterior, general_evidence]; norm_num
-  }
-
--- Example 3: The switch door is always the advantageous choice
-example (player_door host_door : Door) (h : host_door ≠ player_door) :
-  general_posterior player_door host_door (switch_door player_door host_door) >
-  general_posterior player_door host_door player_door := by
-  rw [switching_probability player_door host_door h, staying_probability player_door host_door h]
-  norm_num
 
 /-!
 ## Main Results
@@ -232,3 +185,10 @@ theorem general_switching_advantage (player_door host_door : Door) (h : host_doo
   2 * general_posterior player_door host_door player_door := by
   rw [switching_probability player_door host_door h, staying_probability player_door host_door h]
   norm_num
+
+
+-- Key theorem: staying always gives 1/3, switching gives 2/3
+theorem expl_bay_monty_hall (player_door host_door : Door) (h : host_door ≠ player_door) :
+  general_posterior player_door host_door player_door = 1/3 ∧
+  general_posterior player_door host_door (switch_door player_door host_door) = 2/3 := by
+  exact ⟨staying_probability player_door host_door h, switching_probability player_door host_door h⟩
