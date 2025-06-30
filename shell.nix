@@ -3,5 +3,11 @@ let
   leanLspMcp = import ./lean-lsp-mcp.nix { inherit pkgs; };
 in
 pkgs.mkShell {
-  buildInputs = [ leanLspMcp ];
+  buildInputs = with pkgs; [
+    leanLspMcp
+    bash
+    elan
+    mathlibtools
+    git
+  ];
 }

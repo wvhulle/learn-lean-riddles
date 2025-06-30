@@ -1,6 +1,6 @@
-# Riddles in Lean
+# Learn Lean by solving riddles
 
-This is a collection of riddles implemented in Lean 4 for a [workshop](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
+This are notes for a [workshop on Lean](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
 
 A basic introduction to Lean can be found on the [Introduction in the reference](https://lean-lang.org/doc/reference/latest/Introduction/#introduction):
 
@@ -120,6 +120,12 @@ For VS Code to discover this binary, you have to launch VS Code from the shell w
 ```bash
 nix-shell
 code .
+```
+
+Or if you want it to happen automatically:
+
+```bash
+direnv allow
 ```
 
 ### Enable in VS Code

@@ -7,5 +7,5 @@
         }
     },
     "chat.agent.maxRequests": 100000,
-    "terminal.integrated.defaultProfile.linux": "bash"
+    "terminal.integrated.defaultProfile.linux": "bash",
 }
