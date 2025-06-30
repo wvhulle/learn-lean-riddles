@@ -63,9 +63,6 @@ theorem Game.ext {g₁ g₂ : Game} : g₁.car = g₂.car → g₁.pick = g₂.p
   simp at h₁ h₂ h₃
   simp [h₁, h₂, h₃]
 
-
-
-
 def fin_to_door (f : Fin 3) : Door :=
   match f with
   | 0 => left
@@ -192,43 +189,53 @@ def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
 
 
-
--- Consolidated ENNReal arithmetic lemmas
--- Master lemma for fraction reduction with common factors
 @[simp] lemma ennreal_frac_reduce {a b c : ℕ} {hc_pos : 0 < c} :
   (a * c : ENNReal) / (b * c) = a / b := by
   apply ENNReal.mul_div_mul_right
   · simp [Nat.cast_ne_zero, ne_of_gt hc_pos]
   · simp [ENNReal.natCast_ne_top]
 
--- Core pattern for conditional probability: (1/a)⁻¹ * (b/c) = (a*b)/c
 @[simp] lemma ennreal_inv_frac_mul_frac_general {a b c : ℕ} :
   (1 / (a : ENNReal))⁻¹ * ((b : ENNReal) / (c : ENNReal)) = ((a * b : ℕ) : ENNReal) / (c : ENNReal) := by
   rw [one_div, inv_inv, ← mul_div_assoc, Nat.cast_mul]
 
--- Utility lemmas for ENNReal/Real conversion
-@[simp] lemma ennreal_ofReal_div_pos {a b : ℝ} {hb : 0 < b} : 
+
+@[simp] lemma ennreal_ofReal_div_pos {a b : ℝ} {hb : 0 < b} :
   ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
   ENNReal.ofReal_div_of_pos hb
 
 @[simp] lemma ennreal_inv_inv {a: ENNReal}: (a ⁻¹)⁻¹ = a := by simp
 
--- Simplified conversion lemma (used in proofs)
-@[simp] lemma ennreal_div_inv {a : ENNReal} {g: a ≠ ⊤} : 
+@[simp] lemma ennreal_div_inv {a : ENNReal} {g: a ≠ ⊤} :
   ENNReal.ofReal ((1 / ENNReal.toReal a)⁻¹) = a := by
   rw [one_div, inv_inv, ENNReal.ofReal_toReal g]
 
--- Convert ENNReal division to Real computation and back (when finite and non-zero)
-lemma ennreal_div_eq {a b : ENNReal} (h: b ≠ 0) (i: a ≠ ⊤): 
+
+lemma ennreal_div_eq {a b : ENNReal} (h: b ≠ 0) (i: a ≠ ⊤):
   a / b = ENNReal.ofReal (ENNReal.toReal a / ENNReal.toReal b) := by
   rw [← ENNReal.ofReal_toReal (ENNReal.div_ne_top i h)]
   congr 1
   exact ENNReal.toReal_div a b
 
 
-
-
-
+@[simp]  lemma ennreal_mul_frac_simplify {a b c d e : ℕ} (h : a * b * e = d * c)
+  (hc_pos : 0 < c) (he_pos : 0 < e) :
+  (a : ENNReal) * ((b : ENNReal) / (c : ENNReal)) = (d : ENNReal) / (e : ENNReal) := by
+  have h1: (a : ENNReal) * (b / c) = (a * b) / c := by
+    exact Eq.symm (mul_div_assoc (a : ENNReal) (b : ENNReal) (c : ENNReal))
+  rw [h1]
+  refine (ENNReal.div_eq_div_iff ?_ ?_ ?_ ?_).mpr ?_
+  · simp [Nat.cast_ne_zero, ne_of_gt hc_pos]
+    intro a
+    linarith
+  · simp [ENNReal.natCast_ne_top]
+  · simp [Nat.cast_ne_zero, ne_of_gt he_pos]
+    linarith
+  · simp [ENNReal.natCast_ne_top]
+  · norm_cast
+    rw [mul_comm e (a * b)]
+    rw [mul_comm c d]
+    exact h
 
 
 
@@ -282,20 +289,17 @@ lemma prob_density_right_left_right :
 -- This represents the total probability of the conditioning event across all car positions
 lemma prob_pick_left_host_right :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}) = 1/6 := by
-  -- Convert intersection to explicit condition
   have h_inter_eq : ({ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right}) =
                     {ω : Game | ω.pick = left ∧ ω.host = right} := by
     ext ω; simp [Set.mem_inter_iff]
 
   rw [h_inter_eq]
-  -- Convert to finite set representation
   have h_filter_eq : {ω : Game | ω.pick = left ∧ ω.host = right} =
     ↑(game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right)) := by
       rw [← equivalence_game_repr]
       ext ω; simp [Finset.mem_filter]
 
   rw [h_filter_eq, PMF.toMeasure_apply_finset]
-  -- Explicitly enumerate the three valid games
   have h_filter_explicit :
     game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right) =
     {({car := left, pick := left, host := right} : Game),
@@ -306,7 +310,6 @@ lemma prob_pick_left_host_right :
   rw [h_filter_explicit]
   unfold p
   simp only [PMF.ofFinset_apply]
-  -- Sum the three probabilities: 1/18 + 2/18 + 0 = 3/18 = 1/6
   rw [Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
   · rw [prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
     simp only [add_zero]
@@ -319,7 +322,6 @@ lemma prob_pick_left_host_right :
   · simp
   · simp
 
--- General numerator lemma for conditional probability calculation
 lemma prob_car_at_given_pick_host (car : Door) :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = car}) =
   prob_density {car := car, pick := left, host := right} := by
@@ -334,7 +336,6 @@ lemma prob_car_at_given_pick_host (car : Door) :
   rw [PMF.toMeasure_apply_singleton]; rfl
   exact MeasurableSet.singleton _
 
--- Specific instances for our proofs
 lemma prob_car_left_pick_left_host_right :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = left}) = 1/18 := by
   rw [prob_car_at_given_pick_host, prob_density_left_left_right]
@@ -343,28 +344,29 @@ lemma prob_car_middle_pick_left_host_right :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) = 2/18 := by
   rw [prob_car_at_given_pick_host, prob_density_middle_left_right]
 
-
-
-
-
 theorem monty_hall_stay_probability:
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
   · rw [prob_car_left_pick_left_host_right, prob_pick_left_host_right]
-    -- Use generic conditional probability pattern: (1/6)⁻¹ * (1/18) = 6 * (1/18) = 6/18 = 1/3
-    simp only [ennreal_inv_frac_mul_frac_general]
+    simp
+    refine (toReal_eq_toReal_iff' ?_ ?_).mp ?_
+    simp
+    refine div_ne_top ?_ ?_
+    norm_cast
+    norm_cast
+    norm_cast
+    norm_cast
+    simp
     norm_num
-  · exact MeasurableSet.of_discrete
-
-
+  · apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
 
 theorem monty_hall_switch_probability:
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
-  · rw [prob_car_middle_pick_left_host_right, prob_pick_left_host_right]
-    -- Use generic conditional probability pattern: (1/6)⁻¹ * (2/18) = 6 * (2/18) = 12/18 = 2/3
-    simp only [ennreal_inv_frac_mul_frac_general]
-    norm_num
-  · exact MeasurableSet.of_discrete
+  · rw [prob_car_middle_pick_left_host_right]
+    rw [prob_pick_left_host_right]
+    simp
+    exact ennreal_mul_frac_simplify  (by norm_num) (by norm_num) (by norm_num)
+  · apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
