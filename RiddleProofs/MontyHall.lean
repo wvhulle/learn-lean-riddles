@@ -193,56 +193,34 @@ def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
 
 
 
--- Core ENNReal conversion lemmas for finite positive numbers
-@[simp] lemma ennreal_ofReal_div_pos {a b : ℝ} {hb : 0 < b} : ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
-  ENNReal.ofReal_div_of_pos hb
-
-
-
--- Remove @[simp] from redundant lemmas to avoid loops
-@[simp] lemma ennreal_mul_div_mul_right_pos {a b c : ℕ} {hc_pos : 0 < c} :
-  (a * c : ENNReal) / (b * c) = (a : ENNReal) / b := by
-  apply ENNReal.mul_div_mul_right
-  · simp [Nat.cast_ne_zero, ne_of_gt hc_pos]
-  · simp [ENNReal.natCast_ne_top]
-
-@[simp] lemma ennreal_mul_div_mul_right_cast {a b c : ℕ} {hc_pos : 0 < c} :
-  (↑(a * c) : ENNReal) / (↑(b * c) : ENNReal) = a / b := by
-  rw [Nat.cast_mul, Nat.cast_mul]
-  exact @ennreal_mul_div_mul_right_pos a b c hc_pos
-
--- Keep only the most general fraction reduction rule as @[simp]
-@[simp]  lemma ennreal_frac_reduce {a b c : ℕ} {hc_pos : 0 < c} :
+-- Consolidated ENNReal arithmetic lemmas
+-- Master lemma for fraction reduction with common factors
+@[simp] lemma ennreal_frac_reduce {a b c : ℕ} {hc_pos : 0 < c} :
   (a * c : ENNReal) / (b * c) = a / b := by
   apply ENNReal.mul_div_mul_right
   · simp [Nat.cast_ne_zero, ne_of_gt hc_pos]
   · simp [ENNReal.natCast_ne_top]
 
--- General lemma: (1/a)⁻¹ * (b/c) = (a*b)/c for natural numbers
--- This is the core pattern underlying all conditional probability computations
-@[simp]  lemma ennreal_inv_frac_mul_frac_general {a b c : ℕ} :
+-- Core pattern for conditional probability: (1/a)⁻¹ * (b/c) = (a*b)/c
+@[simp] lemma ennreal_inv_frac_mul_frac_general {a b c : ℕ} :
   (1 / (a : ENNReal))⁻¹ * ((b : ENNReal) / (c : ENNReal)) = ((a * b : ℕ) : ENNReal) / (c : ENNReal) := by
-  rw [one_div, inv_inv]  -- (1/a)⁻¹ = a
-  rw [← mul_div_assoc]   -- a * (b/c) = (a*b)/c
-  rw [Nat.cast_mul]      -- cast the multiplication
+  rw [one_div, inv_inv, ← mul_div_assoc, Nat.cast_mul]
 
+-- Utility lemmas for ENNReal/Real conversion
+@[simp] lemma ennreal_ofReal_div_pos {a b : ℝ} {hb : 0 < b} : 
+  ENNReal.ofReal (a / b) = ENNReal.ofReal a / ENNReal.ofReal b :=
+  ENNReal.ofReal_div_of_pos hb
 
+@[simp] lemma ennreal_inv_inv {a: ENNReal}: (a ⁻¹)⁻¹ = a := by simp
 
-@[simp] lemma ennreal_inv_inv {a: ENNReal}: (a ⁻¹)⁻¹ = a := by
-  simp
+-- Simplified conversion lemma (used in proofs)
+@[simp] lemma ennreal_div_inv {a : ENNReal} {g: a ≠ ⊤} : 
+  ENNReal.ofReal ((1 / ENNReal.toReal a)⁻¹) = a := by
+  rw [one_div, inv_inv, ENNReal.ofReal_toReal g]
 
-@[simp] lemma ennreal_div_inv {a : ENNReal}  {g: a ≠ ⊤ } : ENNReal.ofReal ( (1 / ENNReal.toReal a))⁻¹ = a  := by
-  refine (toReal_eq_toReal_iff' ?_ g).mp ?_
-  simp
-  simp
-
-@[simp] lemma ennreal_mul_inv {a b : ENNReal}  {h : b ≠ 0} {g: a ≠ ⊤}: a * (b⁻¹) = ENNReal.ofReal (ENNReal.toReal a / ENNReal.toReal b) := by
-  rw [← div_eq_mul_inv]
-  rw [← ENNReal.ofReal_toReal (ENNReal.div_ne_top g h)]
-  congr 1
-  exact ENNReal.toReal_div a b
-
-lemma ennreal_div_eq {a b : ENNReal} (h: b ≠ 0) (i: a ≠ ⊤): a / b = ENNReal.ofReal (ENNReal.toReal a / ENNReal.toReal b) := by
+-- Convert ENNReal division to Real computation and back (when finite and non-zero)
+lemma ennreal_div_eq {a b : ENNReal} (h: b ≠ 0) (i: a ≠ ⊤): 
+  a / b = ENNReal.ofReal (ENNReal.toReal a / ENNReal.toReal b) := by
   rw [← ENNReal.ofReal_toReal (ENNReal.div_ne_top i h)]
   congr 1
   exact ENNReal.toReal_div a b
@@ -373,18 +351,11 @@ theorem monty_hall_stay_probability:
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
-
-  rw [prob_car_left_pick_left_host_right, prob_pick_left_host_right]
-  rw [ennreal_div_eq]
-  norm_cast
-  simp [ennreal_div_inv]
-  rw [ennreal_div_eq]
-  norm_num
-  simp
-  simp
-  simp
-  simp
-  exact MeasurableSet.of_discrete
+  · rw [prob_car_left_pick_left_host_right, prob_pick_left_host_right]
+    -- Use generic conditional probability pattern: (1/6)⁻¹ * (1/18) = 6 * (1/18) = 6/18 = 1/3
+    simp only [ennreal_inv_frac_mul_frac_general]
+    norm_num
+  · exact MeasurableSet.of_discrete
 
 
 
@@ -392,18 +363,8 @@ theorem monty_hall_switch_probability:
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
-  -- Use extracted lemmas for numerator and denominator
-  rw [prob_car_middle_pick_left_host_right, prob_pick_left_host_right]
-  -- Direct computation: (2/18) / (1/6) = (2/18) * 6 = 12/18 = 2/3
-  rw [ennreal_div_eq]
-  norm_cast
-  -- rw [ennreal_div_eq]
-  simp [ennreal_div_inv]
-  rw [ennreal_div_eq]
-  norm_num
-  simp
-  simp
-  simp
-  simp
-
-  exact MeasurableSet.of_discrete
+  · rw [prob_car_middle_pick_left_host_right, prob_pick_left_host_right]
+    -- Use generic conditional probability pattern: (1/6)⁻¹ * (2/18) = 6 * (2/18) = 12/18 = 2/3
+    simp only [ennreal_inv_frac_mul_frac_general]
+    norm_num
+  · exact MeasurableSet.of_discrete
