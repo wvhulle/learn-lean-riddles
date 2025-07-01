@@ -1,7 +1,7 @@
-import RiddleProofs.MontyHall.Classic.Measure
-import RiddleProofs.MontyHall.Classic.Enumeration
+import RiddleProofs.MontyHall.Measure
+import RiddleProofs.MontyHall.Enumeration
 import RiddleProofs.MontyHall.Statement
-import RiddleProofs.MontyHall.Classic.Arithmetic
+import RiddleProofs.MontyHall.Arithmetic
 
 open ProbabilityTheory ENNReal Door
 
@@ -139,5 +139,5 @@ theorem monty_hall_switch_probability:
   · rw [prob_car_middle_pick_left_host_right]
     rw [prob_pick_left_host_right]
     simp
-    exact ennreal_mul_frac_simplify  (by norm_num) (by norm_num) (by norm_num)
+    exact ENNReal.mul_div_eq_div_of_mul_eq (by norm_num) (by norm_num) (by norm_num)
   · apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete

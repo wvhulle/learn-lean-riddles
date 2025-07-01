@@ -32,12 +32,4 @@ structure Game where
   host  : Door
   deriving DecidableEq, Repr, Fintype
 
-
--- Manual Fintype instance for Door
-instance : Fintype Door := {
-  elems := {Door.left, Door.middle, Door.right}
-  complete := fun x => by cases x <;> simp
-}
-
--- Nonempty instance needed for uniformOfFintype
 instance : Nonempty Door := ⟨Door.left⟩

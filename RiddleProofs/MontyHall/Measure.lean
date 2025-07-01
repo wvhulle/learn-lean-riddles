@@ -1,4 +1,4 @@
-import RiddleProofs.MontyHall.Classic.Enumeration
+import RiddleProofs.MontyHall.Enumeration
 import Mathlib.Data.Finset.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
