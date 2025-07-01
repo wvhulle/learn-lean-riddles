@@ -26,31 +26,68 @@ This workshop is suitable for everyone who:
 
 ## Installation
 
-You choose to use the online instance at [Lean Web Editor](https://live.lean-lang.org/) or you can install Lean locally on your computer.
+You can either use the online [Lean Web Editor](https://live.lean-lang.org/) or install Lean locally on your computer.
 
 ### Editor
 
-Unfortunately, there is not that much choice for Lean editors. The recommended editor is [Visual Studio Code](https://code.visualstudio.com/). Emacs and Vim are also supported, but the experience may be harder.
+The recommended editor is [Visual Studio Code](https://code.visualstudio.com/) with the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4). Emacs and Vim are also supported but may be more challenging for beginners.
 
-A linter is available for VS Code as a [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4) that provides syntax highlighting, code completion, and other features. There is no formatter for Lean code available yet.
+### Installing Lean locally
 
-### Installing toolchain
+For complete installation instructions, see the [official Lean installation guide](https://lean-lang.org/doc/reference/latest/Setup/#installation).
 
-If you have never used Lean before, you will have to install some system dependencies and tools to get started.
+Quick summary:
+1. **Windows users**: Use [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install)
+2. **All platforms**: Install [`elan`](https://github.com/leanprover/elan) to manage Lean toolchains
 
-For Windows users, it is recommended to use the [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install) to run Lean. This way, you can use the same commands as on Linux and macOS.
+```bash
+# Install elan (provides `lean` and `lake` commands)
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+```
 
-Install [`elan`](https://github.com/leanprover/elan), to manage Lean toolchains. It provides the `lean` and `lake` commands.
+## Managing Lean toolchain
 
-_Remark: Installing `elan` installs two executables. The executable `lake` has a similar role as cargo and `lean` is similar to `rustc`._
+### Check current version
+```bash
+lean --version
+elan show
+```
 
-### Mathlib
+### Update toolchain
+```bash
+# Update to latest stable
+elan update
 
-This is the de-facto standard library of Lean 4 and contains the official standard library as well.
+# Install specific version
+elan install leanprover/lean4:v4.22.0
+elan default leanprover/lean4:v4.22.0
+```
 
-To install Mathlib as a dependency to your current project, follow  the [Mathlib installation instructions](https://github.com/leanprover-community/mathlib4/wiki/Using-mathlib4-as-a-dependency).
+### Project-specific toolchain
 
-Inside the `lakefile.toml` file, add the following lines:
+The `lean-toolchain` file in your project root specifies which Lean version to use:
+
+```
+leanprover/lean4:v4.22.0-rc2
+```
+
+Toolchain management workflow:
+1. Check compatibility between your Lean version and Mathlib version
+2. Update gradually - don't jump multiple major versions at once
+3. Test after updates: run `lake build` to ensure everything still compiles
+4. Update cache: run `lake exe cache get` after toolchain changes
+
+When to update Lean:
+- When you need new language features
+- When Mathlib requires a newer version
+- For security updates (rare but important)
+- **Caution**: Major version updates may break existing code
+
+## Dependency management
+
+### Adding dependencies
+
+Mathlib is the de-facto standard library of Lean 4 and contains the official standard library as well. To add Mathlib as a dependency, add this to your `lakefile.toml`:
 
 ```toml
 [[require]]
@@ -58,41 +95,92 @@ name = "mathlib"
 scope = "leanprover-community"
 ```
 
-### Finding Lean packages
+Version pinning (optional):
 
-Search
+By default, Lake automatically selects a compatible Mathlib version. You can optionally pin to specific versions:
 
-https://reservoir.lean-lang.org/
+```toml
+# Option 1: Pin to a stable release (recommended for production)
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.9.1"
 
-### Download / update dependencies
+# Option 2: Pin to a specific commit (for exact reproducibility)
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "99042f33ebede3d0a9893f0e8021575d50c5354e"
 
+# Option 3: Use development branch (for latest features)
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "master"
+```
 
-Dependencies are installed and updated with:
+When to pin versions:
+- No pinning: Best for development with cutting-edge Lean versions (like this project)
+- Release tags: For stable projects that need tested, documented versions
+- Commit hashes: For published research or when exact reproducibility is critical
+
+Finding other packages: Search for additional Lean packages at [Reservoir](https://reservoir.lean-lang.org/).
+
+### Updating dependencies
 
 ```bash
+# Update all dependencies
+lake update
+
+# Update specific dependency
 lake update mathlib
 ```
 
-### LLM
+When to update:
+- After adding new dependencies to `lakefile.toml`
+- When you want the latest compatible versions
+- When switching Lean toolchain versions
 
+### Building and cache
+
+Getting Mathlib cache (recommended first step):
+```bash
+lake exe cache get
+```
+
+Important: `lake exe cache get` is only for Mathlib, not for other dependencies. This is a special tool provided by Mathlib to download pre-compiled binaries.
+
+Building from source:
+```bash
+# Build everything
+lake build
+
+# Build specific target
+lake build RiddleProofs
+```
+
+When to use cache vs build:
+- Always use cache first for Mathlib (saves 30-60 minutes)
+- Use cache after updating Mathlib dependency or when Mathlib files are compiling from scratch
+- Use build for your own code changes or other small dependencies
+- Why cache matters: Mathlib is huge (~1GB compiled), other packages compile quickly from source
+
+### LLM
 
 Install an extension in your editor that can do inference of strong LLM AI models:
 
 - [Continue](https://docs.continue.dev)
 - [Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
 
-Ideally, the extension should support 
-- edit / agent mode
-- custom MCP servers
-
+Ideally, the extension should support edit/agent mode and custom MCP servers.
 
 ### MCP server
 
-LLMs cannot see all proof context by default. For that, you need to install a local MCP server for the Lean language server (`lean-lsp`) and add it to the settings of your editor (see the installation instructions above).
+LLMs cannot see all proof context by default. For that, you need to install a local MCP server for the Lean language server (`lean-lsp`) and add it to the settings of your editor.
 
 #### Ubuntu / Fedora / etc.
 
-Install the MCP server from [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp/tree/main). Follow the project's instructions or use the `shell.nix` provided with this project to install it. You have to add it to your  user `settings.json` file in VS Code, so that the Lean language server can use it:
+Install the MCP server from [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp/tree/main). Follow the project's instructions or use the `shell.nix` provided with this project to install it. You have to add it to your user `settings.json` file in VS Code:
 
 ```json
 {
@@ -110,7 +198,6 @@ Install the MCP server from [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp
 #### NixOS
 
 In case you use the `shell.nix` file, you can instead use this setting in your workspace's `settings.json` file (already included in this project):
-
 
 ```json
 {
@@ -137,10 +224,9 @@ Or if you want it to happen automatically:
 direnv allow
 ```
 
-### Enable in VS Code
+#### Enable in VS Code
 
 Open the Copilot Chat sidebar and click on the "tools" icon on the bottom left. Scroll down and toggle the Lean MCP server that you added previously to the settings.
-
 
 ### Other tools
 
@@ -177,21 +263,7 @@ Extra dependencies, needed later on during development, will also be added to `l
 
 _Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
 
-
-### Building the project
-
-The fastest way to get started is probably to just download a pre-built cache
-
-```bash
-lake exe cache get
-```
-
-The first time you open the project, you might have to compile the project:
-
-```bash
-lake build
-```
-
+## Learning Resources
 
 ### Beginner documentation
 
@@ -380,3 +452,51 @@ If you are ready for it, continue with more challenging problems. Use the techni
 - Larger, older, well-known (solved) problems in mathematics: https://www.cs.ru.nl/~freek/100/
 - Solutions to recent International Mathematical Olympiad problems: https://dwrensha.github.io/compfiles/imo.html
 - Have a look at the [math index page](https://leanprover-community.github.io/mathlib-overview.html).
+
+### Troubleshooting dependencies
+
+Common issues and solutions:
+
+"Imports are out of date and must be rebuilt"
+```bash
+# Solution: Restart Lean language server or rebuild
+lake build
+# In VS Code: Ctrl+Shift+P → "Lean 4: Restart Server"
+```
+
+"Package configuration has errors"
+```bash
+# Solution: Check lakefile.toml syntax and update dependencies
+lake update
+```
+
+"Compilation takes forever"
+```bash
+# Solution: Use pre-built cache instead of compiling from scratch
+lake exe cache get
+```
+
+"Version conflicts between Lean and Mathlib"
+```bash
+# Solution: Either update Lean toolchain or pin compatible Mathlib version
+# Check https://github.com/leanprover-community/mathlib4/releases for compatibility
+```
+
+"Unknown package" errors
+```bash
+# Solution: Add missing dependency to lakefile.toml and update
+lake update
+```
+
+Best practices:
+
+1. Always use cache first: Run `lake exe cache get` before `lake build`
+2. Update incrementally: Update one dependency at a time to identify issues
+3. Keep toolchain stable: Don't update Lean unless necessary
+4. Pin versions for production: Use specific versions for published work
+5. Clean build when stuck: 
+   ```bash
+   lake clean
+   lake exe cache get
+   lake build
+   ```
