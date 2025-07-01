@@ -58,6 +58,12 @@ name = "mathlib"
 scope = "leanprover-community"
 ```
 
+### Finding Lean packages
+
+Search
+
+https://reservoir.lean-lang.org/
+
 ### Download / update dependencies
 
 
