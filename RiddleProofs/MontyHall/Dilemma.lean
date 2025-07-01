@@ -26,7 +26,7 @@ lemma prob_density_car_eq_pick (car pick host : Door) (h_eq : car = pick) (h_val
   unfold prob_density real_density
   rw [total_weight_value]
   unfold game_weight
-  simp [h_eq, h_valid.1, h_valid.2]
+  simp [h_eq, h_valid.1]
   norm_num
 
 lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_valid : host ≠ pick ∧ host ≠ car) :
@@ -68,7 +68,7 @@ lemma prob_pick_left_host_right :
   have h_filter_eq : {ω : Game | ω.pick = left ∧ ω.host = right} =
     ↑(game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right)) := by
       rw [← equivalence_game_repr]
-      ext ω; simp [Finset.mem_filter]
+      ext ω; simp
 
   rw [h_filter_eq, PMF.toMeasure_apply_finset]
   have h_filter_explicit :

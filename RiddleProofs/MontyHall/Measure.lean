@@ -25,7 +25,7 @@ instance measurableSpace : MeasurableSpace Game := ⊤
 
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
 
-def game_weight (ω : Game) : ℝ :=
+noncomputable def game_weight (ω : Game) : ℝ :=
   if ω.host = ω.pick then 0     -- Host never opens the picked door.
 
   else if ω.host = ω.car then 0 -- Host never opens the car door.
@@ -33,7 +33,7 @@ def game_weight (ω : Game) : ℝ :=
     if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
     else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
 
-def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
+noncomputable def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
 
 theorem total_weight_value: total_game_weights = 18 := by
   simp [total_game_weights, game_weight]
