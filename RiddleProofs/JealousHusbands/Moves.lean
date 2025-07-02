@@ -17,43 +17,12 @@ inductive Direction
 | toLeft   -- Moving from right to left
 deriving DecidableEq, Repr
 
-instance : ToString Direction where
-  toString
-  | .toRight => "R"
-  | .toLeft => "L"
-
 -- Move as a finite set of people with direction (at most 2, at least 1)
 structure Move where
   people : Finset Person
   direction : Direction
   valid_size : people.card ≤ 2 ∧ people.card > 0
 deriving DecidableEq
-
--- Clean display function that shows moves in our notation format
-def display_move (m : Move) : String :=
-  let people := m.people
-  let people_str :=
-    if Person.husband ⟨0, by decide⟩ ∈ people ∧ people.card = 1 then "H 0"
-    else if Person.husband ⟨1, by decide⟩ ∈ people ∧ people.card = 1 then "H 1"
-    else if Person.husband ⟨2, by decide⟩ ∈ people ∧ people.card = 1 then "H 2"
-    else if Person.wife ⟨0, by decide⟩ ∈ people ∧ people.card = 1 then "W 0"
-    else if Person.wife ⟨1, by decide⟩ ∈ people ∧ people.card = 1 then "W 1"
-    else if Person.wife ⟨2, by decide⟩ ∈ people ∧ people.card = 1 then "W 2"
-    else if people = {Person.husband ⟨0, by decide⟩, Person.wife ⟨0, by decide⟩} then "H 0, W 0"
-    else if people = {Person.husband ⟨1, by decide⟩, Person.wife ⟨1, by decide⟩} then "H 1, W 1"
-    else if people = {Person.husband ⟨2, by decide⟩, Person.wife ⟨2, by decide⟩} then "H 2, W 2"
-    else if people = {Person.husband ⟨0, by decide⟩, Person.husband ⟨1, by decide⟩} then "H 0, H 1"
-    else if people = {Person.husband ⟨0, by decide⟩, Person.husband ⟨2, by decide⟩} then "H 0, H 2"
-    else if people = {Person.husband ⟨1, by decide⟩, Person.husband ⟨2, by decide⟩} then "H 1, H 2"
-    else if people = {Person.wife ⟨0, by decide⟩, Person.wife ⟨1, by decide⟩} then "W 0, W 1"
-    else if people = {Person.wife ⟨0, by decide⟩, Person.wife ⟨2, by decide⟩} then "W 0, W 2"
-    else if people = {Person.wife ⟨1, by decide⟩, Person.wife ⟨2, by decide⟩} then "W 1, W 2"
-    else "?"
-  (toString m.direction) ++ " {" ++ people_str ++ "}"
-
--- Display function for lists of moves
-def display_moves (moves : List Move) : List String :=
-  moves.map display_move
 
 
 namespace Move
@@ -67,22 +36,6 @@ def pair (p1 p2 : Person) (dir : Direction) (h : p1 ≠ p2) : Move :=
     constructor
     · simp [Finset.card_pair h]
     · simp [Finset.card_pair h]⟩
-
--- Convenience constructors for the original move types with direction
-def single_husband (i : Fin num_couples) (dir : Direction) : Move :=
-  single (Person.husband i) dir
-
-def single_wife (i : Fin num_couples) (dir : Direction) : Move :=
-  single (Person.wife i) dir
-
-def two_husbands (i j : Fin num_couples) (dir : Direction) (h : i ≠ j) : Move :=
-  pair (Person.husband i) (Person.husband j) dir (by simp [h])
-
-def two_wives (i j : Fin num_couples) (dir : Direction) (h : i ≠ j) : Move :=
-  pair (Person.wife i) (Person.wife j) dir (by simp [h])
-
-def married_couple (i : Fin num_couples) (dir : Direction) : Move :=
-  pair (Person.husband i) (Person.wife i) dir (by simp)
 
 end Move
 
@@ -146,19 +99,12 @@ def simple_move_valid (m : Move) (s : State) : Bool :=
 
   -- For exactly 2 people, check if it's a valid pairing
   let pair_valid := if people.card = 2 then
-    -- Check all valid 2-person combinations using explicit sets
-    let valid_pairs := [
-      {Person.husband ⟨0, by decide⟩, Person.wife ⟨0, by decide⟩},      -- couple 0
-      {Person.husband ⟨1, by decide⟩, Person.wife ⟨1, by decide⟩},      -- couple 1
-      {Person.husband ⟨2, by decide⟩, Person.wife ⟨2, by decide⟩},      -- couple 2
-      {Person.husband ⟨0, by decide⟩, Person.husband ⟨1, by decide⟩},   -- husbands 0,1
-      {Person.husband ⟨0, by decide⟩, Person.husband ⟨2, by decide⟩},   -- husbands 0,2
-      {Person.husband ⟨1, by decide⟩, Person.husband ⟨2, by decide⟩},   -- husbands 1,2
-      {Person.wife ⟨0, by decide⟩, Person.wife ⟨1, by decide⟩},         -- wives 0,1
-      {Person.wife ⟨0, by decide⟩, Person.wife ⟨2, by decide⟩},         -- wives 0,2
-      {Person.wife ⟨1, by decide⟩, Person.wife ⟨2, by decide⟩}          -- wives 1,2
-    ]
-    valid_pairs.any (· = people)
+    -- Valid pairs: married couples or same-gender pairs
+    -- Check if it's a couple (same couple_id) or same gender
+    all_people.any (fun p1 =>
+      all_people.any (fun p2 =>
+        p1 ≠ p2 && people = {p1, p2} &&
+        (p1.couple_id = p2.couple_id || (p1.is_husband && p2.is_husband) || (p1.is_wife && p2.is_wife))))
   else true
 
   all_on_boat && pair_valid
@@ -185,22 +131,35 @@ def generate_valid_moves (s : State) : List Move :=
   -- Determine direction based on boat position
   let direction := if s.boat == RiverBank.left then Direction.toRight else Direction.toLeft
 
-  -- Single moves - using List.flatMap with modern lambda syntax
+  -- Single moves - using clean notation
   let single_moves :=
     couples.flatMap fun i =>
-      [Move.single_husband i direction, Move.single_wife i direction]
+      if direction == Direction.toRight then
+        [R {Person.husband i}, R {Person.wife i}]
+      else
+        [L {Person.husband i}, L {Person.wife i}]
 
-  -- Pair moves - using more efficient nested iteration with simplified proofs
+  -- Pair moves - using clean notation with explicit proofs
   let pair_moves :=
     couples.flatMap fun i =>
       couples.flatMap fun j =>
-        if h : i.val < j.val then  -- More explicit comparison
-          [Move.two_husbands i j direction (Fin.ne_of_lt h),
-           Move.two_wives i j direction (Fin.ne_of_lt h)]
+        if h : i.val < j.val then
+          let ne_proof : i ≠ j := Fin.ne_of_lt h
+          if direction == Direction.toRight then
+            [Move.pair (Person.husband i) (Person.husband j) Direction.toRight (by simp [ne_proof]),
+             Move.pair (Person.wife i) (Person.wife j) Direction.toRight (by simp [ne_proof])]
+          else
+            [Move.pair (Person.husband i) (Person.husband j) Direction.toLeft (by simp [ne_proof]),
+             Move.pair (Person.wife i) (Person.wife j) Direction.toLeft (by simp [ne_proof])]
         else []
 
-  -- Couple moves - direct mapping with modern syntax
-  let couple_moves := couples.map (Move.married_couple · direction)
+  -- Couple moves - using clean notation
+  let couple_moves :=
+    couples.map fun i =>
+      if direction == Direction.toRight then
+        R {Person.husband i, Person.wife i}
+      else
+        L {Person.husband i, Person.wife i}
 
   -- Filter using modern syntax and better composition
   (single_moves ++ pair_moves ++ couple_moves).filter (simple_move_valid · s)

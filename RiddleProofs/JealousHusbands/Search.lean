@@ -36,9 +36,4 @@ def search_solution : Option (List Move) := solve_with_bfs 15
 -- The search solution is correct by construction (axiom for now)
 axiom search_solution_correct: ∀ sol, search_solution = some sol → validate_solution sol = true
 
-
-
-
--- #eval search_solution
--- Display the search solution nicely
-#eval search_solution.map display_moves
+-- #reduce search_solution
