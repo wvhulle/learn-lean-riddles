@@ -12,11 +12,12 @@ Can they all get across safely?
 
 def num_mathematicians: Nat := 3
 
+namespace JealousMathematician
+
 inductive RiverBank
 | left
 | right
 deriving DecidableEq, Repr, Inhabited
-
 
 open RiverBank
 
@@ -43,7 +44,6 @@ Whether a property is decidable depends on how it is defined. If it is built fro
 instance : DecidablePred no_notebook_left_behind := by
   unfold no_notebook_left_behind
   infer_instance
--- unfold ...; infer_instance works if and only if the unfolded definition is built from decidable pieces and quantifies only over finite/enumerable types.
 
 -- Initial state: everyone and everything on the left bank
 def initial_state : State :=
@@ -95,8 +95,8 @@ section Solution
 **Warning!**: Do not read this section before you have made a few attempts.
  -/
 
-def n_transfers : Nat := 11
-def n_states := n_transfers + 1
+private def n_transfers : Nat := 11
+private def n_states := n_transfers + 1
 
 /-
 ## Obtaining solution
@@ -180,3 +180,5 @@ If you prefer a manual approach, you can use a more verbose forward or backward 
 
 theorem all_states_safe : ∀ i : Fin n_states, no_notebook_left_behind (intermediate_states  i) := by
   decide
+
+end JealousMathematician

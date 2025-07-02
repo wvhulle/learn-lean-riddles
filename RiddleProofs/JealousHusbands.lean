@@ -2,3 +2,4 @@ import RiddleProofs.JealousHusbands.Statement
 import RiddleProofs.JealousHusbands.Moves
 import RiddleProofs.JealousHusbands.Search
 import RiddleProofs.JealousHusbands.Solution
+import RiddleProofs.JealousHusbands.JealousMathematician
