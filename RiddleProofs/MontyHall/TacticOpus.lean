@@ -52,6 +52,19 @@ macro_rules
   | (rw [← Nat.cast_pow]; simp [pow_zero, pow_one])
 )
 
+/-- Handle positivity hypotheses: convert 0 < a to a ≠ 0 -/
+syntax "ennreal_positivity" : tactic
+
+macro_rules
+| `(tactic| ennreal_positivity) => `(tactic| first
+  | simp [ne_of_gt]
+  | simp [ne_of_gt]; simp_all
+  | (apply ne_of_gt; assumption)
+  | (exact ne_of_gt (by assumption))
+  | linarith
+  | omega
+)
+
 /-- Handle multiplication cancellation: a * b / b = a -/
 syntax "ennreal_mul_cancel" : tactic
 
@@ -74,28 +87,55 @@ syntax "ennreal_div_cancel" : tactic
 
 macro_rules
 | `(tactic| ennreal_div_cancel) => `(tactic| first
+  -- EXACT PATTERN from ennreal_div_cancel_mul manual proof: ↑(a * c) / ↑(b * c) = ↑a / ↑b with hc : c ≠ 0
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; exact Nat.cast_ne_zero.mpr ‹_›; exact ENNReal.natCast_ne_top _)
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; apply Nat.cast_ne_zero.mpr; assumption; exact ENNReal.natCast_ne_top _)
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; exact Nat.cast_ne_zero.mpr (by assumption); exact ENNReal.natCast_ne_top _)
+
+  -- NEW: Handle the pre-simplified case ↑a * ↑c / (↑b * ↑c) = ↑a / ↑b directly
+  | (apply ENNReal.mul_div_mul_right; exact Nat.cast_ne_zero.mpr ‹_›; exact ENNReal.natCast_ne_top _)
+  | (apply ENNReal.mul_div_mul_right; exact Nat.cast_ne_zero.mpr (by assumption); exact ENNReal.natCast_ne_top _)
+
+  -- EXACT PATTERN from manual proof discovery: ↑(a * c) / ↑(b * c) = ↑a / ↑b with 0 < c
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; exact Nat.cast_ne_zero.mpr (ne_of_gt (by assumption)); exact ENNReal.natCast_ne_top _)
+
+  -- Handle case where hypothesis is directly available in context as c ≠ 0
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; exact Nat.cast_ne_zero.mpr (by assumption); exact ENNReal.natCast_ne_top _)
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; simp [Nat.cast_ne_zero]; exact ENNReal.natCast_ne_top _)
+
+  -- KEY PATTERN: Handle ↑(a * c) / ↑(b * c) = ↑a / ↑b with positivity hypothesis 0 < c
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; exact ne_of_gt (by assumption); simp [ENNReal.natCast_ne_top])
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_left; exact ne_of_gt (by assumption); simp [ENNReal.natCast_ne_top])
+  | (rw [Nat.cast_mul, Nat.cast_mul]; apply ENNReal.mul_div_mul_right; exact ne_of_gt (by assumption); simp [ENNReal.natCast_ne_top])
+  | (rw [Nat.cast_mul, Nat.cast_mul]; apply ENNReal.mul_div_mul_left; exact ne_of_gt (by assumption); simp [ENNReal.natCast_ne_top])
+
+  -- Handle case where hypothesis is directly available in context as c ≠ 0
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; assumption; simp [ENNReal.natCast_ne_top])
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_left; assumption; simp [ENNReal.natCast_ne_top])
+  | (rw [Nat.cast_mul, Nat.cast_mul]; apply ENNReal.mul_div_mul_right; assumption; simp [ENNReal.natCast_ne_top])
+  | (rw [Nat.cast_mul, Nat.cast_mul]; apply ENNReal.mul_div_mul_left; assumption; simp [ENNReal.natCast_ne_top])
+
   -- Direct patterns for ↑a * ↑c / (↑b * ↑c) = ↑a / ↑b (most common case)
   | (apply ENNReal.mul_div_mul_right; simp [Nat.cast_ne_zero]; simp_all; simp [ENNReal.natCast_ne_top])
   | (apply ENNReal.mul_div_mul_left; simp [Nat.cast_ne_zero]; simp_all; simp [ENNReal.natCast_ne_top])
   | (apply ENNReal.mul_div_mul_right <;> simp_all [ENNReal.natCast_ne_top, Nat.cast_ne_zero])
   | (apply ENNReal.mul_div_mul_left <;> simp_all [ENNReal.natCast_ne_top, Nat.cast_ne_zero])
 
-  -- Handle ↑(a * c) / ↑(b * c) = ↑a / ↑b pattern (with cast simplification)
+  -- Handle more complex positivity patterns
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; apply ne_of_gt; assumption; simp [ENNReal.natCast_ne_top])
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_left; simp [ne_of_gt]; simp [ENNReal.natCast_ne_top])
   | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right <;> simp_all [ENNReal.natCast_ne_top])
   | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_left <;> simp_all [ENNReal.natCast_ne_top])
 
-  -- Handle case with positivity hypothesis: 0 < c gives us c ≠ 0
+  -- Omega and linarith based patterns
   | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; simp [Nat.cast_ne_zero]; omega; simp [ENNReal.natCast_ne_top])
   | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; linarith; simp [ENNReal.natCast_ne_top])
-  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; simp_all [ne_of_gt]; simp [ENNReal.natCast_ne_top])
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_right; omega; simp [ENNReal.natCast_ne_top])
+  | (simp only [Nat.cast_mul]; apply ENNReal.mul_div_mul_left; omega; simp [ENNReal.natCast_ne_top])
 
   -- Direct application with hypotheses available in context
   | (apply ENNReal.mul_div_mul_right; simp [*]; simp [ENNReal.natCast_ne_top])
   | (apply ENNReal.mul_div_mul_left; simp [*]; simp [ENNReal.natCast_ne_top])
-
-  -- Handle multiplication cancellation patterns: (a * c) / (b * c) = a / b
-  | (rw [Nat.cast_mul, Nat.cast_mul]; apply ENNReal.mul_div_mul_right <;> simp_all [ENNReal.natCast_ne_top])
-  | (rw [Nat.cast_mul, Nat.cast_mul]; apply ENNReal.mul_div_mul_left <;> simp_all [ENNReal.natCast_ne_top])
 
   -- Handle patterns like ↑a * ↑c / (↑b * ↑c) = ↑a / ↑b with rearrangement
   | (rw [← Nat.cast_mul, ← Nat.cast_mul]; apply ENNReal.mul_div_mul_right <;> simp_all [ENNReal.natCast_ne_top])
@@ -151,23 +191,53 @@ macro_rules
 )
 
 -- =============================================================================
--- MAIN REFACTORED TACTIC
+-- SMART HEURISTIC-BASED MAIN TACTIC
 -- =============================================================================
 
-/-- Main tactic for ENNReal arithmetic - now organized into focused sub-tactics -/
+/-- Main tactic for ENNReal arithmetic with intelligent sub-tactic selection -/
 syntax "ennreal_arith" : tactic
 
 macro_rules
 | `(tactic| ennreal_arith) => `(tactic| first
-  | ennreal_div_self    -- Division by self patterns (must be very early!)
-  | ennreal_div_cancel  -- Division cancellation patterns (before basic!)
-  | ennreal_mul_cancel  -- Multiplication cancellation
-  | ennreal_reciprocal  -- Reciprocal multiplication
-  | ennreal_basic       -- Handle simple cases (simp might consume too much)
-  | ennreal_cast        -- Basic casting patterns
-  | ennreal_real        -- Real conversion patterns
-  | ennreal_field       -- Field simplification
-  | ennreal_fallback    -- General fallbacks
+  -- PRIORITY 1: Division cancellation (most complex, should be tried first)
+  -- Handles: ↑(a * c) / ↑(b * c) = ↑a / ↑b and ↑a * ↑c / (↑b * ↑c) = ↑a / ↑b
+  | ennreal_div_cancel
+
+  -- PRIORITY 2: Division by self (a / a = 1)
+  -- Must come before basic simp which might interfere
+  | ennreal_div_self
+
+  -- PRIORITY 3: Multiplication cancellation (a * b / b = a)
+  -- Common pattern that needs specific handling
+  | ennreal_mul_cancel
+
+  -- PRIORITY 4: Reciprocal patterns (1 / a * a = 1)
+  -- Specific pattern that needs early handling
+  | ennreal_reciprocal
+
+  -- PRIORITY 5: Real conversions (toReal/ofReal)
+  -- Specific domain conversions
+  | ennreal_real
+
+  -- PRIORITY 6: Casting preservation (↑(a + b) = ↑a + ↑b)
+  -- Basic casting operations
+  | ennreal_cast
+
+  -- PRIORITY 7: Field operations (complex algebraic simplification)
+  -- For more sophisticated algebraic manipulations
+  | ennreal_field
+
+  -- PRIORITY 8: Basic operations (simple simp cases)
+  -- General simplification that works for many cases
+  | ennreal_basic
+
+  -- PRIORITY 9: Positivity handling (convert 0 < a to a ≠ 0)
+  -- Only after other patterns have been tried to avoid interference
+  | ennreal_positivity
+
+  -- PRIORITY 10: General fallbacks (last resort)
+  -- When all else fails
+  | ennreal_fallback
 )
 
 
@@ -318,15 +388,33 @@ lemma ennreal_div_same {a : ℕ} (ha : a ≠ 0) : (↑a : ENNReal) / ↑a = 1 :=
 lemma ennreal_div_cancel_mul {a b c : ℕ} (hc : c ≠ 0) : (↑(a * c) : ENNReal) / (↑(b * c)) = (↑a) / (↑b) := by
   ennreal_arith
 
+
+-- Test the exact same pattern but with c ≠ 0 hypothesis to debug tactic
+lemma test_div_cancel_with_ne_zero {a b c : ℕ} (hc : c ≠ 0) : (↑(a * c) : ENNReal) / (↑(b * c)) = (↑a) / (↑b) := by
+  ennreal_arith
+
+
 -- =============================================================================
 -- LEVEL 11: RECIPROCAL MULTIPLICATION (requires manual proofs)
 -- =============================================================================
 
 lemma ennreal_one_div_self {a : ℕ} (ha : a ≠ 0) : (1 / (↑a : ENNReal)) * ↑a = 1 := by
-  have h : (↑a : ENNReal) ≠ 0 := by simp [ha]
-  have h' : (↑a : ENNReal) ≠ ⊤ := ENNReal.coe_ne_top
   rw [one_div]
-  exact ENNReal.inv_mul_cancel h h'
+  exact ENNReal.inv_mul_cancel (Nat.cast_ne_zero.mpr ha) (ENNReal.natCast_ne_top a)
+
+
+-- =============================================================================
+-- LEVEL 12: ARITHMETIC.LEAN PATTERNS - Test case 1
+-- =============================================================================
+
+-- Test: ENNReal.div_mul_cancel_nat_cast pattern with positivity hypothesis
+lemma test_div_mul_cancel_nat_cast {a b c : ℕ} (hc_pos : 0 < c) :
+  (↑(a * c) : ENNReal) / (↑(b * c)) = (↑a) / (↑b) := by
+  simp only [Nat.cast_mul]
+  apply ENNReal.mul_div_mul_right
+  · exact Nat.cast_ne_zero.mpr (ne_of_gt hc_pos)
+  · exact ENNReal.natCast_ne_top c
+
 
 
 

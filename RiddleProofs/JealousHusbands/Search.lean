@@ -29,22 +29,11 @@ partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
 -- Main solution function
 def search_solution : Option (List Move) := solve_with_bfs 15
 
+-- #eval search_solution
 
--- The solution to the problem
-def solution : List Move := optimal_solution
 
--- Get solution from search if preferred
-def search_based_solution : Option (List Move) := search_solution
-
--- Choose the best available solution (prefer search result if valid, otherwise use known solution)
-def best_solution : List Move :=
-  match search_based_solution with
-  | some moves => if validate_solution moves then moves else solution
-  | none => solution
-
--- Verify the solution is correct
-theorem solution_correct : validate_solution solution = true := by
-  decide
+theorem search_solution_correct: validate_solution search_solution.get! = true := by
+  native_decide
 
 
 -- Convert simple solution to readable format
@@ -59,10 +48,8 @@ def format_simple_solution (moves : List Move) : List String :=
 
 -- Display the complete solution step by step
 def display_solution : List String :=
-  [s!"Jealous Husbands Problem - Solution ({best_solution.length} moves):"] ++
-  format_simple_solution best_solution
+  [s!"Jealous Husbands Problem - Solution ({search_solution.get!.length} moves):"] ++
+  format_simple_solution search_solution.get!
 
--- The final answer
-def solve_jealous_husbands : List String := display_solution
 
 -- #eval display_solution

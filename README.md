@@ -165,72 +165,6 @@ When to use cache vs build:
 - Use build for your own code changes or other small dependencies
 - Why cache matters: Mathlib is huge (~1GB compiled), other packages compile quickly from source
 
-### LLM
-
-Install an extension in your editor that can do inference of strong LLM AI models:
-
-- [Continue](https://docs.continue.dev)
-- [Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
-
-Ideally, the extension should support edit/agent mode and custom MCP servers.
-
-### MCP server
-
-LLMs cannot see all proof context by default. For that, you need to install a local MCP server for the Lean language server (`lean-lsp`) and add it to the settings of your editor.
-
-#### Ubuntu / Fedora / etc.
-
-Install the MCP server from [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp/tree/main). Follow the project's instructions or use the `shell.nix` provided with this project to install it. You have to add it to your user `settings.json` file in VS Code:
-
-```json
-{
-    "mcp": {
-        "servers": {
-            "lean-lsp": {
-                "command": "uvx",
-                "args": ["lean-lsp-mcp"],
-            }
-        }
-    }
-}
-```
-
-#### NixOS
-
-In case you use the `shell.nix` file, you can instead use this setting in your workspace's `settings.json` file (already included in this project):
-
-```json
-{
-    "mcp": {
-        "servers": {
-            "lean-lsp": {
-                "command": "lean-lsp-mcp",
-            }
-        }
-    }
-}
-```
-
-For VS Code to discover this binary, you have to launch VS Code from the shell where you have installed the MCP server. 
-
-```bash
-nix-shell
-code .
-```
-
-Or if you want it to happen automatically:
-
-```bash
-direnv allow
-```
-
-#### Enable in VS Code
-
-Open the Copilot Chat sidebar and click on the "tools" icon on the bottom left. Scroll down and toggle the Lean MCP server that you added previously to the settings.
-
-### Other tools
-
-To be able to let LLMs search online, you have install an extension in VS Code: `ms-vscode.vscode-websearchforcopilot`. Enable it in the context settings.
 
 
 ## Getting started
@@ -353,26 +287,6 @@ import Mathlib.Tactic.FindSyntax
 
 
 
-### Cloud LLM inference
-
-Any LLM will fail when you provide too much context. Ideally, you should select fewer than 5 problematic Lean source code lines before you start any LLM in agentic coding mode. Errors that cover more than 10 source code lines will easily confuse the LLM and time-out or give up after > 10 frustrating minutes.
-
-- The free included LLM GPT-4.1 can be used in agentic mode and may come up with creative solutions quickly (in case it uses the MCP server). 
-- Claude 4 is not completely free, but seems to be the best at agentic coding on Lean4 code, because it has a slightly deeper understanding of the APIs (and more consistently queries the MCP server). Claude does not have streaming output, so it might seem to hang. 
-- Gemini 2.5 Pro is quite smart given the right context. However, it is often slow and does not use the provided MCP server for Lean.
-
-Have a look at [Vellum](https://www.vellum.ai/llm-leaderboard#) for more models. 
-
-### Local inference
-
-Local LLMs such LLama 3.2 hosted by `ollama` can also be used, but they are not as powerful as the cloud-based LLMs and cannot be used in "agent mode" or with an MCP server. You might have to fine-tune them on Lean code to get better results.
-
-_Remark: To build a local fine-tuned Lean model, you need to start from a popular open model like LLama 3.2. First, you have to create good dataset with any language. Training / fine-tuning can only be done in Python and using a fine-tuning framework like [Unsloth](https://unsloth.ai/). Afterwards you can do inference with any inference engine._
-
-### Injecting prompts 
-
-When you use LLMs and repeat yourself often, you can add global or (workspace-local) prompts in VS Code for GitHub Copilot Chat inside [`.github/prompts`](./github/prompts). Search for the command `Chat: new prompt file` in the command palette (`Ctrl + Shift + P`). A few useful prompts were already added to this project as examples.
-
 ## Mathematics
 
 Lean is not only a powerful functional programming language, but is also known for being a flexible proof assistant. It has helped thousands of mathematicians worldwide to formalize starter up-to research-level mathematics.
@@ -453,50 +367,88 @@ If you are ready for it, continue with more challenging problems. Use the techni
 - Solutions to recent International Mathematical Olympiad problems: https://dwrensha.github.io/compfiles/imo.html
 - Have a look at the [math index page](https://leanprover-community.github.io/mathlib-overview.html).
 
-### Troubleshooting dependencies
 
-Common issues and solutions:
 
-"Imports are out of date and must be rebuilt"
-```bash
-# Solution: Restart Lean language server or rebuild
-lake build
-# In VS Code: Ctrl+Shift+P → "Lean 4: Restart Server"
+
+## Lean and AI
+
+
+### Install extension
+
+Install an extension in your editor that can do inference of strong LLM AI models:
+
+- [Continue](https://docs.continue.dev)
+- [Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
+
+To be able to let LLMs search online from Copilot Chat, you have install an extension in VS Code: `ms-vscode.vscode-websearchforcopilot`. Enable it in the context settings.
+
+Ideally, the extension should support edit/agent mode and custom MCP servers.
+
+
+### MCP server
+
+LLMs cannot see all proof context by default. For that, you need to install a local MCP server for the Lean language server (`lean-lsp`) and add it to the settings of your editor.
+
+#### Ubuntu / Fedora / etc.
+
+Install the MCP server from [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp/tree/main). Follow the project's instructions or use the `shell.nix` provided with this project to install it. You have to add it to your user `settings.json` file in VS Code:
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "lean-lsp": {
+                "command": "uvx",
+                "args": ["lean-lsp-mcp"],
+            }
+        }
+    }
+}
 ```
 
-"Package configuration has errors"
-```bash
-# Solution: Check lakefile.toml syntax and update dependencies
-lake update
+#### NixOS
+
+In case you use the `shell.nix` file, you can instead use this setting in your workspace's `settings.json` file (already included in this project):
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "lean-lsp": {
+                "command": "lean-lsp-mcp",
+            }
+        }
+    }
+}
 ```
 
-"Compilation takes forever"
+For VS Code to discover this binary, you have to launch VS Code from the shell where you have installed the MCP server. 
+
 ```bash
-# Solution: Use pre-built cache instead of compiling from scratch
-lake exe cache get
+nix-shell
+code .
 ```
 
-"Version conflicts between Lean and Mathlib"
+Or if you want it to happen automatically:
+
 ```bash
-# Solution: Either update Lean toolchain or pin compatible Mathlib version
-# Check https://github.com/leanprover-community/mathlib4/releases for compatibility
-```
+direnv allow
+``` 
 
-"Unknown package" errors
-```bash
-# Solution: Add missing dependency to lakefile.toml and update
-lake update
-```
+### Usage
 
-Best practices:
+The easiest way to use AI in Lean is to use [Copilot Chat](https://github.com/features/copilot). Install the extension in VS Code and click on the icon next to the search bar on the top of the window. On the right appears a sidebar with a chat interface. You can ask questions about Lean code, Mathlib, or even ask it to write code for you.  
 
-1. Always use cache first: Run `lake exe cache get` before `lake build`
-2. Update incrementally: Update one dependency at a time to identify issues
-3. Keep toolchain stable: Don't update Lean unless necessary
-4. Pin versions for production: Use specific versions for published work
-5. Clean build when stuck: 
-   ```bash
-   lake clean
-   lake exe cache get
-   lake build
-   ```
+Switch the mode from "Ask" to "Agent". Select Claude Sonnet 4 from the model selection menu. Claude 4 is not completely free, but seems to be the best at agentic coding on Lean4 code, because it has a slightly deeper understanding of the APIs and respects context such as MCP or system prompts better.
+
+
+Now you can select parts of your Lean code that are incomplete or problematic, and ask the LLM to fix them. Any LLM will fail when you provide too much context. Ideally, you should select fewer than 5 problematic Lean source code lines before you start any LLM in agentic coding mode. Errors that cover more than 10 source code lines will easily confuse the LLM and time-out or give up after > 10 frustrating minutes.
+
+As you go along, you will notice quirks and undesirable behaviour of the LLM. You can fix this by providing the right context. Adjust the instructions in [`.github/copilot-instructions.md`](.github/copilot-instructions.md). These instructions will be passed to every conversation with any LLM using Copilot Chat. You should also make sure the MCP server for Lean is configured. Click on the "tools" icon on the bottom left. Scroll down and toggle the Lean MCP server that you added previously to the settings. 
+
+### Explore models
+
+If you want to try another model than Claude 4, you should have a look at the [Vellum leaderboard](https://www.vellum.ai/llm-leaderboard#) for more models. It is also recommended to create an account on OpenRouter, and configure OpenRouter as an LLM inference provider in VS Code. Local LLMs such LLama 3.2 hosted by `ollama` can also be used, but they are not as powerful as the cloud-based LLMs. You have to check whether the local LLM supports function / tool calling or MCP servers. You might have to fine-tune a local model on Lean code to get better results (using Unsloth).
+
+
+

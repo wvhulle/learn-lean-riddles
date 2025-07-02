@@ -3,6 +3,7 @@
 ## General Principles
 - Never replace a working, type-checked proof with `sorry`.
 - Avoid sketching proofs in comments. Instead, prioritize proving smaller, initial lemmas. Writing comments instead of code is not helpful.
+- When you receive an error message like "Sorry, your request failed. Please try again.", you should try to query again.
 
 ## Lean/Mathlib Strategy
 - The primary source for definitions and theorems is the `mathlib4` library.
@@ -10,7 +11,7 @@
   - **Loogle:** [https://loogle.lean-lang.org/](https://loogle.lean-lang.org/) (paste the goal's shape)
   - **LeanExplore:** [https://www.leanexplore.com/](https://www.leanexplore.com/) (for broader searches)
 
-## Tool Usage
+## Tool Usage 
 
 ### `simp` Tactic
 - Use the `simp` tactic to automate low-level arithmetic and casting steps.
