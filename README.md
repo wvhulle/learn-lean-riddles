@@ -368,7 +368,7 @@ If you are ready for it, continue with more challenging problems. Use the techni
 - Have a look at the [math index page](https://leanprover-community.github.io/mathlib-overview.html).
 
 
-
+Also have a look at project Euler.
 
 ## Lean and AI
 
