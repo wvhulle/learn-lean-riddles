@@ -1,3 +1,7 @@
 import RiddleProofs.BlueEyedIslanders
 import RiddleProofs.JealousMathematician
 import RiddleProofs.MontyHall
+import RiddleProofs.BirthdayProblem
+import RiddleProofs.FibonacciNumbers
+import RiddleProofs.PerfectNumbers
+import RiddleProofs.DigitalRoot
