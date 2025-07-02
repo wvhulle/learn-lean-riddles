@@ -10,4 +10,5 @@
     "lean4.automaticallyBuildDependencies": true,
     "terminal.integrated.defaultProfile.linux": "bash",
     "explorer.excludeGitIgnore": true,
+    "github.copilot.chat.useProjectTemplates": false,
 }

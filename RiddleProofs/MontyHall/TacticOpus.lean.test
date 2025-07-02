@@ -1,0 +1,23 @@
+import Mathlib.Data.ENNReal.Basic
+import Mathlib.Data.ENNReal.Real
+import Mathlib.Data.ENNReal.Inv
+
+open ENNReal
+
+-- Test exactly what should work
+example {a b c : ℕ} (hc : c ≠ 0) : (↑(a * c) : ENNReal) / (↑(b * c)) = (↑a) / (↑b) := by
+  rw [Nat.cast_mul, Nat.cast_mul] 
+  -- Goal is now: ↑a * ↑c / (↑b * ↑c) = ↑a / ↑b
+  apply ENNReal.mul_div_mul_right
+  · norm_cast
+    exact hc
+  · exact ENNReal.natCast_ne_top _
+
+-- Let's also test the left version
+example {a b c : ℕ} (hc : c ≠ 0) : (↑(a * c) : ENNReal) / (↑(c * b)) = (↑a) / (↑b) := by
+  rw [Nat.cast_mul, Nat.cast_mul]
+  -- Goal is now: ↑a * ↑c / (↑c * ↑b) = ↑a / ↑b  
+  apply ENNReal.mul_div_mul_left
+  · exact ENNReal.natCast_ne_top _
+  · norm_cast
+    exact hc
