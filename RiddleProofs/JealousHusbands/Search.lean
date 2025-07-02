@@ -30,10 +30,9 @@ partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
 
   bfs [(initial_state, [])] []
 
--- Main solution function
 def search_solution : Option (List Move) := solve_with_bfs 15
 
--- The search solution is correct by construction (axiom for now)
 axiom search_solution_correct: ∀ sol, search_solution = some sol → validate_solution sol = true
 
+-- Uncomment to see an internal representation of the solution found
 -- #reduce search_solution

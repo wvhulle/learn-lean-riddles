@@ -4,34 +4,16 @@ import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 open MeasureTheory Door
 
-/-
-**The Solution**
-
-Yes. Switching doors doubles your probability of winning the car from 1/3 to 2/3. This proof demonstrates this result using probability theory.
-
-**The Key Insight**
-
-The probability model assigns different weights to different game scenarios:
-- When contestant picks correctly (car=pick): weight = 1 (host has 2 doors to choose from)
-- When contestant picks incorrectly (car≠pick): weight = 2 (host is forced to open specific door)
-
-This weighting reflects the host's constraint: the host must always open a door with a goat.
-
-See also: https://en.wikipedia.org/wiki/Monty_Hall_problem
--/
-
-
 instance measurableSpace : MeasurableSpace Game := ⊤
 
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
 
 noncomputable def game_weight (ω : Game) : ℝ :=
-  if ω.host = ω.pick then 0     -- Host never opens the picked door.
-
-  else if ω.host = ω.car then 0 -- Host never opens the car door.
+  if ω.host = ω.pick then 0
+  else if ω.host = ω.car then 0
   else
-    if ω.car = ω.pick then 1    -- Contestant chose the car. Host chooses from 2 doors.
-    else 2                      -- Contestant chose a goat. Host is forced to open the only other goat door.
+    if ω.car = ω.pick then 1
+    else 2
 
 noncomputable def total_game_weights : ℝ := ∑ ω : Game, game_weight ω
 

@@ -2,7 +2,6 @@ import RiddleProofs.MontyHall.Statement
 
 open Door
 
--- Extensionality for Game
 @[ext]
 theorem Game.ext {g₁ g₂ : Game} : g₁.car = g₂.car → g₁.pick = g₂.pick → g₁.host = g₂.host → g₁ = g₂ := by
   intro h₁ h₂ h₃

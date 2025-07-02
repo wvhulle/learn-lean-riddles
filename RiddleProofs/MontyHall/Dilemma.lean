@@ -36,28 +36,23 @@ lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_v
   unfold game_weight
   simp [h_ne, h_valid.1, h_valid.2]
 
--- When car = pick (staying wins): probability density = 1/18 (weight 1, divided by total weight 18)
 lemma prob_density_left_left_right :
   prob_density {car := left, pick := left, host := right} = (1 : ENNReal) / 18 := by
   apply prob_density_car_eq_pick
   · rfl
   · simp
 
--- When car ≠ pick (switching wins): probability density = 2/18 (weight 2, divided by total weight 18)
 lemma prob_density_middle_left_right :
   prob_density {car := middle, pick := left, host := right} = (2 : ENNReal) / 18 := by
   apply prob_density_car_ne_pick
   · simp
   · simp
 
--- When host opens car door: impossible (probability density = 0)
 lemma prob_density_right_left_right :
   prob_density {car := right, pick := left, host := right} = 0 := by
   unfold prob_density real_density game_weight
   simp
 
--- Common denominator lemma: P(pick=left ∩ host=right) = 1/6
--- This represents the total probability of the conditioning event across all car positions
 lemma prob_pick_left_host_right :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}) = 1/6 := by
   have h_inter_eq : ({ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right}) =

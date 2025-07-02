@@ -17,13 +17,14 @@
 - Use the `simp` tactic to automate low-level arithmetic and casting steps.
 - Define custom `simp` lemmas for recurring simplifications.
 - These lemmas must be generic:
-  - Avoid magic numbers.
+  - Avoid magic numbers. As generic as possible.
   - Use implicit constraints (e.g., finiteness, non-zeroness, strict positivity).
 
 ### Lean MCP Server
 - **Always use the Lean MCP server first.** The binary name is `lean-lsp-mcp`.
-- Never guess solutions; query the MCP server's capabilities before you start.
-- Re-query the MCP server after making fundamental changes to the code.
+- Query the MCP server's capabilities before you make large changes.
+- Re-query the MCP server after making fundamental changes.
+- Provide the right parameters to the functions supported by the MCP server. Try to fix error messages returned by the MCP server. If not possible, clearly report to the user.
 
 ### Lake & Build System
 - **Do not delete the `.lake` directory or run `lake clean`.** This is almost always a mistake.
@@ -32,6 +33,9 @@
 
 ## Code Style
 - Prefer equational proofs using `calc` over a series of successive `have` statements. `calc` blocks are easier to read and follow.
+- Do not leave redundant comments when you can use good naming to convey intention of code.
+- Remove definitions that are never used.
+- Prefer short notations. In case it is useful, define custom notation that makes the problem statement or solutions clearer.
 
 ## Workflow for Large Files
 - When asked to fix a large file, work in small, incremental steps.
