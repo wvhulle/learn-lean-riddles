@@ -20,10 +20,6 @@ inductive RiverBank
 | right
 deriving DecidableEq, Repr, Inhabited, BEq
 
-instance : ToString RiverBank where
-  toString
-  | .left => "left"
-  | .right => "right"
 
 open RiverBank
 
