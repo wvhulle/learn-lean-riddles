@@ -22,8 +22,10 @@
 
 ### Lean MCP Server
 - **Always use the Lean MCP server first.** The binary name is `lean-lsp-mcp`.
+- Before you run the MCP server, you have to save the file.
 - Query the MCP server's capabilities before you make large changes.
 - Re-query the MCP server after making fundamental changes.
+- If the output of the MCP server is empty, you didn't wait long enough for the output or there as an error.
 - Provide the right parameters to the functions supported by the MCP server. Try to fix error messages returned by the MCP server. If not possible, clearly report to the user.
 
 ### Lake & Build System

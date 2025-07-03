@@ -37,34 +37,26 @@ lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_v
   simp [h_ne, h_valid.1, h_valid.2]
 
 lemma prob_density_left_left_right :
-  prob_density {car := left, pick := left, host := right} = (1 : ENNReal) / 18 := by
-  apply prob_density_car_eq_pick
-  · rfl
-  · simp
+  prob_density {car := left, pick := left, host := right} = 1/18 := by
+  simp [prob_density_car_eq_pick]
 
 lemma prob_density_middle_left_right :
-  prob_density {car := middle, pick := left, host := right} = (2 : ENNReal) / 18 := by
-  apply prob_density_car_ne_pick
-  · simp
-  · simp
+  prob_density {car := middle, pick := left, host := right} = 2/18 := by
+  simp [prob_density_car_ne_pick]
 
 lemma prob_density_right_left_right :
   prob_density {car := right, pick := left, host := right} = 0 := by
-  unfold prob_density real_density game_weight
-  simp
+  simp [prob_density, real_density, game_weight]
 
 lemma prob_pick_left_host_right :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}) = 1/6 := by
   have h_inter_eq : ({ω : Game | ω.pick = left} ∩ {ω : Game | ω.host = right}) =
                     {ω : Game | ω.pick = left ∧ ω.host = right} := by
     ext ω; simp [Set.mem_inter_iff]
-
   rw [h_inter_eq]
   have h_filter_eq : {ω : Game | ω.pick = left ∧ ω.host = right} =
     ↑(game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right)) := by
-      rw [← equivalence_game_repr]
-      ext ω; simp
-
+      rw [← equivalence_game_repr]; ext ω; simp
   rw [h_filter_eq, PMF.toMeasure_apply_finset]
   have h_filter_explicit :
     game_enumeration.filter (fun ω => ω.pick = left ∧ ω.host = right) =
@@ -72,7 +64,6 @@ lemma prob_pick_left_host_right :
      ({car := middle, pick := left, host := right} : Game),
      ({car := right, pick := left, host := right} : Game)} := by
     simp [game_enumeration]; decide
-
   rw [h_filter_explicit]
   unfold p
   simp only [PMF.ofFinset_apply]
@@ -131,8 +122,7 @@ theorem monty_hall_switch_probability:
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
-  · rw [prob_car_middle_pick_left_host_right]
-    rw [prob_pick_left_host_right]
+  · rw [prob_car_middle_pick_left_host_right, prob_pick_left_host_right]
     simp
     exact ENNReal.mul_div_eq_div_of_mul_eq (by norm_num) (by norm_num) (by norm_num)
   · apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
