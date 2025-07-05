@@ -177,7 +177,9 @@ You can update all of them
 lake update
 ```
 
-If you updated the `mathlib4` package, you should redownload the pre-compiled cache for Mathlib before you run `lake build` again. This is because the cache is only valid for a specific Mathlib version:
+### Updating Mathlib cache (optional)
+
+If you updated the `mathlib4` package, you may need to redownload the pre-compiled cache for Mathlib before you run `lake build` again. This is because the cache is only valid for a specific Mathlib version:
 
 ```bash
 lake exe cache get
@@ -229,7 +231,19 @@ A few educational interactive problems are provided as games at [University Düs
 
 ### Linting
 
-Use `#lint` for catching stylistic issues. Seems to be unsupported by MCP
+Write this in your Lean project root for detecting redundant code:
+
+```lean
+set_option linter.all true
+```
+
+For slow code:
+
+```lean
+set_option profiler true
+```
+
+Use `#lint` for catching stylistic issues in Mathlib. 
 
 There is no standard formatter as of June 2025.
 
