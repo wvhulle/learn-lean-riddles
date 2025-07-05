@@ -103,8 +103,11 @@ When to update Lean:
 - For security updates (rare but important)
 - **Caution**: Major version updates may break existing code
 
+## Managing dependencies (optional)
 
-### Adding dependencies
+You can skip this section if you are not interested in using external dependencies.
+
+### Mathlib dependency
 
 Mathlib is the de-facto standard library of Lean 4 and contains the official standard library as well. It is recommended to add it every new project. To add Mathlib as a dependency, add this to your `lakefile.toml`:
 
@@ -114,44 +117,45 @@ name = "mathlib"
 scope = "leanprover-community"
 ```
 
-Since compiling Mathlib would take several hours, you have to download a pre-compiled cache.
+**Remark**: Since compiling Mathlib would take several hours, you have to download a pre-compiled cache.
 ```bash
 lake exe cache get
 ```
 
 This is only possible for Mathlib, not for other dependencies.
 
-By default, Lake automatically selects a compatible Mathlib version. You can optionally pin to specific versions:
+By default, Lake automatically selects a compatible Mathlib version. You can optionally pin to specific versions.
+
+### Adding dependencies in general
+
+In general dependencies are added to the `lakefile.toml` file in the root of your project. 
+
+When a dependency is available through [Reservoir](https://reservoir.lean-lang.org/), you can add it with:
 
 ```toml
-# Option 1: Pin to a stable release (recommended for production)
 [[require]]
-name = "mathlib"
-scope = "leanprover-community"
-rev = "v4.9.1"
-
-# Option 2: Pin to a specific commit (for exact reproducibility)
-[[require]]
-name = "mathlib"
-scope = "leanprover-community"
-rev = "99042f33ebede3d0a9893f0e8021575d50c5354e"
-
-# Option 3: Use development branch (for latest features)
-[[require]]
-name = "mathlib"
-scope = "leanprover-community"
-rev = "master"
+name = "[name]" 
+scope = "[owner]"
 ```
 
-When to pin versions:
-- No pinning: Best for development with cutting-edge Lean versions (like this project)
-- Release tags: For stable projects that need tested, documented versions
-- Commit hashes: For published research or when exact reproducibility is critical
+Otherwise, you can add a local dependency (only available on your pc):
 
+```toml
+[[require]]
+name = "ennreal-arith"
+path = "../ennreal"
+```
 
-Finding other packages: Search for additional Lean packages at [Reservoir](https://reservoir.lean-lang.org/).
+Usually, you want to add Git dependencies with:
 
+```toml
+[[require]]
+git = "https://github.com/wvhulle/ennreal-arith"
+name = "ennreal-arith"
+rev = "main"
+```
 
+There is also another format for dependencies available: `lakefile.lean`.
 
 
 ### Updating dependencies
@@ -208,7 +212,6 @@ Update compiler toolchain:
 # Update to latest stable
 elan update
 
-# Install specific version
 elan install leanprover/lean4:v4.22.0
 elan default leanprover/lean4:v4.22.0
 ```
