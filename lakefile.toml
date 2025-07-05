@@ -20,6 +20,6 @@ scope = "leanprover-community"
 
 
 [[require]]
+git = "https://github.com/wvhulle/ennreal-arith"
 name = "ennreal-arith"
 rev = "main"
-scope = "wvhulle"

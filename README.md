@@ -33,7 +33,7 @@ Several options:
 2. Download VS Code and install the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
 3. Install Lean locally on your computer and choose your editor:
     - Use [Visual Studio Code](https://code.visualstudio.com/) with the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
-    - Use [Emacs](https://www.gnu.org/software/emacs/)
+    - Use [Emacs](https://www.gnu.org/software/emacs/) with [Lean4 mode](https://github.com/leanprover-community/lean4-mode)
     - Use [Vim](https://www.vim.org/)
 
 
@@ -52,7 +52,6 @@ In case you choose to install Lean locally:
   - `lean` - the Lean compiler and interpreter
   - `elan` - the Lean version manager
 
-## Managing local Lean toolchain
 
 
 
@@ -153,10 +152,37 @@ When to pin versions:
 Finding other packages: Search for additional Lean packages at [Reservoir](https://reservoir.lean-lang.org/).
 
 
+
+
+### Updating dependencies
+
+When to update:
+- After adding new dependencies to `lakefile.toml`
+- When you want the latest compatible versions
+- When switching Lean toolchain versions
+
+Try to update only the dependencies that changed with:
+
+```bash
+lake update [DEP_NAME]
+```
+You can update all of them
+
+
+```bash
+lake update
+```
+
+If you updated the `mathlib4` package, you should redownload the pre-compiled cache for Mathlib before you run `lake build` again. This is because the cache is only valid for a specific Mathlib version:
+
+```bash
+lake exe cache get
+```
+
 ### Building
 
 
-Building all Lean files in the current project:
+Building all dependencies (which can take a while the first time) and  Lean files in the current project:
 ```bash
 lake build
 ```
@@ -166,27 +192,6 @@ You can also compile single files or folders by specifying the module import spe
 ```bash
 lake build RiddleProofs.MontyHall
 ```
-
-### Updating dependencies
-
-When to update:
-- After adding new dependencies to `lakefile.toml`
-- When you want the latest compatible versions
-- When switching Lean toolchain versions
-
-
-```bash
-lake update
-```
-
-Upgrading dependencies
-
-```bash
-lake update mathlib
-lake exe cache get
-```
-
-Before you run `lake build` again, you should redownload the pre-compiled cache for Mathlib
 
 ### Updating Lean compiler
 
