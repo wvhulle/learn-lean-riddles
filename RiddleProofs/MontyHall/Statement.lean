@@ -15,7 +15,6 @@ You are a contestant on a game show. You are presented with three closed doors. 
 **The Question**
 
 Is it to your advantage to switch doors?
-
 -/
 
 inductive Door : Type

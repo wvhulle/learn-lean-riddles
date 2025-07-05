@@ -36,6 +36,16 @@ instance : ToString Person where
 notation "H" n => Person.husband ⟨n, by decide⟩
 notation "W" n => Person.wife ⟨n, by decide⟩
 
+@[app_unexpander Person.husband]
+def unexpandHusband : Lean.PrettyPrinter.Unexpander
+  | `($_ ⟨$n, $_⟩) => `(H $n)
+  | _ => throw ()
+
+@[app_unexpander Person.wife]
+def unexpandWife : Lean.PrettyPrinter.Unexpander
+  | `($_ ⟨$n, $_⟩) => `(W $n)
+  | _ => throw ()
+
 def Person.couple_id : Person → Fin num_couples
 | .husband i => i
 | .wife i => i

@@ -1,8 +1,5 @@
 import RiddleProofs.JealousHusbands.Statement
-import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
-import Mathlib.Data.Finset.Max
-import Lean.ToExpr
 
 inductive Direction
 | toRight
@@ -15,7 +12,7 @@ structure Move where
   valid_size : people.card ≤ 2 ∧ people.card > 0
 deriving DecidableEq
 
-namespace Move
+
 
 def single (p : Person) (dir : Direction) : Move :=
   ⟨{p}, dir, by simp [Finset.card_singleton]⟩
@@ -26,7 +23,6 @@ def pair (p1 p2 : Person) (dir : Direction) (h : p1 ≠ p2) : Move :=
     · simp [Finset.card_pair h]
     · simp [Finset.card_pair h]⟩
 
-end Move
 
 syntax:50 "R" "{" term "}" : term
 syntax:50 "L" "{" term "}" : term
@@ -34,12 +30,31 @@ syntax:50 "R" "{" term "," term "}" : term
 syntax:50 "L" "{" term "," term "}" : term
 
 macro_rules
-  | `(R {$p}) => `(Move.single $p Direction.toRight)
-  | `(L {$p}) => `(Move.single $p Direction.toLeft)
-  | `(R {$p1, $p2}) => `(Move.pair $p1 $p2 Direction.toRight (by simp))
-  | `(L {$p1, $p2}) => `(Move.pair $p1 $p2 Direction.toLeft (by simp))
+  | `(R {$p}) => `(single $p Direction.toRight)
+  | `(L {$p}) => `(single $p Direction.toLeft)
+  | `(R {$p1, $p2}) => `(pair $p1 $p2 Direction.toRight (by simp))
+  | `(L {$p1, $p2}) => `(pair $p1 $p2 Direction.toLeft (by simp))
 
-instance : Inhabited Move := ⟨Move.single (Person.husband ⟨0, by decide⟩) Direction.toRight⟩
+
+
+@[app_unexpander single]
+def unexpandSingle : Lean.PrettyPrinter.Unexpander
+  | `($_ $p Direction.toRight) =>
+      `(R {$p})
+  | `($_ $p Direction.toLeft) => `(L {$p})
+  | _ => throw ()
+
+@[app_unexpander pair]
+def unexpandPair : Lean.PrettyPrinter.Unexpander
+  | `($_ $p1 $p2 Direction.toRight $_) => `(R {$p1, $p2})
+  | `($_ $p1 $p2 Direction.toLeft $_) => `(L {$p1, $p2})
+  | _ => throw ()
+
+-- Output render check
+-- #check single (Person.husband ⟨0, by decide⟩) Direction.toLeft
+-- #check L {H 0}
+
+instance : Inhabited Move := ⟨single (Person.husband ⟨0, by decide⟩) Direction.toRight⟩
 
 def opposite_bank : RiverBank → RiverBank
 | .left => .right
@@ -79,6 +94,8 @@ def simple_move_valid (m : Move) (s : State) : Bool :=
   else true
   all_on_boat && pair_valid
 
+
+
 def validate_solution (moves : List Move) : Bool :=
   let rec check_moves (s : State) (ms : List Move) : Bool :=
     match ms with
@@ -109,11 +126,11 @@ def generate_valid_moves (s : State) : List Move :=
         if h : i.val < j.val then
           let ne_proof : i ≠ j := Fin.ne_of_lt h
           if direction == Direction.toRight then
-            [Move.pair (Person.husband i) (Person.husband j) Direction.toRight (by simp [ne_proof]),
-             Move.pair (Person.wife i) (Person.wife j) Direction.toRight (by simp [ne_proof])]
+            [pair (Person.husband i) (Person.husband j) Direction.toRight (by simp [ne_proof]),
+             pair (Person.wife i) (Person.wife j) Direction.toRight (by simp [ne_proof])]
           else
-            [Move.pair (Person.husband i) (Person.husband j) Direction.toLeft (by simp [ne_proof]),
-             Move.pair (Person.wife i) (Person.wife j) Direction.toLeft (by simp [ne_proof])]
+            [pair (Person.husband i) (Person.husband j) Direction.toLeft (by simp [ne_proof]),
+             pair (Person.wife i) (Person.wife j) Direction.toLeft (by simp [ne_proof])]
         else []
 
   let couple_moves :=

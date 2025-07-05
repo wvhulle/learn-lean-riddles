@@ -1,15 +1,8 @@
-import RiddleProofs.JealousHusbands.Statement
 import RiddleProofs.JealousHusbands.Moves
 
 open Move
 
-/-!
-# Known Solution for the Jealous Husbands Problem
-
-This file contains the optimal 11-move solution to the problem.
--/
-
--- The optimal solution (11 moves) with explicit directions
+-- One known solution to the Jealous Husbands riddle
 def hardwired_solution : List Move := [
   R {W 0, W 1},
   L {W 0},

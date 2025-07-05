@@ -13,3 +13,13 @@ root = "Main"
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
+
+# [[require]]
+# name = "ennreal-arith"
+# path = "../ennreal"
+
+
+[[require]]
+name = "ennreal-arith"
+rev = "main"
+scope = "wvhulle"

@@ -1,9 +1,8 @@
 import RiddleProofs.MontyHall.Measure
 import RiddleProofs.MontyHall.Enumeration
 import RiddleProofs.MontyHall.Statement
-import RiddleProofs.MontyHall.Arithmetic
-
-open ProbabilityTheory ENNReal Door
+import ENNRealArith
+open ProbabilityTheory ENNReal Door ENNRealArith
 
 def host_opens (d : Door) : Set Game := {ω | ω.host = d}
 def car_at (d : Door) : Set Game := {ω | ω.car = d}
@@ -27,7 +26,7 @@ lemma prob_density_car_eq_pick (car pick host : Door) (h_eq : car = pick) (h_val
   rw [total_weight_value]
   unfold game_weight
   simp [h_eq, h_valid.1]
-  norm_num
+  ennreal_arith
 
 lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_valid : host ≠ pick ∧ host ≠ car) :
   prob_density {car := car, pick := pick, host := host} = (2 : ENNReal) / 18 := by
@@ -35,6 +34,7 @@ lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_v
   rw [total_weight_value]
   unfold game_weight
   simp [h_ne, h_valid.1, h_valid.2]
+  ennreal_arith
 
 lemma prob_density_left_left_right :
   prob_density {car := left, pick := left, host := right} = 1/18 := by
@@ -69,15 +69,9 @@ lemma prob_pick_left_host_right :
   simp only [PMF.ofFinset_apply]
   rw [Finset.sum_insert, Finset.sum_insert, Finset.sum_singleton]
   · rw [prob_density_left_left_right, prob_density_middle_left_right, prob_density_right_left_right]
-    simp only [add_zero]
-    rw [← ENNReal.add_div]
-    ring_nf
-    rw [show (3 : ENNReal) / 18 = (1 * 3) / (6 * 3) by norm_num]
-    rw [ENNReal.mul_div_mul_right]
-    · norm_num
-    · norm_num
-  · simp
-  · simp
+    ennreal_arith
+  · ennreal_arith
+  · ennreal_arith
 
 lemma prob_car_at_given_pick_host (car : Door) :
   p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = car}) =
@@ -106,16 +100,7 @@ theorem monty_hall_stay_probability:
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
   · rw [prob_car_left_pick_left_host_right, prob_pick_left_host_right]
-    simp
-    refine (toReal_eq_toReal_iff' ?_ ?_).mp ?_
-    simp
-    refine div_ne_top ?_ ?_
-    norm_cast
-    norm_cast
-    norm_cast
-    norm_cast
-    simp
-    norm_num
+    ennreal_arith
   · apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
 
 theorem monty_hall_switch_probability:
@@ -123,6 +108,5 @@ theorem monty_hall_switch_probability:
   unfold Prob car_at pick_door host_opens
   rw [ProbabilityTheory.cond_apply]
   · rw [prob_car_middle_pick_left_host_right, prob_pick_left_host_right]
-    simp
-    exact ENNReal.mul_div_eq_div_of_mul_eq (by norm_num) (by norm_num) (by norm_num)
+    ennreal_arith
   · apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete

@@ -1,5 +1,4 @@
 import RiddleProofs.MontyHall.Enumeration
-import Mathlib.Data.Finset.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 open MeasureTheory Door

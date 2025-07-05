@@ -1,11 +1,7 @@
-import RiddleProofs.JealousHusbands.Statement
-import RiddleProofs.JealousHusbands.Solution
 import RiddleProofs.JealousHusbands.Moves
 
--- Make list membership decidable for State
 instance : DecidableEq State := by infer_instance
 
--- Simple BFS solver
 partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
   let rec bfs (queue : List (State × List Move)) (visited : List State) : Option (List Move) :=
     match queue with
@@ -35,4 +31,7 @@ def search_solution : Option (List Move) := solve_with_bfs 15
 axiom search_solution_correct: ∀ sol, search_solution = some sol → validate_solution sol = true
 
 -- Uncomment to see an internal representation of the solution found
--- #reduce search_solution
+-- Cannot be reduced fully because of partiality
+-- #reduce search_solution.get!
+-- Eval cannot evaluate it because the output (and Move) does not implement `Repr` yet
+-- #eval search_solution.get!

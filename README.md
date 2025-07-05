@@ -1,6 +1,8 @@
 # Learn Lean by solving riddles
 
-This are notes for a [workshop on Lean](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for [SysGhent](https://sysghent.be).
+(... riddles or computational problems)
+
+This repository contains material for a [workshop on Lean](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for the [SysGhent](https://sysghent.be) community.
 
 A basic introduction to Lean can be found on the [Introduction in the reference](https://lean-lang.org/doc/reference/latest/Introduction/#introduction):
 
@@ -13,8 +15,7 @@ theorem Nat.exists_infinite_primes (n : ℕ) :
 ∃ (p : ℕ), n ≤ p ∧ Prime p
 ```
 
-A team from Google managed to solve some of the International Mathematical Olympiad (IMO) problems using Lean 4 and the Mathlib library. See the blog post [AI solves IMO problems at silver medal level](https://deepmind.google/discover/blog/ai-solves-imo-problems-at-silver-medal-level/) for more information.
-
+Using LLM's or AI tools / assistants will not be covered in this workshop. See the [sysghent.be](https://sysghent.be/events) for future events.
 
 ## Target audience
 
@@ -26,44 +27,64 @@ This workshop is suitable for everyone who:
 
 ## Installation
 
-You can either use the online [Lean Web Editor](https://live.lean-lang.org/) or install Lean locally on your computer.
+Several options:
 
-### Editor
+1. Use the online [Lean Web Editor](https://live.lean-lang.org/) and don't install anything locally.
+2. Download VS Code and install the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
+3. Install Lean locally on your computer and choose your editor:
+    - Use [Visual Studio Code](https://code.visualstudio.com/) with the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
+    - Use [Emacs](https://www.gnu.org/software/emacs/)
+    - Use [Vim](https://www.vim.org/)
 
-The recommended editor is [Visual Studio Code](https://code.visualstudio.com/) with the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4). Emacs and Vim are also supported but may be more challenging for beginners.
 
-### Installing Lean locally
+Other editors are not supported as far as I know. Use command-line tools like the `python` package `leanclient` to implement your own language server.
 
-For complete installation instructions, see the [official Lean installation guide](https://lean-lang.org/doc/reference/latest/Setup/#installation).
+### Installing Lean locally(optional)
 
-Quick summary:
-1. **Windows users**: Use [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install)
-2. **All platforms**: Install [`elan`](https://github.com/leanprover/elan) to manage Lean toolchains
+In case you choose to install Lean locally:
+
+1. **Windows users**: Use [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install). Then follow the instructions for Linux below.
+2. **Linux / Mac users**: Install the Lean version manager [`elan`](https://github.com/leanprover/elan):
+  ```bash
+  curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+  ```
+  This will provide you mainly with two commands:
+  - `lean` - the Lean compiler and interpreter
+  - `elan` - the Lean version manager
+
+## Managing local Lean toolchain
+
+
+
+### Initializing a project
+
+You can just continue with the rest of this workshop in the same folder, but you can also create a new project. To start a new Lean project, `cd` into a new empty directory and run:
 
 ```bash
-# Install elan (provides `lean` and `lake` commands)
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+lake init
 ```
 
-## Managing Lean toolchain
+After initialisation, the directory tree will look like this:
 
-### Check current version
-```bash
-lean --version
-elan show
+```txt
+riddle-proofs/
+├── lakefile.toml         # Project configuration for Lake (Lean's build tool)
+├── lean-toolchain        # Specifies the Lean toolchain version to use
+├── README.md             # Project documentation and instructions
+├── Main.lean             # (Optional) Main entry point for the project, often imports or runs top-level code
+├── RiddleProofs.lean     # (Optional) Index file for the RiddleProofs/ folder, re-exports submodules
+├── RiddleProofs/
+│   ├── Basic.lean        # (Example) A Lean file for basic definitions or warm-up exercises
+│   └── JealousHusbands.lean
 ```
 
-### Update toolchain
-```bash
-# Update to latest stable
-elan update
+Source files that are "top-level entrypoints" (like `/Main.lean` and `/RiddleProofs.lean`) have to be declared in the `lakefile.toml` file.
 
-# Install specific version
-elan install leanprover/lean4:v4.22.0
-elan default leanprover/lean4:v4.22.0
-```
+Extra dependencies, needed later on during development, will also be added to `lakefile.toml`. For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
 
-### Project-specific toolchain
+_Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
+
+### Setting toolchain per project
 
 The `lean-toolchain` file in your project root specifies which Lean version to use:
 
@@ -83,11 +104,10 @@ When to update Lean:
 - For security updates (rare but important)
 - **Caution**: Major version updates may break existing code
 
-## Dependency management
 
 ### Adding dependencies
 
-Mathlib is the de-facto standard library of Lean 4 and contains the official standard library as well. To add Mathlib as a dependency, add this to your `lakefile.toml`:
+Mathlib is the de-facto standard library of Lean 4 and contains the official standard library as well. It is recommended to add it every new project. To add Mathlib as a dependency, add this to your `lakefile.toml`:
 
 ```toml
 [[require]]
@@ -95,7 +115,12 @@ name = "mathlib"
 scope = "leanprover-community"
 ```
 
-Version pinning (optional):
+Since compiling Mathlib would take several hours, you have to download a pre-compiled cache.
+```bash
+lake exe cache get
+```
+
+This is only possible for Mathlib, not for other dependencies.
 
 By default, Lake automatically selects a compatible Mathlib version. You can optionally pin to specific versions:
 
@@ -124,78 +149,64 @@ When to pin versions:
 - Release tags: For stable projects that need tested, documented versions
 - Commit hashes: For published research or when exact reproducibility is critical
 
+
 Finding other packages: Search for additional Lean packages at [Reservoir](https://reservoir.lean-lang.org/).
 
-### Updating dependencies
+
+### Building
+
+
+Building all Lean files in the current project:
+```bash
+lake build
+```
+
+You can also compile single files or folders by specifying the module import specifier (useful for debugging):
 
 ```bash
-# Update all dependencies
-lake update
-
-# Update specific dependency
-lake update mathlib
+lake build RiddleProofs.MontyHall
 ```
+
+### Updating dependencies
 
 When to update:
 - After adding new dependencies to `lakefile.toml`
 - When you want the latest compatible versions
 - When switching Lean toolchain versions
 
-### Building and cache
 
-Getting Mathlib cache (recommended first step):
 ```bash
+lake update
+```
+
+Upgrading dependencies
+
+```bash
+lake update mathlib
 lake exe cache get
 ```
 
-Important: `lake exe cache get` is only for Mathlib, not for other dependencies. This is a special tool provided by Mathlib to download pre-compiled binaries.
+Before you run `lake build` again, you should redownload the pre-compiled cache for Mathlib
 
-Building from source:
-```bash
-# Build everything
-lake build
+### Updating Lean compiler
 
-# Build specific target
-lake build RiddleProofs
-```
-
-When to use cache vs build:
-- Always use cache first for Mathlib (saves 30-60 minutes)
-- Use cache after updating Mathlib dependency or when Mathlib files are compiling from scratch
-- Use build for your own code changes or other small dependencies
-- Why cache matters: Mathlib is huge (~1GB compiled), other packages compile quickly from source
-
-
-
-## Getting started
-
-### Initializing a project
-
-You can just continue with the rest of this workshop in the same folder, but you can also create a new project. To start a new Lean project, `cd` into a new empty directory and run:
+Be careful that your dependencies are compatible with the new Lean version. The package ecosystem for Lean is not like others. It is often the case that the Lean version has to follow the Mathlib dependency version.
 
 ```bash
-lake init
+lean --version
+elan show
 ```
 
-After initialisation, the directory tree will look like this:
+Update compiler toolchain:
 
-```txt
-riddle-proofs/
-├── lakefile.toml         # Project configuration for Lake (Lean's build tool)
-├── lean-toolchain        # Specifies the Lean toolchain version to use
-├── README.md             # Project documentation and instructions
-├── Main.lean             # (Optional) Main entry point for the project, often imports or runs top-level code
-├── RiddleProofs.lean     # (Optional) Index file for the RiddleProofs/ folder, re-exports submodules
-├── RiddleProofs/
-│   ├── Basic.lean        # (Example) A Lean file for basic definitions or warm-up exercises
-│   └── JealousMath.lean  # A Lean file containing the code and proofs for the "Jealous Mathematicians" puzzle
+```bash
+# Update to latest stable
+elan update
+
+# Install specific version
+elan install leanprover/lean4:v4.22.0
+elan default leanprover/lean4:v4.22.0
 ```
-
-Source files that are "top-level entrypoints" (like `/Main.lean` and `/RiddleProofs.lean`) have to be declared in the `lakefile.toml` file.
-
-Extra dependencies, needed later on during development, will also be added to `lakefile.toml`. For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
-
-_Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
 
 ## Learning Resources
 
@@ -368,87 +379,5 @@ If you are ready for it, continue with more challenging problems. Use the techni
 - Have a look at the [math index page](https://leanprover-community.github.io/mathlib-overview.html).
 
 
-Also have a look at project Euler.
-
-## Lean and AI
-
-
-### Install extension
-
-Install an extension in your editor that can do inference of strong LLM AI models:
-
-- [Continue](https://docs.continue.dev)
-- [Copilot Chat](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)
-
-To be able to let LLMs search online from Copilot Chat, you have install an extension in VS Code: `ms-vscode.vscode-websearchforcopilot`. Enable it in the context settings.
-
-Ideally, the extension should support edit/agent mode and custom MCP servers.
-
-
-### MCP server
-
-LLMs cannot see all proof context by default. For that, you need to install a local MCP server for the Lean language server (`lean-lsp`) and add it to the settings of your editor.
-
-#### Ubuntu / Fedora / etc.
-
-Install the MCP server from [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp/tree/main). Follow the project's instructions or use the `shell.nix` provided with this project to install it. You have to add it to your user `settings.json` file in VS Code:
-
-```json
-{
-    "mcp": {
-        "servers": {
-            "lean-lsp": {
-                "command": "uvx",
-                "args": ["lean-lsp-mcp"],
-            }
-        }
-    }
-}
-```
-
-#### NixOS
-
-In case you use the `shell.nix` file, you can instead use this setting in your workspace's `settings.json` file (already included in this project):
-
-```json
-{
-    "mcp": {
-        "servers": {
-            "lean-lsp": {
-                "command": "lean-lsp-mcp",
-            }
-        }
-    }
-}
-```
-
-For VS Code to discover this binary, you have to launch VS Code from the shell where you have installed the MCP server. 
-
-```bash
-nix-shell
-code .
-```
-
-Or if you want it to happen automatically:
-
-```bash
-direnv allow
-``` 
-
-### Usage
-
-The easiest way to use AI in Lean is to use [Copilot Chat](https://github.com/features/copilot). Install the extension in VS Code and click on the icon next to the search bar on the top of the window. On the right appears a sidebar with a chat interface. You can ask questions about Lean code, Mathlib, or even ask it to write code for you.  
-
-Switch the mode from "Ask" to "Agent". Select Claude Sonnet 4 from the model selection menu. Claude 4 is not completely free, but seems to be the best at agentic coding on Lean4 code, because it has a slightly deeper understanding of the APIs and respects context such as MCP or system prompts better.
-
-
-Now you can select parts of your Lean code that are incomplete or problematic, and ask the LLM to fix them. Any LLM will fail when you provide too much context. Ideally, you should select fewer than 5 problematic Lean source code lines before you start any LLM in agentic coding mode. Errors that cover more than 10 source code lines will easily confuse the LLM and time-out or give up after > 10 frustrating minutes.
-
-As you go along, you will notice quirks and undesirable behaviour of the LLM. You can fix this by providing the right context. Adjust the instructions in [`.github/copilot-instructions.md`](.github/copilot-instructions.md). These instructions will be passed to every conversation with any LLM using Copilot Chat. You should also make sure the MCP server for Lean is configured. Click on the "tools" icon on the bottom left. Scroll down and toggle the Lean MCP server that you added previously to the settings. 
-
-### Explore models
-
-If you want to try another model than Claude 4, you should have a look at the [Vellum leaderboard](https://www.vellum.ai/llm-leaderboard#) for more models. It is also recommended to create an account on OpenRouter, and configure OpenRouter as an LLM inference provider in VS Code. Local LLMs such LLama 3.2 hosted by `ollama` can also be used, but they are not as powerful as the cloud-based LLMs. You have to check whether the local LLM supports function / tool calling or MCP servers. You might have to fine-tune a local model on Lean code to get better results (using Unsloth).
-
-
+Also have a look at [Project Euler](https://projecteuler.net/) if you want to solve new riddles or problems and compete with others.
 

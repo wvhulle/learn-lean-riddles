@@ -2,12 +2,8 @@
     "recommendations": [
         "tamasfe.even-better-toml",
         "leanprover.lean4",
-        "paperproof.paperproof",
         "davidanson.vscode-markdownlint",
-        "github.copilot",
-        "github.copilot-chat",
         "ms-vscode-remote.remote-wsl",
         "christian-kohler.path-intellisense",
-        "ms-vscode.vscode-websearchforcopilot"
     ]
 }

@@ -45,11 +45,11 @@ instance : DecidablePred no_notebook_left_behind := by
   unfold no_notebook_left_behind
   infer_instance
 
--- Initial state: everyone and everything on the left bank
+-- Everyone and everything on the left bank
 def initial_state : State :=
   { boat := left, mathematicians := Vector.replicate 3 left, notebooks := Vector.replicate 3 left }
--- Goal state: everyone and everything on the right bank
 
+-- Everyone and everything on the right bank
 def final_state : State :=
   { boat := right, mathematicians := Vector.replicate 3 right, notebooks := Vector.replicate 3 right }
 
@@ -59,8 +59,7 @@ theorem final_safe: no_notebook_left_behind (final_state):= by
   unfold final_state
   simp
 
--- If we drop the constraint temporarily that all transfers have to happen step-wise and just look at the initial and final state, we should be able to prove that the two-state path is safe.
-theorem impossible_path_safe :
+theorem fly_safe :
   ∃ (path : List State),
     path.head? = some  initial_state ∧
     path.getLast? = some final_state ∧
@@ -69,11 +68,7 @@ theorem impossible_path_safe :
 
 section Helpers
 
-/-
-## Helpers / abstractions
 
-Let's model the way items or people travel across the river.
- -/
 
 def move_mathematician (n : Fin num_mathematicians) (b : RiverBank) (s : State) : State :=
 { s with mathematicians := s.mathematicians.set n b }
@@ -131,7 +126,7 @@ namespace StructuralRecursion
 
 A kind of recursion that is easy to check for termination. Termination can be checked by Lean automatically because the argument visibly and syntactically "erodes" (or shrinks) in the recursive call.
 
-In the following `n + 1` -> `n` in the recursive call at the end of the recursive function body.
+In the following, the size of the argument changes `n + 1` -> `n` in the recursive call at the end of the recursive function body.
 -/
 
 def intermediate_states_structural_rec : (n: Nat) -> n < n_states → State
@@ -160,7 +155,7 @@ noncomputable def intermediate_states : Fin n_states → State :=
         let prev := rec ⟨n, Nat.lt_of_succ_lt h⟩ (Nat.lt_succ_self n)
         (transfers.get ⟨n, Nat.lt_of_succ_lt h⟩) prev
     )
--- `noncomputable` exempts a definition from compilation
+-- `noncomputable` exempts a definition from certain types of checks
 
 
 -- Verify the start and end point are as expected.
@@ -170,14 +165,7 @@ example : intermediate_states ⟨0, by decide⟩ = initial_state := by
 example : intermediate_states ⟨n_states - 1, by decide⟩ = final_state := by
   decide
 
-/-
-# Correctness of solution
-
-The main correctness theorem can be verified with `decide` because all involved functions are decidable.
-
-If you prefer a manual approach, you can use a more verbose forward or backward proof.
- -/
-
+-- We implemented decidability for `no_notebook_left_behind`, so we can use `decide`
 theorem all_states_safe : ∀ i : Fin n_states, no_notebook_left_behind (intermediate_states  i) := by
   decide
 
