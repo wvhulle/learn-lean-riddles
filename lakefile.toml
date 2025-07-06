@@ -14,12 +14,12 @@ root = "Main"
 name = "mathlib"
 scope = "leanprover-community"
 
-# [[require]]
-# name = "ennreal-arith"
-# path = "../ennreal"
-
-
 [[require]]
-git = "https://github.com/wvhulle/ennreal-arith"
 name = "ennreal-arith"
-rev = "main"
+path = "../ennreal"
+
+
+# [[require]]
+# git = "https://github.com/wvhulle/ennreal-arith"
+# name = "ennreal-arith"
+# rev = "main"

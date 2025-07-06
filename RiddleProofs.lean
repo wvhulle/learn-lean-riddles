@@ -1,1 +1,4 @@
+import RiddleProofs.BlueEyedIslanders
+import RiddleProofs.JealousHusbands
+import RiddleProofs.MontyHall
 set_option linter.all true
