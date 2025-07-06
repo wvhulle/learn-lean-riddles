@@ -11,6 +11,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Cache Lean dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan
+            .lake
+          key: lean-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.toml') }}
+          restore-keys: |
+            lean-${{ runner.os }}-
+            
       - uses: leanprover/lean-action@v1
         with:
           use-github-cache: false
