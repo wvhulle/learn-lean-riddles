@@ -33,7 +33,7 @@ lemma prob_density_car_eq_pick (car pick host : Door) (h_eq : car = pick) (h_val
     _ = 1 / 18 := by ennreal_arith
 
 lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_valid : host ≠ pick ∧ host ≠ car) :
-  prob_density {car := car, pick := pick, host := host} = (2 : ENNReal) / 18 := by
+  prob_density {car := car, pick := pick, host := host} = (1 : ENNReal) / 9 := by
   calc prob_density {car := car, pick := pick, host := host}
     = ENNReal.ofReal (real_density {car := car, pick := pick, host := host}) := rfl
     _ = ENNReal.ofReal (game_weight {car := car, pick := pick, host := host} / total_game_weights) := rfl
@@ -42,14 +42,14 @@ lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_v
     _ = ENNReal.ofReal (2 / 18) := by
         congr 1
         simp only [game_weight, h_ne, h_valid.1, h_valid.2, if_false]
-    _ = 2 / 18 := by ennreal_arith
+    _ = 1 / 9 := by ennreal_arith
 
 lemma prob_density_left_left_right :
   prob_density {car := left, pick := left, host := right} = 1/18 := by
   simp [prob_density_car_eq_pick]
 
 lemma prob_density_middle_left_right :
-  prob_density {car := middle, pick := left, host := right} = 2/18 := by
+  prob_density {car := middle, pick := left, host := right} = 1/9 := by
   simp [prob_density_car_ne_pick]
 
 lemma prob_density_right_left_right :
@@ -88,12 +88,11 @@ lemma prob_pick_left_host_right :
         · simp [add_assoc]
         · simp
         · simp
-    _ = 1/18 + 2/18 + 0 := by
+    _ = 1/18 + 1/9 + 0 := by
         simp only [p, PMF.ofFinset_apply,
                    prob_density_left_left_right,
                    prob_density_middle_left_right,
                    prob_density_right_left_right]
-    _ = 3/18 := by ennreal_arith
     _ = 1/6 := by ennreal_arith
 
 lemma prob_car_at_given_pick_host (car : Door) :
@@ -120,7 +119,7 @@ lemma prob_car_left_pick_left_host_right :
   rw [prob_car_at_given_pick_host, prob_density_left_left_right]
 
 lemma prob_car_middle_pick_left_host_right :
-  p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) = 2/18 := by
+  p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) = 1/9 := by
   rw [prob_car_at_given_pick_host, prob_density_middle_left_right]
 
 theorem monty_hall_stay_probability:
@@ -155,6 +154,6 @@ theorem monty_hall_switch_probability:
     _ = (p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right}))⁻¹ *
       p.toMeasure ({ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}) := by
         rfl
-    _ = (1/6)⁻¹ * (2/18) := by
+    _ = (1/6)⁻¹ * (1/ 9) := by
         rw [prob_pick_left_host_right, prob_car_middle_pick_left_host_right]
     _ = 2/3 := by ennreal_arith

@@ -160,18 +160,17 @@ There is also another format for dependencies available: `lakefile.lean`.
 
 ### Updating dependencies
 
-When to update:
-- After adding new dependencies to `lakefile.toml`
-- When you want the latest compatible versions
-- When switching Lean toolchain versions
+When you have updated a local or remote dependency, or you want to point to a new version of a dependency, you can update the `lakefile.toml` file with the new version or path.
 
-Try to update only the dependencies that changed with:
+You then need to update the source code of the dependency. This can be done with the `lake update` command:
 
 ```bash
-lake update [DEP_NAME]
+lake update --no-build [DEP_NAME] 
 ```
-You can update all of them
 
+The no-build option is useful when you don't want to trigger a full rebuild at the moment.
+
+To update all dependencies in the project, you can run:
 
 ```bash
 lake update
