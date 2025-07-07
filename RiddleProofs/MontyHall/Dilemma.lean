@@ -5,9 +5,7 @@ import ENNRealArith
 import Mathlib.Probability.Notation
 open ProbabilityTheory ENNReal Door ENNRealArith
 
-local notation:max "ℙ[" A "]" => p.toMeasure A
-
-local notation "↑ₑ" => ENNReal.ofReal
+notation "↑ₑ" => ENNReal.ofReal
 
 def host_opens (d : Door) : Set Game := {ω | ω.host = d}
 def car_at (d : Door) : Set Game := {ω | ω.car = d}
@@ -26,9 +24,9 @@ lemma unique_game_set (car pick host : Door) :
     rw [h]; simp
 
 lemma prob_density_car_eq_pick (car pick host : Door) (h_eq : car = pick) (h_valid : host ≠ pick ∧ host ≠ car) :
-  prob_density {car := car, pick := pick, host := host} = (1 : ENNReal) / 18 := by
-  calc prob_density {car := car, pick := pick, host := host}
-    = ↑ₑ (real_density {car := car, pick := pick, host := host}) := rfl
+  raw_enn_density {car := car, pick := pick, host := host} = (1 : ENNReal) / 18 := by
+  calc raw_enn_density {car := car, pick := pick, host := host}
+    = ↑ₑ (raw_real_density {car := car, pick := pick, host := host}) := rfl
     _ = ↑ₑ (game_weight {car := car, pick := pick, host := host} / total_game_weights) := rfl
     _ = ↑ₑ (game_weight {car := car, pick := pick, host := host} / 18) := by
         congr 1; rw [total_weight_value]
@@ -38,9 +36,9 @@ lemma prob_density_car_eq_pick (car pick host : Door) (h_eq : car = pick) (h_val
     _ = 1 / 18 := by ennreal_arith
 
 lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_valid : host ≠ pick ∧ host ≠ car) :
-  prob_density {car := car, pick := pick, host := host} = (1 : ENNReal) / 9 := by
-  calc prob_density {car := car, pick := pick, host := host}
-    = ↑ₑ (real_density {car := car, pick := pick, host := host}) := rfl
+  raw_enn_density {car := car, pick := pick, host := host} = (1 : ENNReal) / 9 := by
+  calc raw_enn_density {car := car, pick := pick, host := host}
+    = ↑ₑ (raw_real_density {car := car, pick := pick, host := host}) := rfl
     _ = ↑ₑ (game_weight {car := car, pick := pick, host := host} / total_game_weights) := rfl
     _ = ↑ₑ (game_weight {car := car, pick := pick, host := host} / 18) := by
         congr 1; rw [total_weight_value]
@@ -50,17 +48,17 @@ lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_v
     _ = 1 / 9 := by ennreal_arith
 
 lemma prob_density_left_left_right :
-  prob_density {car := left, pick := left, host := right} = 1/18 := by
+  raw_enn_density {car := left, pick := left, host := right} = 1/18 := by
   simp [prob_density_car_eq_pick]
 
 lemma prob_density_middle_left_right :
-  prob_density {car := middle, pick := left, host := right} = 1/9 := by
+  raw_enn_density {car := middle, pick := left, host := right} = 1/9 := by
   simp [prob_density_car_ne_pick]
 
 lemma prob_density_right_left_right :
-  prob_density {car := right, pick := left, host := right} = 0 := by
-  calc prob_density {car := right, pick := left, host := right}
-    = ↑ₑ (real_density {car := right, pick := left, host := right}) := rfl
+  raw_enn_density {car := right, pick := left, host := right} = 0 := by
+  calc raw_enn_density {car := right, pick := left, host := right}
+    = ↑ₑ (raw_real_density {car := right, pick := left, host := right}) := rfl
     _ = ↑ₑ (game_weight {car := right, pick := left, host := right} / total_game_weights) := rfl
     _ = ↑ₑ (0 / total_game_weights) := by
         unfold game_weight
@@ -103,7 +101,7 @@ lemma prob_pick_left_host_right :
 
 lemma prob_car_at_given_pick_host (car : Door) :
   ℙ[{ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = car}] =
-  prob_density {car := car, pick := left, host := right} := by
+  raw_enn_density {car := car, pick := left, host := right} := by
   calc ℙ[{ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = car}]
     = ℙ[{ω : Game | ω.pick = left ∧ ω.host = right ∧ ω.car = car}] := by
         congr 1
@@ -117,7 +115,7 @@ lemma prob_car_at_given_pick_host (car : Door) :
     _ = p ({car := car, pick := left, host := right} : Game) := by
         rw [PMF.toMeasure_apply_singleton]
         exact MeasurableSet.singleton _
-    _ = prob_density {car := car, pick := left, host := right} := by
+    _ = raw_enn_density {car := car, pick := left, host := right} := by
         rfl
 
 lemma prob_car_left_pick_left_host_right :
