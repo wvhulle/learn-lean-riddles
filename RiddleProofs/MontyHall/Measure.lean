@@ -8,7 +8,6 @@ instance measurableSpace : MeasurableSpace Game := ⊤
 
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
 
--- Direct ENNReal density function
 noncomputable def game_density (ω : Game) : ENNReal :=
   if ω.host = ω.pick then 0
   else if ω.host = ω.car then 0
@@ -21,6 +20,8 @@ theorem density_sum_one : ∑ ω : Game, game_density ω = 1 := by
   simp [equivalence_game_repr, game_enumeration, pairs]
   simp [Finset.sum_product]
   split_ifs <;> ennreal_arith
+  -- TODO: Why is the following line necessary? And why does ennreal_arith not work on its own?
+  ennreal_fraction_add
 
 lemma prob_density_zero_outside : ∀ a ∉ (Finset.univ : Finset Game), game_density a = 0 := by
   intro a ha

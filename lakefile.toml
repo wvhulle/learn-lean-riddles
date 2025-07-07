@@ -18,7 +18,6 @@ scope = "leanprover-community"
 # name = "ennreal-arith"
 # path = "../ennreal"
 
-
 # [[require]]
 # git = "https://github.com/wvhulle/ennreal-arith"
 # name = "ennreal-arith"
@@ -27,4 +26,4 @@ scope = "leanprover-community"
 [[require]]
 git = "https://github.com/wvhulle/ennreal-arith"
 name = "ennreal-arith"
-rev = "41e50f394aa51fb08e9ec4112dc5902077ca1e98"
+rev = "1d0a4390415dcdb1903be38cfc0256a9867d878e"
