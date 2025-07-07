@@ -3,8 +3,6 @@ import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 open MeasureTheory Door
 
-
-
 instance measurableSpace : MeasurableSpace Game := ⊤
 
 instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
@@ -31,63 +29,51 @@ def non_zero_event : Game := {car := left, pick := left, host := middle}
 
 theorem real_sum_one : HasSum raw_real_density 1 := by
   convert hasSum_fintype raw_real_density
-  unfold raw_real_density
-  unfold total_game_weights
   have ne_zero : ∑ a, game_weight a ≠ 0 := by
     intro sum_zero
     have : game_weight non_zero_event ≤ 0 := by
-      rw [← sum_zero]
-      apply Finset.single_le_sum
-      · intro i _
-        simp [game_weight]
-        split_ifs <;> norm_num
-      · exact Finset.mem_univ _
+      calc game_weight non_zero_event
+        _ ≤ ∑ a, game_weight a := Finset.single_le_sum (fun i _ => by simp [game_weight]; split_ifs <;> norm_num) (Finset.mem_univ _)
+        _ = 0 := sum_zero
     simp [game_weight, non_zero_event] at this
     norm_num at this
-  rw [<- Finset.sum_div]
-  rw [div_self ne_zero]
+  calc 1
+    _ = total_game_weights / total_game_weights := (div_self ne_zero).symm
+    _ = (∑ i, game_weight i) / total_game_weights := by rw [total_game_weights]
+    _ = ∑ i, (game_weight i / total_game_weights) := by rw [Finset.sum_div]
+    _ = ∑ i, raw_real_density i := rfl
 
 noncomputable def raw_enn_density (i : Game) : ENNReal :=
   ENNReal.ofReal (raw_real_density i)
+
+lemma game_weight_nonneg (i : Game) : game_weight i ≥ 0 := by
+  simp [game_weight]; split_ifs <;> norm_num
+
+lemma raw_real_density_nonneg (i : Game) : raw_real_density i ≥ 0 := by
+  simp [raw_real_density]
+  exact div_nonneg (game_weight_nonneg i) (Finset.sum_nonneg (fun i _ => game_weight_nonneg i))
 
 theorem density_sums_to_one : HasSum raw_enn_density 1 := by
   apply ENNReal.hasSum_coe.mpr
   apply NNReal.hasSum_coe.mp
   convert real_sum_one using 1
-  have dpos: ∀ i, game_weight i ≥ 0 := by
-    intro i
-    simp [game_weight]
-    split_ifs <;> norm_num
-  have: ∀ i, raw_real_density i >= 0 := by
-    intro i
-    simp [raw_real_density]
-    apply div_nonneg
-    · exact dpos i
-    · rw [total_game_weights]
-      exact Finset.sum_nonneg (fun i _ => dpos i)
   ext i
-  rw [Real.coe_toNNReal (raw_real_density i) (this i)]
-
-
+  rw [Real.coe_toNNReal (raw_real_density i) (raw_real_density_nonneg i)]
 
 lemma prob_density_zero_outside : ∀ a ∉ (Finset.univ : Finset Game), raw_enn_density a = 0 := by
   intro a ha
   exfalso
   exact ha (Finset.mem_univ a)
 
-
 theorem sum_one: ∑ i, raw_enn_density i = 1 := by
   exact (hasSum_fintype raw_enn_density).unique density_sums_to_one
 
-
 noncomputable def p : PMF Game :=
-  PMF.ofFinset raw_enn_density (Finset.univ : Finset Game)  sum_one prob_density_zero_outside
+  PMF.ofFinset raw_enn_density (Finset.univ : Finset Game) sum_one prob_density_zero_outside
 
 notation:max "ℙ[" A "]" => p.toMeasure A
 
-
-
-noncomputable def Prob  := p.toMeasure
+noncomputable def Prob := p.toMeasure
 
 instance : IsProbabilityMeasure Prob := by
   unfold Prob
