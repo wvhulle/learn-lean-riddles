@@ -162,13 +162,18 @@ There is also another format for dependencies available: `lakefile.lean`.
 
 When you have updated a local or remote dependency, or you want to point to a new version of a dependency, you can update the `lakefile.toml` file with the new version or path.
 
+
 You then need to update the source code of the dependency. This can be done with the `lake update` command:
 
 ```bash
-lake update --no-build [DEP_NAME] 
+lake update [DEP_NAME] 
 ```
 
-The no-build option is useful when you don't want to trigger a full rebuild at the moment.
+If you don't want to trigger post-update hooks for Mathlib, you can use:
+
+```bash
+MATHLIB_NO_CACHE_ON_UPDATE=1 lake update ennreal-arith --no-build
+```
 
 To update all dependencies in the project, you can run:
 
@@ -178,7 +183,9 @@ lake update
 
 ### Updating Mathlib cache (optional)
 
-If you updated the `mathlib4` package, you may need to redownload the pre-compiled cache for Mathlib before you run `lake build` again. This is because the cache is only valid for a specific Mathlib version:
+Not required if this was already automatically done during `lake update`.
+
+If you updated the `mathlib4` package, you may need to redownload the pre-compiled cache for Mathlib before you run `lake build` again.  This is because the cache is only valid for a specific Mathlib version:
 
 ```bash
 lake exe cache get
