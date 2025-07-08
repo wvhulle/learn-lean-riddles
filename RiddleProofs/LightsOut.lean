@@ -290,40 +290,25 @@ theorem solvable_iff_in_column_space (initial : State m n) :
 theorem button_self_inverse (button : Button m n) (state : State m n) :
   press (press state button) button = state := by
   funext i j
+  have h : effect button i j + effect button i j = 0 := by
+    rw [← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
   calc press (press state button) button i j
-    = (press state button + effect button) i j := by rw [press]
-    _ = (press state button) i j + (effect button) i j := by rw [Matrix.add_apply]
-    _ = ((state + effect button) i j) + (effect button) i j := by rw [press, Matrix.add_apply]
-    _ = (state i j + effect button i j) + effect button i j := rfl
-    _ = state i j + (effect button i j + effect button i j) := by ring
-    _ = state i j + 0 := by
-      rw [effect, Matrix.of_apply]
-      by_cases h : isAffected button (i, j)
-      · simp only [h, if_true]
-        show state i j + (1 + 1) = state i j + 0
-        have : (1 : ZMod 2) + 1 = 0 := by decide
-        rw [this]
-      · simp only [h]
-        show state i j + (0 + 0) = state i j + 0
-        simp
-    _ = state i j := by ring
+    = state i j + effect button i j + effect button i j := by
+        rw [press, press, Matrix.add_apply, Matrix.add_apply, add_assoc]
+    _ = state i j + (effect button i j + effect button i j) := by rw [add_assoc]
+    _ = state i j + 0 := by rw [h]
+    _ = state i j := add_zero _
 
 /-- The order of button presses doesn't matter since pressing the same button twice cancels out (button_self_inverse), what matters is just which buttons you press an odd number of times. -/
 theorem button_press_comm (button₁ button₂ : Button m n) (state : State m n) :
   press (press state button₁) button₂ = press (press state button₂) button₁ := by
   funext i j
   calc press (press state button₁) button₂ i j
-    = (press state button₁ + effect button₂) i j := by rw [press]
-    _ = press state button₁ i j + effect button₂ i j := by rw [Matrix.add_apply]
-    _ = (state + effect button₁) i j + effect button₂ i j := by rw [press]
-    _ = state i j + effect button₁ i j + effect button₂ i j := by rw [Matrix.add_apply]
-    _ = state i j + (effect button₁ i j + effect button₂ i j) := by rw [add_assoc]
-    _ = state i j + (effect button₂ i j + effect button₁ i j) := by rw [add_comm (effect button₁ i j)]
-    _ = state i j + effect button₂ i j + effect button₁ i j := by rw [← add_assoc]
-    _ = (state + effect button₂) i j + effect button₁ i j := by rw [← Matrix.add_apply]
-    _ = press state button₂ i j + effect button₁ i j := by rw [← press]
-    _ = (press state button₂ + effect button₁) i j := by rw [← Matrix.add_apply]
-    _ = press (press state button₂) button₁ i j := by rw [← press]
+    = state i j + effect button₁ i j + effect button₂ i j := by
+        rw [press, press, Matrix.add_apply, Matrix.add_apply, add_assoc]
+    _ = state i j + effect button₂ i j + effect button₁ i j := by ring
+    _ = press (press state button₂) button₁ i j := by
+        rw [press, press, Matrix.add_apply, Matrix.add_apply, add_assoc]
 
 /-- For finite grids, we can decide solvability -/
 instance [Fintype (Fin m)] [Fintype (Fin n)] : DecidablePred (isSolvable : State m n → Prop) := by
