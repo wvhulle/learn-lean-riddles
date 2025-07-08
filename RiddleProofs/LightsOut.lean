@@ -212,32 +212,21 @@ lemma fromVector_toVector (M : LightsOut m n) : fromVector (toVector M) = M := b
 theorem solvable_iff_in_image (initial : LightsOut m n) :
   isSolvable initial ↔
   toVector initial ∈ Set.range buttonLinearMap := by
-    simp [isSolvable, Set.mem_range, buttonLinearMap, Matrix.toLin'_apply]
+    simp only [isSolvable, Set.mem_range, buttonLinearMap, Matrix.toLin'_apply]
     constructor
-    case mp =>
+    · -- (⇒) If solvable, then in range
       rintro ⟨selection, h⟩
       use selection
-      -- From h: applySelection initial selection = allOff
-      -- Need to show: buttonMatrix.mulVec selection = toVector initial
       ext pos
-      simp only [toVector]
-      -- Get the equation at position pos
-      have h_eq : initial + fromVector (buttonMatrix.mulVec selection) = Statement.allOff := by
-        rw [applySelection] at h; exact h
-      have h_pos : initial pos.1 pos.2 + (buttonMatrix.mulVec selection) pos = 0 := by
-        have := congr_fun (congr_fun h_eq pos.1) pos.2
-        simp only [Statement.allOff, fromVector] at this
-        exact this
-      -- Apply our helper lemma
-      rw [add_comm] at h_pos
-      exact add_eq_zero_iff_eq_ZMod2.mp h_pos
-    case mpr =>
+      simp only [toVector, applySelection] at h ⊢
+      have : initial pos.1 pos.2 + (buttonMatrix.mulVec selection) pos = 0 := by
+        have := congr_fun (congr_fun h pos.1) pos.2
+        simpa [Statement.allOff, fromVector] using this
+      exact add_eq_zero_iff_eq_ZMod2.mp (by rwa [add_comm])
+    · -- (⇐) If in range, then solvable  
       rintro ⟨selection, h⟩
       use selection
-      -- From h: buttonMatrix.mulVec selection = toVector initial
-      -- Need to show: applySelection initial selection = allOff
       rw [applySelection, h, fromVector_toVector]
-      -- Need to show: initial + initial = allOff
       funext i j
       simp only [Statement.allOff]
       exact add_eq_zero_iff_eq_ZMod2.mpr rfl
