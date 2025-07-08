@@ -22,6 +22,8 @@ jobs:
           restore-keys: |
             lean-${{ runner.os }}-
             
-      - uses: leanprover/lean-action@v1
+      
+      - name: Check Lean
+        uses: leanprover/lean-action@v1
         with:
           use-github-cache: false
