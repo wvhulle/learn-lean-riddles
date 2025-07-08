@@ -33,37 +33,65 @@ namespace Statement
 
 variable {m n : ℕ} [NeZero m] [NeZero n]
 
-/-- A Lights Out game state is a matrix over ℤ/2ℤ -/
-def LightsOut (m n : ℕ) := Matrix (Fin m) (Fin n) (ZMod 2)
+/-- Scoped notation for the field ℤ/2ℤ in the context of the Lights Out puzzle -/
+scoped notation "𝔽₂" => ZMod 2
+
+/-- Light state: off or on -/
+scoped notation "●" => (1 : 𝔽₂)  -- light on
+scoped notation "○" => (0 : 𝔽₂)  -- light off
+
+/-- A button on the grid -/
+def Button (m n : ℕ) := Fin m × Fin n
+
+instance [Fintype (Fin m)] [Fintype (Fin n)] : Fintype (Button m n) :=
+  inferInstanceAs (Fintype (Fin m × Fin n))
+
+instance : DecidableEq (Button m n) :=
+  inferInstanceAs (DecidableEq (Fin m × Fin n))
+
+/-- A Lights Out game state is a matrix over the binary field 𝔽₂ -/
+def LightsOut (m n : ℕ) := Matrix (Fin m) (Fin n) 𝔽₂
 
 
-instance : Add (LightsOut m n) := inferInstanceAs (Add (Matrix (Fin m) (Fin n) (ZMod 2)))
-instance : AddCommMonoid (LightsOut m n) := inferInstanceAs (AddCommMonoid (Matrix (Fin m) (Fin n) (ZMod 2)))
-instance : DecidableEq (LightsOut m n) := inferInstanceAs (DecidableEq (Matrix (Fin m) (Fin n) (ZMod 2)))
+instance : Add (LightsOut m n) := inferInstanceAs (Add (Matrix (Fin m) (Fin n) 𝔽₂))
+instance : AddCommMonoid (LightsOut m n) := inferInstanceAs (AddCommMonoid (Matrix (Fin m) (Fin n) 𝔽₂))
+instance : DecidableEq (LightsOut m n) := inferInstanceAs (DecidableEq (Matrix (Fin m) (Fin n) 𝔽₂))
 
 /-- The initial state with all lights off -/
-def allOff : LightsOut m n := fun _ _ => 0
+def allOff : LightsOut m n := fun _ _ => ○
 
 /-- The state with all lights on -/
-def allOn : LightsOut m n := fun _ _ => 1
+def allOn : LightsOut m n := fun _ _ => ●
 
 /-- Check if all lights are off (winning condition) -/
 def isWin (state : LightsOut m n) : Prop := state = allOff
 
-/-- Check if position (i', j') is affected by pressing button at (i, j) -/
-def isAffected (i : Fin m) (j : Fin n) (i' : Fin m) (j' : Fin n) : Bool :=
-  -- A position is affected if it's the button itself or orthogonally adjacent
-  (i = i' ∧ j = j') ||  -- same position
-  (i = i' ∧ (j.val + 1 = j'.val ∨ j'.val + 1 = j.val)) ||  -- horizontal neighbor
-  (j = j' ∧ (i.val + 1 = i'.val ∨ i'.val + 1 = i.val))     -- vertical neighbor
+/-- Check if two positions are orthogonally adjacent -/
+def areAdjacent (pos1 pos2 : Button m n) : Bool :=
+  let (i1, j1) := pos1
+  let (i2, j2) := pos2
+  (i1 == i2 && (j1.val + 1 == j2.val || j2.val + 1 == j1.val)) ||
+  (j1 == j2 && (i1.val + 1 == i2.val || i2.val + 1 == i1.val))
 
-/-- The effect of pressing button at position (i, j) -/
-def buttonEffect (i : Fin m) (j : Fin n) : LightsOut m n :=
-  Matrix.of fun i' j' => if isAffected i j i' j' then 1 else 0
+/-- Check if position is in the von Neumann neighborhood (button + adjacent) -/
+def inVonNeumannNeighborhood (center target : Button m n) : Bool :=
+  decide (center = target) || areAdjacent center target
+
+/-- Check if position is affected by pressing a button -/
+def isAffected (button : Button m n) (pos : Button m n) : Bool :=
+  inVonNeumannNeighborhood button pos
+
+/-- The effect of pressing a specific button -/
+def buttonEffect (button : Button m n) : LightsOut m n :=
+  Matrix.of fun i j => if isAffected button (i, j) then ● else ○
 
 /-- Apply a button press to the current state -/
-def press (state : LightsOut m n) (i : Fin m) (j : Fin n) : LightsOut m n :=
-  state + buttonEffect i j
+def press (state : LightsOut m n) (button : Button m n) : LightsOut m n :=
+  state + buttonEffect button
+
+/-- Apply a button press by coordinates -/
+def pressAt (state : LightsOut m n) (i : Fin m) (j : Fin n) : LightsOut m n :=
+  press state (i, j)
 
 
 end Statement
@@ -77,17 +105,17 @@ The puzzle is solvable iff the initial state is in the column space of the butto
 
 open Statement (LightsOut buttonEffect press allOff isWin isAffected)
 
-/-- Convert a game state to a vector -/
-def toVector (state : LightsOut m n) : (Fin m × Fin n) → ZMod 2 :=
-  fun ⟨i, j⟩ => state i j
+/-- Convert a game state to a vector using uncurrying -/
+def toVector (state : LightsOut m n) : Statement.Button m n → ZMod 2 :=
+  Function.uncurry state
 
-/-- Convert a vector back to a game state -/
-def fromVector (v : (Fin m × Fin n) → ZMod 2) : LightsOut m n :=
-  Matrix.of fun i j => v ⟨i, j⟩
+/-- Convert a vector back to a game state using currying -/
+def fromVector (v : Statement.Button m n → ZMod 2) : LightsOut m n :=
+  Function.curry v
 
 /-- The button effect matrix where each column represents pressing one button -/
-def buttonMatrix : Matrix (Fin m × Fin n) (Fin m × Fin n) (ZMod 2) :=
-  Matrix.of fun pos btn => toVector (buttonEffect btn.1 btn.2) pos
+def buttonMatrix : Matrix (Statement.Button m n) (Statement.Button m n) (ZMod 2) :=
+  Matrix.of fun pos btn => toVector (Statement.buttonEffect btn) pos
 
 /-
 ButtonSelection can represent pressing multiple buttons at once.
@@ -100,7 +128,7 @@ For example, to press buttons (0,0), (0,1), and (1,0), you'd have:
 
 The order of button presses doesn't matter (as proven by button_press_comm).
 -/
-def ButtonSelection (m n : ℕ) := (Fin m × Fin n) → ZMod 2
+def ButtonSelection (m n : ℕ) := Statement.Button m n → ZMod 2
 
 /-- Apply a selection of button presses -/
 def applySelection (initial : LightsOut m n) (selection : ButtonSelection m n) : LightsOut m n :=
@@ -117,11 +145,11 @@ For verification and smaller puzzles, we can use brute-force search.
 -/
 
 /-- All possible button positions -/
-def allButtons : Finset (Fin m × Fin n) := Finset.univ
+def allButtons : Finset (Statement.Button m n) := Finset.univ
 
 /-- Apply a set of button presses (each button pressed once) -/
-def applyButtons (initial : LightsOut m n) (buttons : Finset (Fin m × Fin n)) : LightsOut m n :=
-  buttons.sum (fun btn => buttonEffect btn.1 btn.2) + initial
+def applyButtons (initial : LightsOut m n) (buttons : Finset (Statement.Button m n)) : LightsOut m n :=
+  initial + buttons.sum (fun btn => Statement.buttonEffect btn)
 
 /-- Check if the puzzle is solvable by trying all possible button combinations -/
 def isSolvableCompute (initial : LightsOut m n) [DecidableEq (LightsOut m n)] : Bool :=
@@ -142,20 +170,22 @@ def example2x2 : LightsOut 2 2 :=
 
 /-- Pressing (0,0) toggles the light and its neighbors -/
 theorem example2x2_press_00 :
-  press example2x2 0 0 = Matrix.of fun i j =>
+  Statement.pressAt example2x2 0 0 = Matrix.of fun i j =>
     if (i = 0 ∧ j = 1) ∨ (i = 1 ∧ j = 0) then 1 else 0 := by
   funext i j
   fin_cases i <;> fin_cases j <;>
-  { rw [press, example2x2, buttonEffect, Matrix.add_apply, Matrix.of_apply, Matrix.of_apply]
-    dsimp [isAffected]
+  { rw [Statement.pressAt, Statement.press, example2x2, Statement.buttonEffect, Matrix.add_apply, Matrix.of_apply, Matrix.of_apply]
+    simp only [Statement.isAffected, Statement.inVonNeumannNeighborhood, Statement.areAdjacent]
     decide }
 
 /-- The correct solution for 2×2 single light -/
 theorem example2x2_solution :
-  applyButtons example2x2 ({(0, 0), (0, 1), (1, 0)} : Finset (Fin 2 × Fin 2)) = allOff := by
+  applyButtons example2x2 ({(0, 0), (0, 1), (1, 0)} : Finset (Statement.Button 2 2)) = allOff := by
   funext i j
   fin_cases i <;> fin_cases j <;>
-  { dsimp [applyButtons, buttonEffect, isAffected, example2x2, allOff, Finset.sum]
+  { simp only [applyButtons, Statement.buttonEffect, Statement.isAffected,
+    Statement.inVonNeumannNeighborhood, Statement.areAdjacent, example2x2, allOff]
+    simp
     decide }
 
 /-- 3×3 cross pattern -/
@@ -166,16 +196,17 @@ def example3x3Cross : LightsOut 3 3 :=
 /-- The all-on 3×3 pattern is solvable by pressing all corners -/
 def allOn3x3_solution : LightsOut 3 3 → LightsOut 3 3 :=
   fun initial =>
-    let corners : Finset (Fin 3 × Fin 3) := {(0, 0), (0, 2), (2, 0), (2, 2)}
+    let corners : Finset (Statement.Button 3 3) := {(0, 0), (0, 2), (2, 0), (2, 2)}
     applyButtons initial corners
 
 /-- Example: The 2×2 puzzle with single light is solvable -/
 theorem example2x2_solvable : isSolvable example2x2 := by
-  use fun btn => if btn ∈ ({(0, 0), (0, 1), (1, 0)} : Finset (Fin 2 × Fin 2)) then 1 else 0
-  simp [applySelection, fromVector, buttonMatrix, Matrix.mulVec, Matrix.of_apply, toVector]
+  use fun btn => if btn ∈ ({(0, 0), (0, 1), (1, 0)} : Finset (Statement.Button 2 2)) then 1 else 0
+  simp [applySelection, fromVector, buttonMatrix, toVector]
   funext i j
   fin_cases i <;> fin_cases j <;>
-  { simp [example2x2, allOff, buttonEffect, isAffected, Matrix.of_apply]
+  { simp only [example2x2, allOff, Statement.buttonEffect, Statement.isAffected,
+    Statement.inVonNeumannNeighborhood, Statement.areAdjacent]
     decide }
 
 end Examples
@@ -204,7 +235,7 @@ lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
 /-- Helper: fromVector ∘ toVector = id for matrices -/
 lemma fromVector_toVector (M : LightsOut m n) : fromVector (toVector M) = M := by
   funext i j
-  simp [fromVector, toVector, Matrix.of_apply]
+  simp [fromVector, toVector]
 
 /-- Helper: toVector is injective -/
 lemma toVector_injective : Function.Injective (@toVector m n) := by
@@ -245,43 +276,46 @@ theorem solvable_iff_in_column_space (initial : LightsOut m n) :
   isSolvable initial ↔
   toVector initial ∈ Set.range (buttonMatrix.mulVec) := by
   rw [solvable_iff_in_image]
-  simp [buttonLinearMap, Matrix.toLin'_apply]
+  rfl
 
 /-- Button presses are self-inverse (pressing twice = doing nothing) -/
-theorem button_self_inverse (i : Fin m) (j : Fin n) (state : LightsOut m n) :
-  press (press state i j) i j = state := by
-  funext i' j'
-  calc press (press state i j) i j i' j'
-    = (press state i j + buttonEffect i j) i' j' := by rw [press]
-    _ = press state i j i' j' + buttonEffect i j i' j' := by rw [Matrix.add_apply]
-    _ = (state + buttonEffect i j) i' j' + buttonEffect i j i' j' := by rw [press]
-    _ = state i' j' + buttonEffect i j i' j' + buttonEffect i j i' j' := by rw [Matrix.add_apply]
-    _ = state i' j' + (buttonEffect i j i' j' + buttonEffect i j i' j') := by rw [add_assoc]
-    _ = state i' j' + 0 := by {
-        rw [buttonEffect, Matrix.of_apply]
-        split_ifs with h
-        · have : (1 : ZMod 2) + 1 = 0 := by decide
-          simp [this]
-        · simp
-      }
-    _ = state i' j' := by rw [add_zero]
+theorem button_self_inverse (button : Statement.Button m n) (state : LightsOut m n) :
+  Statement.press (Statement.press state button) button = state := by
+  funext i j
+  calc Statement.press (Statement.press state button) button i j
+    = (Statement.press state button + Statement.buttonEffect button) i j := by rw [Statement.press]
+    _ = (Statement.press state button) i j + (Statement.buttonEffect button) i j := by rw [Matrix.add_apply]
+    _ = ((state + Statement.buttonEffect button) i j) + (Statement.buttonEffect button) i j := by rw [Statement.press, Matrix.add_apply]
+    _ = (state i j + Statement.buttonEffect button i j) + Statement.buttonEffect button i j := rfl
+    _ = state i j + (Statement.buttonEffect button i j + Statement.buttonEffect button i j) := by ring
+    _ = state i j + 0 := by
+      rw [Statement.buttonEffect, Matrix.of_apply]
+      by_cases h : Statement.isAffected button (i, j)
+      · simp only [h, if_true]
+        -- In ZMod 2: 1 + 1 = 0
+        have : (1 : ZMod 2) + 1 = 0 := by decide
+        rw [this]
+      · simp only [h]
+        -- 0 + 0 = 0
+        simp
+    _ = state i j := by ring
 
 /-- The order of button presses doesn't matter since pressing the same button twice cancels out (button_self_inverse), what matters is just which buttons you press an odd number of times. -/
-theorem button_press_comm (i₁ i₂ : Fin m) (j₁ j₂ : Fin n) (state : LightsOut m n) :
-  press (press state i₁ j₁) i₂ j₂ = press (press state i₂ j₂) i₁ j₁ := by
+theorem button_press_comm (button₁ button₂ : Statement.Button m n) (state : LightsOut m n) :
+  Statement.press (Statement.press state button₁) button₂ = Statement.press (Statement.press state button₂) button₁ := by
   funext i j
-  calc press (press state i₁ j₁) i₂ j₂ i j
-    = (press state i₁ j₁ + buttonEffect i₂ j₂) i j := by rw [press]
-    _ = press state i₁ j₁ i j + buttonEffect i₂ j₂ i j := by rw [Matrix.add_apply]
-    _ = (state + buttonEffect i₁ j₁) i j + buttonEffect i₂ j₂ i j := by rw [press]
-    _ = state i j + buttonEffect i₁ j₁ i j + buttonEffect i₂ j₂ i j := by rw [Matrix.add_apply]
-    _ = state i j + (buttonEffect i₁ j₁ i j + buttonEffect i₂ j₂ i j) := by rw [add_assoc]
-    _ = state i j + (buttonEffect i₂ j₂ i j + buttonEffect i₁ j₁ i j) := by rw [add_comm (buttonEffect i₁ j₁ i j)]
-    _ = state i j + buttonEffect i₂ j₂ i j + buttonEffect i₁ j₁ i j := by rw [← add_assoc]
-    _ = (state + buttonEffect i₂ j₂) i j + buttonEffect i₁ j₁ i j := by rw [← Matrix.add_apply]
-    _ = press state i₂ j₂ i j + buttonEffect i₁ j₁ i j := by rw [← press]
-    _ = (press state i₂ j₂ + buttonEffect i₁ j₁) i j := by rw [← Matrix.add_apply]
-    _ = press (press state i₂ j₂) i₁ j₁ i j := by rw [← press]
+  calc Statement.press (Statement.press state button₁) button₂ i j
+    = (Statement.press state button₁ + Statement.buttonEffect button₂) i j := by rw [Statement.press]
+    _ = Statement.press state button₁ i j + Statement.buttonEffect button₂ i j := by rw [Matrix.add_apply]
+    _ = (state + Statement.buttonEffect button₁) i j + Statement.buttonEffect button₂ i j := by rw [Statement.press]
+    _ = state i j + Statement.buttonEffect button₁ i j + Statement.buttonEffect button₂ i j := by rw [Matrix.add_apply]
+    _ = state i j + (Statement.buttonEffect button₁ i j + Statement.buttonEffect button₂ i j) := by rw [add_assoc]
+    _ = state i j + (Statement.buttonEffect button₂ i j + Statement.buttonEffect button₁ i j) := by rw [add_comm (Statement.buttonEffect button₁ i j)]
+    _ = state i j + Statement.buttonEffect button₂ i j + Statement.buttonEffect button₁ i j := by rw [← add_assoc]
+    _ = (state + Statement.buttonEffect button₂) i j + Statement.buttonEffect button₁ i j := by rw [← Matrix.add_apply]
+    _ = Statement.press state button₂ i j + Statement.buttonEffect button₁ i j := by rw [← Statement.press]
+    _ = (Statement.press state button₂ + Statement.buttonEffect button₁) i j := by rw [← Matrix.add_apply]
+    _ = Statement.press (Statement.press state button₂) button₁ i j := by rw [← Statement.press]
 
 /-- For finite grids, we can decide solvability -/
 instance [Fintype (Fin m)] [Fintype (Fin n)] : DecidablePred (isSolvable : LightsOut m n → Prop) := by
