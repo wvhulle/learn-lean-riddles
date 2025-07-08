@@ -1,3 +1,4 @@
 import RiddleProofs.BlueEyedIslanders
 import RiddleProofs.JealousHusbands
 import RiddleProofs.MontyHall
+import RiddleProofs.LightsOut

@@ -3,14 +3,19 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
 
 /-!
-# Jealous Husbands River Crossing Puzzle:
+# Jealous husbands river crossing puzzle:
 
 Three husbands (m1, m2, m3) and their respective wives (w1, w2, w3) must cross a river.
 - The boat carries at most two people at a time.
 - A man and a woman cannot be in the boat together unless they are married.
 - A woman cannot remain on the same side of the river with a man unless her husband is present.
 - The boat must always return to the other side to pick up the remaining passengers.
-- The goal is to ensure all six individuals and the boat reach the right bank.
+
+Left Bank                 ~~~      Right Bank
+---------------------------------------------
+H1 W1 H2 W2 H3 W3 |<~>|
+
+The goal is to ensure all six individuals and the boat reach the right bank.
 -/
 
 def num_couples: Nat := 3
