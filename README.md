@@ -67,14 +67,14 @@ After initialisation, the directory tree will look like this:
 
 ```txt
 riddle-proofs/
-├── lakefile.toml         # Project configuration for Lake (Lean's build tool)
-├── lean-toolchain        # Specifies the Lean toolchain version to use
-├── README.md             # Project documentation and instructions
-├── Main.lean             # (Optional) Main entry point for the project, often imports or runs top-level code
-├── RiddleProofs.lean     # (Optional) Index file for the RiddleProofs/ folder, re-exports submodules
+├── lakefile.toml            # Dependencies
+├── lean-toolchain           # Enforces a version of Lean
+├── README.md             
+├── Main.lean                # (Optional) Main binary to run Lean code
+├── RiddleProofs.lean        # Exports submodules
 ├── RiddleProofs/
-│   ├── Basic.lean        # (Example) A Lean file for basic definitions or warm-up exercises
-│   └── JealousHusbands.lean
+│   ├── Basic.lean           # Conventional sub-module entry-point / prelude
+│   └── JealousHusbands.lean # A sub-module
 ```
 
 Source files that are "top-level entrypoints" (like `/Main.lean` and `/RiddleProofs.lean`) have to be declared in the `lakefile.toml` file.
@@ -91,17 +91,7 @@ The `lean-toolchain` file in your project root specifies which Lean version to u
 leanprover/lean4:v4.22.0-rc2
 ```
 
-Toolchain management workflow:
-1. Check compatibility between your Lean version and Mathlib version
-2. Update gradually - don't jump multiple major versions at once
-3. Test after updates: run `lake build` to ensure everything still compiles
-4. Update cache: run `lake exe cache get` after toolchain changes
-
-When to update Lean:
-- When you need new language features
-- When Mathlib requires a newer version
-- For security updates (rare but important)
-- **Caution**: Major version updates may break existing code
+This will be updated automatically when you run `lake update`. If you update this manually, make sure the version is compatible with Mathlib or other dependencies.
 
 ## Managing dependencies (optional)
 
@@ -175,13 +165,14 @@ If you don't want to trigger post-update hooks for Mathlib, you can use:
 MATHLIB_NO_CACHE_ON_UPDATE=1 lake update ennreal-arith --no-build
 ```
 
-To update all dependencies in the project, you can run:
+To update all dependencies (and the Lean compiler) in the project, you can run:
 
 ```bash
 lake update
 ```
 
-### Updating Mathlib cache (optional)
+
+### Download Mathlib cache (optional)
 
 Not required if this was already automatically done during `lake update`.
 
@@ -205,24 +196,7 @@ You can also compile single files or folders by specifying the module import spe
 lake build RiddleProofs.MontyHall
 ```
 
-### Updating Lean compiler
 
-Be careful that your dependencies are compatible with the new Lean version. The package ecosystem for Lean is not like others. It is often the case that the Lean version has to follow the Mathlib dependency version.
-
-```bash
-lean --version
-elan show
-```
-
-Update compiler toolchain:
-
-```bash
-# Update to latest stable
-elan update
-
-elan install leanprover/lean4:v4.22.0
-elan default leanprover/lean4:v4.22.0
-```
 
 ## Learning Resources
 
@@ -377,35 +351,30 @@ You can also search using English / natural language on [Moogle](https://moogle.
 
 If you prefer reading documentation in your browser, you can search on the [HTML pages](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) with cross-references and syntax highlighting.
 
-### Hints for certain math topics
-
-(Work-in-progress)
-
-For computing sums of weight functions explicitly as a real number, you might have to map the index set to an equivalent set that is easier to enumerate. This requires you to define an equivalent set and prove an equivalence relation.
-
-Unfinished proof states may suggest that you need complex types such as  `ENNReal` (extended non-negative real numbers)  for making a proof pass. However, avoid such specific types and use instead common types such as `Real`.
-
-When you become more proficient, it is recommended to replace mentions of `Nat` or `Real` by fields or other algebraic structures. Such concepts are encoded in Lean by using type classes. One of the simpler type classes is `Monoid` (a type with an associative binary operation and an identity element). When you use type classes instead of concrete types,  you can re-use the same definitions and theorems for different types of sets.
-
-## Riddles
+## Exercises
 
 In this workshop, we will try to solve some well-known riddles using Lean.
 
-### Simple
+### Famous riddles
 
 Problem statements and solutions for this workshop are located in the [`RiddleProofs`](./RiddleProofs) sub-directory.
 
 _**Note**: This is a work in progress. The code is not complete yet, but the riddles are mostly solvable. Still looking for more riddles!_
 
 
-### Harder
+### Advanced Lean problems
 
 If you are ready for it, continue with more challenging problems. Use the techniques in the proofs to improve your skills.
 
-- Larger, older, well-known (solved) problems in mathematics: https://www.cs.ru.nl/~freek/100/
 - Solutions to recent International Mathematical Olympiad problems: https://dwrensha.github.io/compfiles/imo.html
 - Have a look at the [math index page](https://leanprover-community.github.io/mathlib-overview.html).
 
 
-Also have a look at [Project Euler](https://projecteuler.net/) if you want to solve new riddles or problems and compete with others.
+### Unformalised problems
+
+When you have had enough of formalised (in Lean) problems, you can have a look at problems that are unformalised:
+
+- Larger, older, well-known (solved) problems in mathematics: https://www.cs.ru.nl/~freek/100/
+
+- Also have a look at [Project Euler](https://projecteuler.net/) if you want to solve new riddles or problems and compete with others.
 
