@@ -37,7 +37,6 @@ variable {m n : ℕ} [NeZero m] [NeZero n]
 def LightsOut (m n : ℕ) := Matrix (Fin m) (Fin n) (ZMod 2)
 
 
--- Instance for adding matrices (game states)
 instance : Add (LightsOut m n) := inferInstanceAs (Add (Matrix (Fin m) (Fin n) (ZMod 2)))
 instance : AddCommMonoid (LightsOut m n) := inferInstanceAs (AddCommMonoid (Matrix (Fin m) (Fin n) (ZMod 2)))
 instance : DecidableEq (LightsOut m n) := inferInstanceAs (DecidableEq (Matrix (Fin m) (Fin n) (ZMod 2)))
@@ -156,8 +155,7 @@ theorem example2x2_solution :
   applyButtons example2x2 ({(0, 0), (0, 1), (1, 0)} : Finset (Fin 2 × Fin 2)) = allOff := by
   funext i j
   fin_cases i <;> fin_cases j <;>
-  { -- Check all 4 cases explicitly
-    dsimp [applyButtons, buttonEffect, isAffected, example2x2, allOff, Finset.sum]
+  { dsimp [applyButtons, buttonEffect, isAffected, example2x2, allOff, Finset.sum]
     decide }
 
 /-- 3×3 cross pattern -/
@@ -225,8 +223,7 @@ theorem solvable_iff_in_image (initial : LightsOut m n) :
       _ ↔ ∃ selection, toVector (initial + fromVector (buttonMatrix.mulVec selection)) = toVector Statement.allOff := by
           constructor
           · rintro ⟨selection, h⟩; use selection; rw [h]
-          · rintro ⟨selection, h⟩; use selection
-            exact toVector_injective h
+          · rintro ⟨selection, h⟩; use selection; exact toVector_injective h
       _ ↔ ∃ selection, toVector initial + buttonMatrix.mulVec selection = 0 := by
           simp only [fromVector]
           constructor
@@ -263,11 +260,9 @@ theorem button_self_inverse (i : Fin m) (j : Fin n) (state : LightsOut m n) :
     _ = state i' j' + 0 := by {
         rw [buttonEffect, Matrix.of_apply]
         split_ifs with h
-        · -- If affected, then 1 + 1 = 0 in ZMod 2
-          have : (1 : ZMod 2) + 1 = 0 := by decide
+        · have : (1 : ZMod 2) + 1 = 0 := by decide
           simp [this]
-        · -- If not affected, then 0 + 0 = 0
-          simp
+        · simp
       }
     _ = state i' j' := by rw [add_zero]
 
@@ -291,16 +286,8 @@ theorem button_press_comm (i₁ i₂ : Fin m) (j₁ j₂ : Fin n) (state : Light
 /-- For finite grids, we can decide solvability -/
 instance [Fintype (Fin m)] [Fintype (Fin n)] : DecidablePred (isSolvable : LightsOut m n → Prop) := by
   intro initial
-  -- isSolvable means ∃ selection, applySelection initial selection = allOff
-  -- Since we have finitely many possible selections, this is decidable
   unfold isSolvable
-  -- We need to show that the existence of a selection is decidable
-  -- First, note that ButtonSelection m n = (Fin m × Fin n) → ZMod 2
-  -- This is a finite type since both domain and codomain are finite
   have : Fintype (ButtonSelection m n) := by
-    -- ButtonSelection m n = (Fin m × Fin n) → ZMod 2
-    -- Both Fin m × Fin n and ZMod 2 are finite, so functions between them are finite
     unfold ButtonSelection
     infer_instance
-  -- For finite types, we can decide existence by checking all elements
   apply Fintype.decidableExistsFintype
