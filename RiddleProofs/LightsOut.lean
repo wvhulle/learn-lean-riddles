@@ -208,28 +208,40 @@ lemma fromVector_toVector (M : LightsOut m n) : fromVector (toVector M) = M := b
   funext i j
   simp [fromVector, toVector, Matrix.of_apply]
 
+/-- Helper: toVector is injective -/
+lemma toVector_injective : Function.Injective (@toVector m n) := by
+  intros M N eq
+  funext i j
+  exact congr_fun eq ⟨i, j⟩
+
 /-- A state is solvable iff it's in the image of the button linear map -/
 theorem solvable_iff_in_image (initial : LightsOut m n) :
   isSolvable initial ↔
   toVector initial ∈ Set.range buttonLinearMap := by
-    simp only [isSolvable, Set.mem_range, buttonLinearMap, Matrix.toLin'_apply]
-    constructor
-    · -- (⇒) If solvable, then in range
-      rintro ⟨selection, h⟩
-      use selection
-      ext pos
-      simp only [toVector, applySelection] at h ⊢
-      have : initial pos.1 pos.2 + (buttonMatrix.mulVec selection) pos = 0 := by
-        have := congr_fun (congr_fun h pos.1) pos.2
-        simpa [Statement.allOff, fromVector] using this
-      exact add_eq_zero_iff_eq_ZMod2.mp (by rwa [add_comm])
-    · -- (⇐) If in range, then solvable  
-      rintro ⟨selection, h⟩
-      use selection
-      rw [applySelection, h, fromVector_toVector]
-      funext i j
-      simp only [Statement.allOff]
-      exact add_eq_zero_iff_eq_ZMod2.mpr rfl
+    calc isSolvable initial
+      ↔ ∃ selection, applySelection initial selection = Statement.allOff := Iff.rfl
+      _ ↔ ∃ selection, initial + fromVector (buttonMatrix.mulVec selection) = Statement.allOff := by
+          rfl
+      _ ↔ ∃ selection, toVector (initial + fromVector (buttonMatrix.mulVec selection)) = toVector Statement.allOff := by
+          constructor
+          · rintro ⟨selection, h⟩; use selection; rw [h]
+          · rintro ⟨selection, h⟩; use selection
+            exact toVector_injective h
+      _ ↔ ∃ selection, toVector initial + buttonMatrix.mulVec selection = 0 := by
+          simp only [fromVector]
+          constructor
+          · rintro ⟨selection, h⟩; use selection; funext pos; exact congr_fun h pos
+          · rintro ⟨selection, h⟩; use selection; funext pos; exact congr_fun h pos
+      _ ↔ ∃ selection, buttonMatrix.mulVec selection = toVector initial := by
+          constructor
+          · rintro ⟨selection, h⟩; use selection; funext pos
+            exact add_eq_zero_iff_eq_ZMod2.mp (by rw [add_comm]; exact congr_fun h pos)
+          · rintro ⟨selection, h⟩; use selection; funext pos
+            rw [← h]; exact add_eq_zero_iff_eq_ZMod2.mpr rfl
+      _ ↔ toVector initial ∈ Set.range (buttonMatrix.mulVec) := Set.mem_range.symm
+      _ ↔ toVector initial ∈ Set.range buttonLinearMap := by
+          simp only [buttonLinearMap]
+          rfl
 
 /-- The linear algebra and computational approaches are equivalent -/
 theorem solvable_iff_in_column_space (initial : LightsOut m n) :
@@ -254,7 +266,7 @@ theorem button_self_inverse (i : Fin m) (j : Fin n) (state : LightsOut m n) :
         · -- If affected, then 1 + 1 = 0 in ZMod 2
           have : (1 : ZMod 2) + 1 = 0 := by decide
           simp [this]
-        · -- If not affected, then 0 + 0 = 0  
+        · -- If not affected, then 0 + 0 = 0
           simp
       }
     _ = state i' j' := by rw [add_zero]
