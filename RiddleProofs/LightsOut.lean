@@ -192,6 +192,22 @@ The main theoretical result connects the two approaches.
 def buttonLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
   Matrix.toLin' buttonMatrix
 
+/-- Helper: In ZMod 2, if a + b = 0, then a = b -/
+lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
+  constructor
+  · intro h
+    calc a = a + 0 := by rw [add_zero]
+         _ = a + (b + b) := by rw [← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
+         _ = (a + b) + b := by rw [add_assoc]
+         _ = 0 + b := by rw [h]
+         _ = b := by rw [zero_add]
+  · intro h; rw [h, ← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
+
+/-- Helper: fromVector ∘ toVector = id for matrices -/
+lemma fromVector_toVector (M : LightsOut m n) : fromVector (toVector M) = M := by
+  funext i j
+  simp [fromVector, toVector, Matrix.of_apply]
+
 /-- A state is solvable iff it's in the image of the button linear map -/
 theorem solvable_iff_in_image (initial : LightsOut m n) :
   isSolvable initial ↔
@@ -204,55 +220,27 @@ theorem solvable_iff_in_image (initial : LightsOut m n) :
       -- From h: applySelection initial selection = allOff
       -- Need to show: buttonMatrix.mulVec selection = toVector initial
       ext pos
-      -- Goal: (buttonMatrix.mulVec selection) pos = (toVector initial) pos
       simp only [toVector]
-      -- From applySelection definition and h:
-      have : initial + fromVector (buttonMatrix.mulVec selection) = Statement.allOff := by
+      -- Get the equation at position pos
+      have h_eq : initial + fromVector (buttonMatrix.mulVec selection) = Statement.allOff := by
         rw [applySelection] at h; exact h
-      -- Apply this equality at position pos
-      have h' : initial pos.1 pos.2 + (fromVector (buttonMatrix.mulVec selection)) pos.1 pos.2 = 0 := by
-        have := congr_fun (congr_fun this pos.1) pos.2
-        simp only [Statement.allOff] at this
+      have h_pos : initial pos.1 pos.2 + (buttonMatrix.mulVec selection) pos = 0 := by
+        have := congr_fun (congr_fun h_eq pos.1) pos.2
+        simp only [Statement.allOff, fromVector] at this
         exact this
-      -- Simplify using fromVector definition
-      simp only [fromVector, Matrix.of_apply] at h'
-      -- In ZMod 2, a + b = 0 implies a = b
-      -- From h': initial pos.1 pos.2 + buttonMatrix.mulVec selection pos = 0
-      -- We need: buttonMatrix.mulVec selection pos = initial pos.1 pos.2
-      have : buttonMatrix.mulVec selection pos + initial pos.1 pos.2 = 0 := by
-        rw [add_comm]; exact h'
-      -- Since x + y = 0 and x = -x in ZMod 2, we get x = y
-      calc buttonMatrix.mulVec selection pos 
-        = buttonMatrix.mulVec selection pos + 0 := by rw [add_zero]
-        _ = buttonMatrix.mulVec selection pos + (initial pos.1 pos.2 + initial pos.1 pos.2) := by
-          rw [← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul, add_zero]
-        _ = (buttonMatrix.mulVec selection pos + initial pos.1 pos.2) + initial pos.1 pos.2 := by
-          rw [add_assoc]
-        _ = 0 + initial pos.1 pos.2 := by rw [this]
-        _ = initial pos.1 pos.2 := by rw [zero_add]
+      -- Apply our helper lemma
+      rw [add_comm] at h_pos
+      exact add_eq_zero_iff_eq_ZMod2.mp h_pos
     case mpr =>
       rintro ⟨selection, h⟩
       use selection
-      -- We have: buttonMatrix.mulVec selection = toVector initial
+      -- From h: buttonMatrix.mulVec selection = toVector initial
       -- Need to show: applySelection initial selection = allOff
-      rw [applySelection]
-      -- Need to show: initial + fromVector (buttonMatrix.mulVec selection) = allOff
-      -- Substitute h into the goal
-      rw [h]
-      -- Now we need: initial + fromVector (toVector initial) = allOff
-      -- Since fromVector ∘ toVector = id for matrices, we have fromVector (toVector initial) = initial
-      have : fromVector (toVector initial) = initial := by
-        funext i j
-        simp [fromVector, toVector, Matrix.of_apply]
-      rw [this]
-      -- Now we need: initial + initial = allOff
-      -- In ZMod 2, x + x = 0 for all x
+      rw [applySelection, h, fromVector_toVector]
+      -- Need to show: initial + initial = allOff
       funext i j
       simp only [Statement.allOff]
-      -- For any x : ZMod 2, we have x + x = 0
-      have : initial i j + initial i j = 0 := by
-        rw [← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
-      exact this
+      exact add_eq_zero_iff_eq_ZMod2.mpr rfl
 
 /-- The linear algebra and computational approaches are equivalent -/
 theorem solvable_iff_in_column_space (initial : LightsOut m n) :
@@ -291,4 +279,17 @@ theorem button_press_comm (i₁ i₂ : Fin m) (j₁ j₂ : Fin n) (state : Light
 
 /-- For finite grids, we can decide solvability -/
 instance [Fintype (Fin m)] [Fintype (Fin n)] : DecidablePred (isSolvable : LightsOut m n → Prop) := by
-  sorry -- TODO: Fix decidability instance properly
+  intro initial
+  -- isSolvable means ∃ selection, applySelection initial selection = allOff
+  -- Since we have finitely many possible selections, this is decidable
+  unfold isSolvable
+  -- We need to show that the existence of a selection is decidable
+  -- First, note that ButtonSelection m n = (Fin m × Fin n) → ZMod 2
+  -- This is a finite type since both domain and codomain are finite
+  have : Fintype (ButtonSelection m n) := by
+    -- ButtonSelection m n = (Fin m × Fin n) → ZMod 2
+    -- Both Fin m × Fin n and ZMod 2 are finite, so functions between them are finite
+    unfold ButtonSelection
+    infer_instance
+  -- For finite types, we can decide existence by checking all elements
+  apply Fintype.decidableExistsFintype
