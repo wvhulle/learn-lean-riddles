@@ -253,29 +253,39 @@ theorem solvable_iff_in_column_space (initial : LightsOut m n) :
 theorem button_self_inverse (i : Fin m) (j : Fin n) (state : LightsOut m n) :
   press (press state i j) i j = state := by
   funext i' j'
-  rw [press, press]
-  rw [Matrix.add_apply, Matrix.add_apply]
-  -- The goal is: state + effect + effect = state
-  -- In ZMod 2, this is true because effect + effect = 0
-  rw [add_assoc]
-  -- Now we need to show effect + effect = 0
-  rw [buttonEffect, Matrix.of_apply]
-  split_ifs
-  · -- If affected, then 1 + 1 = 0 in ZMod 2
-    have : (1 : ZMod 2) + 1 = 0 := by decide
-    rw [this, add_zero]
-  · -- If not affected, then 0 + 0 = 0
-    simp
+  calc press (press state i j) i j i' j'
+    = (press state i j + buttonEffect i j) i' j' := by rw [press]
+    _ = press state i j i' j' + buttonEffect i j i' j' := by rw [Matrix.add_apply]
+    _ = (state + buttonEffect i j) i' j' + buttonEffect i j i' j' := by rw [press]
+    _ = state i' j' + buttonEffect i j i' j' + buttonEffect i j i' j' := by rw [Matrix.add_apply]
+    _ = state i' j' + (buttonEffect i j i' j' + buttonEffect i j i' j') := by rw [add_assoc]
+    _ = state i' j' + 0 := by {
+        rw [buttonEffect, Matrix.of_apply]
+        split_ifs with h
+        · -- If affected, then 1 + 1 = 0 in ZMod 2
+          have : (1 : ZMod 2) + 1 = 0 := by decide
+          simp [this]
+        · -- If not affected, then 0 + 0 = 0  
+          simp
+      }
+    _ = state i' j' := by rw [add_zero]
 
 /-- The order of button presses doesn't matter since pressing the same button twice cancels out (button_self_inverse), what matters is just which buttons you press an odd number of times. -/
 theorem button_press_comm (i₁ i₂ : Fin m) (j₁ j₂ : Fin n) (state : LightsOut m n) :
   press (press state i₁ j₁) i₂ j₂ = press (press state i₂ j₂) i₁ j₁ := by
   funext i j
-  rw [press, press, press, press]
-  rw [Matrix.add_apply, Matrix.add_apply, Matrix.add_apply, Matrix.add_apply]
-  -- The goal is: ((state + b1) + b2) = ((state + b2) + b1)
-  -- This follows from commutativity and associativity of addition
-  rw [add_assoc, add_assoc, add_comm (buttonEffect i₁ j₁ i j)]
+  calc press (press state i₁ j₁) i₂ j₂ i j
+    = (press state i₁ j₁ + buttonEffect i₂ j₂) i j := by rw [press]
+    _ = press state i₁ j₁ i j + buttonEffect i₂ j₂ i j := by rw [Matrix.add_apply]
+    _ = (state + buttonEffect i₁ j₁) i j + buttonEffect i₂ j₂ i j := by rw [press]
+    _ = state i j + buttonEffect i₁ j₁ i j + buttonEffect i₂ j₂ i j := by rw [Matrix.add_apply]
+    _ = state i j + (buttonEffect i₁ j₁ i j + buttonEffect i₂ j₂ i j) := by rw [add_assoc]
+    _ = state i j + (buttonEffect i₂ j₂ i j + buttonEffect i₁ j₁ i j) := by rw [add_comm (buttonEffect i₁ j₁ i j)]
+    _ = state i j + buttonEffect i₂ j₂ i j + buttonEffect i₁ j₁ i j := by rw [← add_assoc]
+    _ = (state + buttonEffect i₂ j₂) i j + buttonEffect i₁ j₁ i j := by rw [← Matrix.add_apply]
+    _ = press state i₂ j₂ i j + buttonEffect i₁ j₁ i j := by rw [← press]
+    _ = (press state i₂ j₂ + buttonEffect i₁ j₁) i j := by rw [← Matrix.add_apply]
+    _ = press (press state i₂ j₂) i₁ j₁ i j := by rw [← press]
 
 /-- For finite grids, we can decide solvability -/
 instance [Fintype (Fin m)] [Fintype (Fin n)] : DecidablePred (isSolvable : LightsOut m n → Prop) := by
