@@ -46,10 +46,8 @@ namespace Statement
 
 variable {m n : ℕ} [NeZero m] [NeZero n]
 
-/-- Scoped notation for the field ℤ/2ℤ in the context of the Lights Out puzzle -/
 scoped notation "𝔽₂" => ZMod 2
 
-/-- Light state: off or on -/
 scoped notation "●" => (1 : 𝔽₂)  -- light on
 scoped notation "○" => (0 : 𝔽₂)  -- light off
 
@@ -153,7 +151,7 @@ def isSolvable (initial : State m n) : Prop :=
   ∃ selection : ButtonSelection m n, applySelection initial selection = allOff
 
 /-!
-## Computational Approach via State Space Search
+## Computational approach via state space search
 
 For verification and smaller puzzles, we can use brute-force search.
 -/
@@ -171,7 +169,7 @@ def isSolvableCompute (initial : State m n) [DecidableEq (State m n)] : Bool :=
     applyButtons initial buttons = allOff).card > 0
 
 /-!
-## Examples and Verification
+## Examples and verification
 
 Let's verify our approach with some small examples.
 -/
@@ -227,7 +225,7 @@ def allOn3x3_solution : State 3 3 → State 3 3 :=
 end Examples
 
 /-!
-## Theoretical Results
+## Theoretical
 
 The main theoretical result connects the two approaches.
 -/
@@ -236,7 +234,6 @@ The main theoretical result connects the two approaches.
 def buttonLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
   Matrix.toLin' buttonMatrix
 
-/-- Helper: In ZMod 2, if a + b = 0, then a = b -/
 lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
   constructor
   · intro h
@@ -247,12 +244,8 @@ lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
          _ = b := by rw [zero_add]
   · intro h; rw [h, ← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
 
-/-- Helper: fromVector ∘ toVector = id for matrices -/
-lemma fromVector_toVector (M : State m n) : fromVector (toVector M) = M := by
-  funext i j
-  simp [fromVector, toVector]
 
-/-- Helper: toVector is injective -/
+
 lemma toVector_injective : Function.Injective (@toVector m n) := by
   intros M N eq
   funext i j
