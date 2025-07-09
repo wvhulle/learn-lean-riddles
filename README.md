@@ -87,8 +87,16 @@ _Remark: On some sites, you might see there is a `lakefile.lean` instead of `lak
 
 The `lean-toolchain` file in your project root specifies which Lean version to use:
 
+<<<<<<< Updated upstream
 ```
 leanprover/lean4:v4.22.0-rc2
+||||||| Stash base
+```
+leanprover/lean4:v4.22.0-rc3
+=======
+```bash
+leanprover/lean4:v4.22.0-rc3
+>>>>>>> Stashed changes
 ```
 
 This will be updated automatically when you run `lake update`. If you update this manually, make sure the version is compatible with Mathlib or other dependencies.
@@ -118,34 +126,49 @@ By default, Lake automatically selects a compatible Mathlib version. You can opt
 
 ### Adding dependencies in general
 
+<<<<<<< Updated upstream
 In general dependencies are added to the `lakefile.toml` file in the root of your project. 
+||||||| Stash base
+In general dependencies are added to the `lakefile.toml` file in the root of your project.
+=======
+In general, dependencies are added to the `lakefile.lean` file in the root of your project. A sample [`lakefile.lean`](./lakefile.lean) looks like:
+>>>>>>> Stashed changes
 
-When a dependency is available through [Reservoir](https://reservoir.lean-lang.org/), you can add it with:
+```lean
+import Lake
+open Lake DSL
 
+<<<<<<< Updated upstream
 ```toml
 [[require]]
 name = "[name]" 
 scope = "[owner]"
-```
-
-Otherwise, you can add a local dependency (only available on your pc):
-
+||||||| Stash base
 ```toml
 [[require]]
-name = "ennreal-arith"
-path = "../ennreal"
+name = "<package-name>"    # Replace with actual package name
+scope = "<package-owner>"  # Replace with actual owner/organization
+=======
+package «ennreal-arith» where
+  version := v!"0.0.1"
+  keywords := #["probability", "ENNReal", "arithmetic", "tactics"]
+  description := "Arithmetic tactics for extended non-negative real numbers (ENNReal)"
+  homepage := "https://github.com/wvhulle/ennreal-arith"
+  license := "Apache-2.0"
+
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git" @ "main"
+
+@[default_target]
+lean_lib «ENNRealArith» where
+  -- Glob patterns for the library's Lean sources
+  globs := #[.andSubmodules `ENNRealArith]
+  -- Additional options for this library
+  moreLeanArgs := #[]
+>>>>>>> Stashed changes
 ```
 
-Usually, you want to add Git dependencies with:
-
-```toml
-[[require]]
-git = "https://github.com/wvhulle/ennreal-arith"
-name = "ennreal-arith"
-rev = "main"
-```
-
-There is also another format for dependencies available: `lakefile.lean`.
+You can also point to local directories for dependencies. A simplified alternative is the `lakefile.toml` file in the more conventional TOML format (but it does not seem to support testing in CI).
 
 
 ### Updating dependencies
@@ -378,3 +401,128 @@ When you have had enough of formalised (in Lean) problems, you can have a look a
 
 - Also have a look at [Project Euler](https://projecteuler.net/) if you want to solve new riddles or problems and compete with others.
 
+<<<<<<< Updated upstream
+||||||| Stash base
+## Extending the Lean ecosystem
+
+You can make your own packages and redistribute them on GitHub.
+
+If certain requirements are met, your package will be automatically listed by [Reservoir](https://reservoir.lean-lang.org/).
+
+### Linting
+
+For detecting dead code:
+
+```lean
+set_option linter.all true
+```
+
+For benchmarking compilation and type-checking time:
+
+```lean
+set_option profiler true
+```
+
+Use `#lint` for catching stylistic issues in Mathlib.
+
+There is no standard formatter as of June 2025.
+
+### Tests
+
+Your [`lakefile.toml`](./lakefile.toml) should look like:
+
+```toml
+defaultTargets = ["ENNRealTest"] # Include the test library.
+testDriver = "TestRunner"   # Point to the test runner script, written in Lean.
+
+[[lean_lib]]                # The tests are in a self-contained library.
+name = "ENNRealTest"        # Be careful not to choose `Test` because it is usually taken.
+                            # Usually people prefix the main library name.
+[[lean_exe]]
+name = "TestRunner"         # This is the testing entry point. 
+```
+
+The `TestRunner` executable points to a file `TestRunner.lean` located at the root of the repository with contents:
+
+```lean
+import ENNRealTest.Unit     # Reference modules in the test sub-module.
+import ENNRealTest.Integration
+
+def main : IO Unit := do
+  IO.println "Tests completed successfully"
+```
+
+Then you can just run `lake test` to run `TestRunner` (after trying to compile the testing library).
+
+### Using @[test_runner] attribute (to be checked)
+
+You can also use the `@[test_runner]` attribute for a more lightweight testing approach:
+
+```lean
+-- In a test file like Test/Basic.lean
+import Lean
+
+@[test_runner]
+def testRunner : IO Unit := do
+  -- Run your tests here
+  IO.println "Running tests..."
+  assert! (1 + 1 = 2)
+  IO.println "All tests passed!"
+```
+
+This approach doesn't require a separate test executable in your lakefile.
+=======
+## Extending the Lean ecosystem
+
+You can make your own packages and redistribute them on GitHub.
+
+If certain requirements are met, your package will be automatically listed by [Reservoir](https://reservoir.lean-lang.org/).
+
+### Linting
+
+For detecting dead code:
+
+```lean
+set_option linter.all true
+```
+
+For benchmarking compilation and type-checking time:
+
+```lean
+set_option profiler true
+```
+
+Use `#lint` for catching stylistic issues in Mathlib.
+
+There is no standard formatter as of June 2025.
+
+### Tests
+
+Your [`lakefile.lean`](./lakefile.lean) should contain a "test driver" that depends on your main exported library:
+
+```lean
+import Lake
+open Lake DSL
+
+@[default_target]
+lean_lib «ENNRealArith» where
+  -- Glob patterns for the library's Lean sources
+  globs := #[.andSubmodules `ENNRealArith]
+  -- Additional options for this library
+  moreLeanArgs := #[]
+
+@[test_driver]
+lean_lib «ENNRealTest» where
+  globs := #[.andSubmodules `ENNRealTest]
+  -- This library depends on ENNRealArith
+  needs := #[ENNRealArith]
+  moreLinkArgs := #[]
+
+```
+
+Then you can just run `lake test` to run all tests defined under the sub-directory `ENNRealTest`.
+
+## CI
+
+Use the official [Github action](https://github.com/leanprover/lean-action).
+>>>>>>> Stashed changes
