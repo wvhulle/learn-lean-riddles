@@ -34,40 +34,42 @@ Several options:
 3. Install Lean locally on your computer and choose your editor:
     - Use [Visual Studio Code](https://code.visualstudio.com/) with the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
     - Use [Emacs](https://www.gnu.org/software/emacs/) with [Lean4 mode](https://github.com/leanprover-community/lean4-mode)
-    - Use [Vim](https://www.vim.org/)
+    - Use [Vim](https://www.vim.org/) with [lean.nvim](https://github.com/Julian/lean.nvim) plugin
 
+Other editors are not officially supported. For custom setups, you can use command-line tools like the `python` package `leanclient` to implement your own language server integration.
 
-Other editors are not supported as far as I know. Use command-line tools like the `python` package `leanclient` to implement your own language server.
-
-### Installing Lean locally(optional)
+### Installing Lean locally (optional)
 
 In case you choose to install Lean locally:
 
 1. **Windows users**: Use [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install). Then follow the instructions for Linux below.
 2. **Linux / Mac users**: Install the Lean version manager [`elan`](https://github.com/leanprover/elan):
+
   ```bash
   curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
   ```
+
   This will provide you mainly with two commands:
-  - `lean` - the Lean compiler and interpreter
-  - `elan` - the Lean version manager
 
-
-
+- `lean` - the Lean compiler and interpreter
+- `elan` - the Lean version manager
 
 ### Initializing a project
 
 You can just continue with the rest of this workshop in the same folder, but you can also create a new project. To start a new Lean project, `cd` into a new empty directory and run:
 
 ```bash
-lake init
+lake init .
+lake new myproject .lean
 ```
+
+The first command initializes a project in the current directory, the second creates a new project directory with a `lakefile.lean` configuration file.
 
 After initialisation, the directory tree will look like this:
 
 ```txt
 riddle-proofs/
-├── lakefile.toml            # Dependencies
+├── lakefile.lean            # Dependencies and build configuration
 ├── lean-toolchain           # Enforces a version of Lean
 ├── README.md             
 ├── Main.lean                # (Optional) Main binary to run Lean code
@@ -77,18 +79,18 @@ riddle-proofs/
 │   └── JealousHusbands.lean # A sub-module
 ```
 
-Source files that are "top-level entrypoints" (like `/Main.lean` and `/RiddleProofs.lean`) have to be declared in the `lakefile.toml` file.
+Source files that are "top-level entrypoints" (like `/Main.lean` and `/RiddleProofs.lean`) have to be declared in the `lakefile.lean` file.
 
-Extra dependencies, needed later on during development, will also be added to `lakefile.toml`. For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
+Extra dependencies, needed later on during development, will also be added to `lakefile.lean`. For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
 
-_Remark: On some sites, you might see there is a `lakefile.lean` instead of `lakefile.toml`. In this project we will stick to the TOML variant._
+_Remark: You might see references to `lakefile.toml` format in some documentation. This workshop uses the `lakefile.lean` format which allows for more flexible configuration using Lean code itself._
 
 ### Setting toolchain per project
 
 The `lean-toolchain` file in your project root specifies which Lean version to use:
 
-```
-leanprover/lean4:v4.22.0-rc2
+```bash
+leanprover/lean4:v4.22.0-rc3
 ```
 
 This will be updated automatically when you run `lake update`. If you update this manually, make sure the version is compatible with Mathlib or other dependencies.
@@ -99,59 +101,52 @@ You can skip this section if you are not interested in using external dependenci
 
 ### Mathlib dependency
 
-Mathlib is the de-facto standard library of Lean 4 and contains the official standard library as well. It is recommended to add it every new project. To add Mathlib as a dependency, add this to your `lakefile.toml`:
+Mathlib is the de-facto standard library of Lean 4 and contains the official standard library as well. It is recommended to add it to every new project. To add Mathlib as a dependency, add this to your `lakefile.lean` file:
 
-```toml
-[[require]]
-name = "mathlib"
-scope = "leanprover-community"
+```lean
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git" @ "5c5a8deb94353f2b659cb9c578fe833f90febac7"
 ```
 
-**Remark**: Since compiling Mathlib would take several hours, you have to download a pre-compiled cache.
+**Important**: Since compiling Mathlib from source takes several hours, you must download a pre-compiled cache to avoid long build times.
+
 ```bash
 lake exe cache get
 ```
 
-This is only possible for Mathlib, not for other dependencies.
+Pre-compiled caches are only available for Mathlib. Other dependencies must be compiled from source.
 
 By default, Lake automatically selects a compatible Mathlib version. You can optionally pin to specific versions.
 
 ### Adding dependencies in general
 
-In general dependencies are added to the `lakefile.toml` file in the root of your project. 
+Dependencies are added to the `lakefile.lean` file in the root of your project. Here's a complete sample `lakefile.lean` file:
 
-When a dependency is available through [Reservoir](https://reservoir.lean-lang.org/), you can add it with:
+```lean
+import Lake
+open Lake DSL
 
-```toml
-[[require]]
-name = "[name]" 
-scope = "[owner]"
+package «riddle-proofs» where
+  version := v!"0.1.0"
+  keywords := #["mathematics", "puzzles", "proofs"]
+  description := "Lean proofs for classic riddles and puzzles"
+
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git" @ "5c5a8deb94353f2b659cb9c578fe833f90febac7"
+
+@[default_target]
+lean_lib «RiddleProofs» where
+  globs := #[.andSubmodules `RiddleProofs]
+
+lean_exe «riddle-proofs» where
+  root := `Main
 ```
 
-Otherwise, you can add a local dependency (only available on your pc):
-
-```toml
-[[require]]
-name = "ennreal-arith"
-path = "../ennreal"
-```
-
-Usually, you want to add Git dependencies with:
-
-```toml
-[[require]]
-git = "https://github.com/wvhulle/ennreal-arith"
-name = "ennreal-arith"
-rev = "main"
-```
-
-There is also another format for dependencies available: `lakefile.lean`.
-
+You can also point to local directories for dependencies. The `lakefile.lean` format gives you the full power of Lean's programming language to configure your build system.
 
 ### Updating dependencies
 
-When you have updated a local or remote dependency, or you want to point to a new version of a dependency, you can update the `lakefile.toml` file with the new version or path.
-
+When you have updated a local or remote dependency, or you want to point to a new version of a dependency, you can update the `lakefile.lean` file with the new version or path.
 
 You then need to update the source code of the dependency. This can be done with the `lake update` command:
 
@@ -171,21 +166,20 @@ To update all dependencies (and the Lean compiler) in the project, you can run:
 lake update
 ```
 
+### Download Mathlib cache (when needed)
 
-### Download Mathlib cache (optional)
-
-Not required if this was already automatically done during `lake update`.
-
-If you updated the `mathlib4` package, you may need to redownload the pre-compiled cache for Mathlib before you run `lake build` again.  This is because the cache is only valid for a specific Mathlib version:
+If you updated the `mathlib4` package, you may need to redownload the pre-compiled cache for Mathlib before you run `lake build` again. This is because the cache is only valid for a specific Mathlib version:
 
 ```bash
 lake exe cache get
 ```
 
+_Note: This is automatically done during `lake update` for Mathlib, so manual execution is only needed if you encounter build issues._
+
 ### Building
 
-
 Building all dependencies (which can take a while the first time) and  Lean files in the current project:
+
 ```bash
 lake build
 ```
@@ -196,37 +190,15 @@ You can also compile single files or folders by specifying the module import spe
 lake build RiddleProofs.MontyHall
 ```
 
-
-
 ## Learning Resources
 
 ### Beginner documentation
 
 If you need a fast-paced introduction you can read [Hitchhiker's Guide to Logical Verification (2023 Edition)](https://lean-forward.github.io/hitchhikers-guide/2023/).
 
-
 While learning, you may have further questions. Consult the [reference manual](https://lean-lang.org/doc/reference/latest/) for information about the core language. Refer to it for information about the syntax, type system, and other language features.
 
 A few educational interactive problems are provided as games at [University Düsseldorf](https://adam.math.hhu.de/).
-
-### Linting
-
-Write this in your Lean project root for detecting redundant code:
-
-```lean
-set_option linter.all true
-```
-
-For slow code:
-
-```lean
-set_option profiler true
-```
-
-Use `#lint` for catching stylistic issues in Mathlib. 
-
-There is no standard formatter as of June 2025.
-
 
 ### Community resources
 
@@ -244,7 +216,7 @@ Imports have to be placed on the top of the file and are written like this:
 import Std.Data.Foo
 ```
 
-After insterting a new import, you might need to restart the language server of Lean. VS Code shortcut: `Ctrl + Shift + X`.
+After inserting a new import, you might need to restart the language server of Lean. VS Code shortcut: `Ctrl + Shift + P` then search for "Lean 4: Restart Server".
 
 ### Namespaces
 
@@ -270,12 +242,11 @@ open Foo.Bar
 
 The easiest way to find the import paths for modules in the standard library is to install `mathlib` and use its [API documentation site](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html). It also includes and re-exports the standard library of Lean. However, for completeness, this section explains how to find the import paths without installing `mathlib`.
 
-
 ### Using the standard library only
 
 Let's say you need a certain module from the standard library called `Foo`. You found it's path in the reference manual. You don't know the fully-qualified import path to use it in your project.
 
-The path in the reference manual to the standard library points to namespaces, not import paths for modules. This might be confusing. 
+The path in the reference manual to the standard library points to namespaces, not import paths for modules. This might be confusing.
 
 > For example `HashSet` is defined in the namespace `Std.HashSet`, according to the reference manual, but you have to import it like `import Std.Data.HashSet`.
 
@@ -298,8 +269,6 @@ import Mathlib.Tactic.FindSyntax
 #find_syntax "#lint"
 ```
 
-
-
 ## Mathematics
 
 Lean is not only a powerful functional programming language, but is also known for being a flexible proof assistant. It has helped thousands of mathematicians worldwide to formalize starter up-to research-level mathematics.
@@ -308,10 +277,9 @@ The best learning resource for mathematics with Lean is the book [Mathematics in
 
 ### Searching mathematical patterns
 
-The collection of definitions and theorems in Mathlib is large. Sometimes the naming of the modules, namespaces and proofs is not entirly consistent. Use these resources to find the definitions and theorems you need:
+The collection of definitions and theorems in Mathlib is large. Sometimes the naming of the modules, namespaces and proofs is not entirely consistent. Use these resources to find the definitions and theorems you need:
 
 You can use [Loogle](https://loogle.lean-lang.org/) to search for definitions that help to solve a particular open goal. To open `loogle` in VS Code, you can use the command palette (`Ctrl + Shift + P`) and type `Loogle: Search for a definition`.
-
 
 Examples of Loogle searches:
 
@@ -321,19 +289,20 @@ Examples of Loogle searches:
   ?a + ?b < ?c
   ```
 
-
 - To find theorems about multiplication being associative:
+
   ```lean
   ?a * (?b * ?c) = (?a * ?b) * ?c
   ```
 
-
 - To find definitions involving lists and membership:
+
   ```lean
   ?a ∈ List ?b
   ```
 
 - To find theorems about natural number induction:
+
   ```lean
   (?P 0) → (∀ n, ?P n → ?P (n + 1)) → ∀ n, ?P n
   ```
@@ -348,7 +317,6 @@ You can also search using English / natural language on [Moogle](https://moogle.
 - "Cauchy-Schwarz inequality"
 - "derivative of composition of functions"
 
-
 If you prefer reading documentation in your browser, you can search on the [HTML pages](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) with cross-references and syntax highlighting.
 
 ## Exercises
@@ -361,20 +329,124 @@ Problem statements and solutions for this workshop are located in the [`RiddlePr
 
 _**Note**: This is a work in progress. The code is not complete yet, but the riddles are mostly solvable. Still looking for more riddles!_
 
-
 ### Advanced Lean problems
 
 If you are ready for it, continue with more challenging problems. Use the techniques in the proofs to improve your skills.
 
-- Solutions to recent International Mathematical Olympiad problems: https://dwrensha.github.io/compfiles/imo.html
+- Solutions to recent International Mathematical Olympiad problems: <https://dwrensha.github.io/compfiles/imo.html>
 - Have a look at the [math index page](https://leanprover-community.github.io/mathlib-overview.html).
-
 
 ### Unformalised problems
 
 When you have had enough of formalised (in Lean) problems, you can have a look at problems that are unformalised:
 
-- Larger, older, well-known (solved) problems in mathematics: https://www.cs.ru.nl/~freek/100/
+- Larger, older, well-known (solved) problems in mathematics: <https://www.cs.ru.nl/~freek/100/>
 
 - Also have a look at [Project Euler](https://projecteuler.net/) if you want to solve new riddles or problems and compete with others.
 
+## Extending the Lean ecosystem
+
+You can make your own packages and redistribute them on GitHub.
+
+If certain requirements are met, your package will be automatically listed by [Reservoir](https://reservoir.lean-lang.org/).
+
+### Linting
+
+For detecting dead code:
+
+```lean
+set_option linter.all true
+```
+
+If you want to be more specific, you can enable only the linter you want to use. You can also set linter options in the `lakefile.lean` file:
+
+```lean
+import Lake
+open Lake DSL
+
+package «riddle-proofs» where
+  version := v!"0.0.1"
+  -- Enable comprehensive linting for better code quality
+  leanOptions := #[
+    -- Core linters
+    ⟨`linter.all, false⟩,                              -- Don't enable ALL linters (too strict)
+    ⟨`linter.unusedVariables, true⟩,                   -- Catch unused variables
+    ⟨`linter.unusedVariables.funArgs, true⟩,          -- Including function arguments
+    ⟨`linter.unusedVariables.patternVars, true⟩,      -- Including pattern variables
+    ⟨`linter.unusedVariables.analyzeTactics, true⟩,   -- Analyze tactics for unused vars
+    ⟨`linter.constructorNameAsVariable, true⟩,        -- Warn when variable names match constructors
+    ⟨`linter.deprecated, true⟩,                       -- Warn about deprecated features
+    ⟨`linter.missingDocs, false⟩,                     -- Don't require docs for exercises
+    ⟨`linter.unnecessarySimpa, true⟩,                 -- Suggest simpler simp usage
+
+    -- Style linters (mathlib-style)
+    ⟨`linter.style.lambdaSyntax, true⟩,               -- Prefer 'fun' over 'λ'
+    ⟨`linter.style.dollarSyntax, true⟩,               -- Prefer '<|' over '$'
+    ⟨`linter.style.longLine, true⟩,                   -- Enforce 100 character line limit
+    ⟨`linter.style.longFile, true⟩,                   -- Warn on files > 1500 lines
+    ⟨`linter.style.commandStart, true⟩,               -- Commands should start at line beginning
+    ⟨`linter.style.cdot, true⟩,                       -- Check proper cdot usage
+
+    -- Advanced linters for proof quality
+    ⟨`linter.haveLet, true⟩,                             -- Suggest 'let' for non-propositions
+    ⟨`linter.unusedTactic, true⟩,                     -- Catch tactics that do nothing
+    ⟨`linter.minImports, false⟩,                      -- Don't check minimal imports (too pedantic)
+    ⟨`linter.oldObtain, true⟩,                        -- Modernize obtain usage
+    ⟨`linter.style.multiGoal, true⟩,                  -- Warn on multiple active goals
+    ⟨`linter.style.refine, true⟩,                     -- Catch refine' usage
+    ⟨`linter.style.admit, true⟩,                      -- Catch admit usage
+    ⟨`linter.style.openClassical, true⟩,              -- Scope classical logic opens
+    ⟨`linter.style.header, false⟩,                    -- Don't enforce strict header format
+    ⟨`linter.style.docString, false⟩,                 -- Don't enforce docstring format
+    ⟨`linter.style.nameCheck, true⟩,                  -- Check naming conventions
+    ⟨`linter.flexible, true⟩,                         -- Check tactic flexibility
+    ⟨`linter.omit, true⟩                              -- Warn against 'omit' usage
+  ]
+```
+
+Turn linter warnings into errors:
+
+```lean
+
+@[default_target]
+lean_lib «RiddleProofs» where
+  moreLeanArgs := #[
+    "-DwarningAsError=true"                            -- Treat warnings as errors
+  ]
+```
+
+### Profiling
+
+For benchmarking compilation and type-checking time:
+
+```lean
+set_option profiler true
+```
+
+Use `#lint` for catching stylistic issues in Mathlib.
+
+There is no standard formatter as of July 2025.
+
+### Tests
+
+Your [`lakefile.lean`](./lakefile.lean) should contain a "test driver" that depends on your main exported library:
+
+```lean
+import Lake
+open Lake DSL
+
+@[default_target]
+lean_lib «RiddleProofs» where
+  globs := #[.andSubmodules `RiddleProofs]
+
+@[test_driver]
+lean_lib «RiddleTest» where
+  globs := #[.andSubmodules `RiddleTest]
+  needs := #[RiddleProofs]
+```
+
+Then you can just run `lake test` to run all tests defined under the sub-directory `RiddleTest`.
+
+## CI
+
+Use the official [Github action](https://github.com/leanprover/lean-action).

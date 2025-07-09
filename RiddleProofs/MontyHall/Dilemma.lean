@@ -3,6 +3,33 @@ import RiddleProofs.MontyHall.Enumeration
 import RiddleProofs.MontyHall.Statement
 import ENNRealArith
 import Mathlib.Probability.Notation
+
+/-!
+# Monty Hall Problem: The main result
+
+This file proves the famous Monty Hall result using rigorous probability theory.
+
+**The main theorems**:
+- `monty_hall_stay_probability`: If you stay with your original choice, 
+  you win with probability 1/3
+- `monty_hall_switch_probability`: If you switch to the other door, 
+  you win with probability 2/3
+
+**Mathematical approach**:
+We use conditional probability: P(car at door | contestant picked door A, host opened door B)
+This requires careful measure theory to ensure all the calculations are rigorous.
+
+**Key insight**: The asymmetry comes from the host's knowledge and constraints.
+The host can't open the door with the car, so their choice gives information
+about where the car is likely to be.
+
+**Learning goals**:
+- Understand conditional probability in measure theory
+- Learn about measurable sets and probability measures
+- See how to prove probabilistic statements rigorously
+- Practice with ENNReal arithmetic
+-/
+
 open ProbabilityTheory ENNReal Door ENNRealArith
 
 
@@ -105,6 +132,8 @@ lemma prob_car_middle_pick_left_host_right :
   ℙ[{ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}] = 1/9 := by
   rw [prob_car_at_given_pick_host, prob_density_middle_left_right]
 
+-- **THE MAIN RESULT**: Probability of winning if you stay with your original choice
+-- P(car at left | picked left, host opened right) = 1/3
 theorem monty_hall_stay_probability:
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
   have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
@@ -120,6 +149,9 @@ theorem monty_hall_stay_probability:
         rw [prob_pick_left_host_right, prob_car_left_pick_left_host_right]
     _ = 1/3 := by ennreal_arith
 
+-- **THE MAIN RESULT**: Probability of winning if you switch to the other door
+-- P(car at middle | picked left, host opened right) = 2/3
+-- This proves that switching is the better strategy!
 theorem monty_hall_switch_probability:
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by

@@ -13,12 +13,23 @@ The rules are:
 - Everyone acts simultaneously based on perfect logical reasoning
 
 **Question**: What happens?
+
+**Learning goals for this formalization**
+
+- Understand inductive reasoning and common knowledge in logic
+- Learn how to work with finite types and cardinality
+- Practice modeling logical reasoning problems
+- See how `decidable` instances work in Lean
+
+**Key insight**: The announcement creates "common knowledge" which is different from
+everyone just knowing the fact individually. This common knowledge is what enables
+the logical deduction that leads to the blue-eyed islanders eventually leaving.
 -/
 
 inductive EyeColor where
   | blue : EyeColor
   | brown : EyeColor
-  | green : EyeColor
+  | green : EyeColor  -- included for completeness, but not used in our specific problem
   deriving DecidableEq
 
 instance : Fintype EyeColor where
@@ -26,14 +37,19 @@ instance : Fintype EyeColor where
   complete := by intro x; cases x <;> simp
 
 def numIslanders : ℕ := 200
+
 abbrev Islander := Fin numIslanders
 
+-- First 100 islanders (indices 0-99) have blue eyes
+-- Last 100 islanders (indices 100-199) have brown eyes
 def islanderEyeColors : Islander → EyeColor :=
   fun i => if i.val < 100 then EyeColor.blue else EyeColor.brown
 
 instance : DecidablePred (fun i : Islander => islanderEyeColors i = EyeColor.blue) :=
   fun i => by unfold islanderEyeColors; infer_instance
 
+-- The key insight: on day N, if there are N blue-eyed people total,
+-- then each blue-eyed person can deduce their own eye color
 def can_deduce_own_eye_color (i : Islander) (day : ℕ) : Prop :=
   let blue_eyed_islanders := (Finset.univ.filter (λ j => islanderEyeColors j = EyeColor.blue))
   let num_blue_eyed := blue_eyed_islanders.card
@@ -41,6 +57,11 @@ def can_deduce_own_eye_color (i : Islander) (day : ℕ) : Prop :=
 
 def leaves_on_night (i : Islander) (night : ℕ) : Prop :=
   can_deduce_own_eye_color i night
+
+def count_blue_eyed : ℕ :=
+  (Finset.univ.filter (λ i : Islander => islanderEyeColors i = EyeColor.blue)).card
+
+
 
 /-!
 ## Solution
