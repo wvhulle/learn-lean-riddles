@@ -1,6 +1,3 @@
-import Mathlib.LinearAlgebra.Matrix.ToLin
-import Mathlib.LinearAlgebra.FiniteDimensional.Defs
-import Mathlib.GroupTheory.GroupAction.Basic
 import RiddleProofs.LightsOut.Statement
 
 /-!

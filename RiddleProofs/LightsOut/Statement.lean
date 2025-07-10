@@ -49,9 +49,7 @@ and pressing a button twice returns to the original state, the order of button
 presses doesn't matter - only which buttons are pressed an odd number of times.
 -/
 
-import Mathlib.LinearAlgebra.Matrix.ToLin
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
-import Mathlib.GroupTheory.GroupAction.Basic
 
 
 

@@ -1,12 +1,4 @@
-import Mathlib.LinearAlgebra.Matrix.ToLin
-import Mathlib.LinearAlgebra.FiniteDimensional.Defs
-import Mathlib.GroupTheory.GroupAction.Basic
 import RiddleProofs.LightsOut.Statement
-
-
-/-! Examples demonstrating the theory in practice. -/
-
-section Examples
 
 /-- A simple 2×2 puzzle: single light at top-left corner (0,0)
     Visual representation:
@@ -74,6 +66,3 @@ def allOn3x3_solution : LightState 3 3 → LightState 3 3 :=
   fun initial =>
     let corners : Finset (Button 3 3) := {(0, 0), (0, 2), (2, 0), (2, 2)}
     applyButtons initial corners
-
-
-end Examples

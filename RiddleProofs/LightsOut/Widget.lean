@@ -1,17 +1,10 @@
 import ProofWidgets.Component.HtmlDisplay
-import Mathlib.Data.Matrix.Basic
-import Mathlib.Data.ZMod.Basic
-import Lean.Data.Json
-import RiddleProofs.LightsOut.Statement
 import RiddleProofs.LightsOut.BoardExamples
-
-
 
 open Lean
 
 open scoped ProofWidgets.Jsx
 
--- Display a cell based on its state value
 def stateCell (value : ZMod 2) : ProofWidgets.Html :=
   let symbol := if value = 0 then "○" else "●";
   <td style={json% {
@@ -23,7 +16,6 @@ def stateCell (value : ZMod 2) : ProofWidgets.Html :=
           }}>{.text symbol}</td>
 
 
--- Create HTML representation of the board (general version)
 def stateToHtml {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) : ProofWidgets.Html :=
   let rows := (List.range m).map fun i =>
     if h1 : i < m then
@@ -49,15 +41,10 @@ def stateToHtml {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) : Pro
   </div>
 
 
-
-
--- Show a sequence of moves
 def showSequence : ProofWidgets.Html :=
   let s0 := cross3x3;
   let coordinates := #[
-    (1, 1), -- Press center
-    (0, 1), -- Press top center
-    (2, 1)  -- Press bottom center
+    (0, 0), (0, 2), (2, 0), (2, 2)
   ];
   let states := coordinates.foldl (fun acc (i, j) =>
     let lastState := acc[acc.size - 1]!;

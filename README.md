@@ -230,17 +230,17 @@ In this case, you didn't need to write `Foo.id`, because you opened the `Foo` na
 
 ### Modules as namespaces
 
-By default, when you import a module, you open the namespace associated with that module. Every module is by default also a namespace. A **namespace in Lean** is a bit like `mod` in Rust.
+By default, when you import a module, you automatically `open` the namespace associated with that module (see above). Every module is by default also a namespace. A **namespace in Lean** is a bit like `mod` in Rust.
 
 When you have two files in your sub-module: `Foo.lean` and `Bar.lean`, can import `Foo` from `Bar`.
 
-So `Foor.lean` might contain a definition like:
+So `Foo.lean` might contain a definition:
 
 ```lean
 def sum (a b : Nat) : Nat := a + b
 ```
 
-And `Bar.lean` imports it like this:
+And `Bar.lean` imports it:
 
 ```lean
 import Foo
@@ -254,7 +254,7 @@ When you wrote `import Foo`, you imported the `Foo` module as a namespace. This 
 
 The easiest way to find the import paths for modules in the standard library is to install `mathlib` and use its [API documentation site](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html). It also includes and re-exports the standard library of Lean. However, for completeness, this section explains how to find the import paths without installing `mathlib`.
 
-### Using the standard library only
+### Import paths without Mathlib (optional)
 
 Let's say you need a certain module from the standard library called `Foo`. You found it's path in the reference manual. You don't know the fully-qualified import path to use it in your project.
 
