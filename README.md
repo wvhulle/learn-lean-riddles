@@ -4,18 +4,20 @@
 
 This repository contains material for a [workshop on Lean](https://sysghent.be/events/lean/) given on 17th of July 2025 in Ghent for the [SysGhent](https://sysghent.be) community.
 
+**Lean is a functional programming language and theorem prover. It is used to write formal proofs in mathematics, computer science, and other fields.**
+
 A basic introduction to Lean can be found on the [Introduction in the reference](https://lean-lang.org/doc/reference/latest/Introduction/#introduction):
 
 > Leonardo de Moura launched the Lean project when he was at Microsoft Research in 2013, and Lean 0.1 was officially released on June 16, 2014. The goal of the Lean project is to combine the high level of trust provided by a small, independently-implementable logical kernel with the convenience and automation of tools like SMT solvers, while scaling to large problems. This vision still guides the development of Lean, as we invest in improved automation, improved performance, and user-friendliness; the trusted core proof checker is still minimal and independent implementations exist.
 
-A simple example:
+A simple example of the syntax of Lean is:
 
 ```lean4
 theorem Nat.exists_infinite_primes (n : ℕ) :
 ∃ (p : ℕ), n ≤ p ∧ Prime p
 ```
 
-Using LLM's or AI tools / assistants will not be covered in this workshop. See the [sysghent.be](https://sysghent.be/events) for future events.
+Using automated LLM agents with Lean will not be covered in this workshop (although they were used to quickly generate examples). See the [sysghent.be](https://sysghent.be/events) for future events.
 
 ## Target audience
 
@@ -65,23 +67,32 @@ lake new myproject .lean
 
 The first command initializes a project in the current directory, the second creates a new project directory with a `lakefile.lean` configuration file.
 
-After initialisation, the directory tree will look like this:
+A typical Lean project's directory tree will look like this:
 
 ```txt
 riddle-proofs/
+├── lake-manifest.json       # Version lock file for dependencies
 ├── lakefile.lean            # Dependencies and build configuration
 ├── lean-toolchain           # Enforces a version of Lean
-├── README.md             
+├── LICENSE                  # For publishing on Reservoir
 ├── Main.lean                # (Optional) Main binary to run Lean code
+├── README.md                
 ├── RiddleProofs.lean        # Exports submodules
-├── RiddleProofs/
-│   ├── Basic.lean           # Conventional sub-module entry-point / prelude
-│   └── JealousHusbands.lean # A sub-module
+├── RiddleProofs/            # (Optional) Sub-module collection
+│   ├── Basic.lean           # Prelude
+│   ├── MontyHall.lean       # Index file of sub-module MontyHall
+│   └── MontyHall/
+│       ├── Basic.lean       # Prelude of MontyHall
+│       ├── Dilemma.lean     # A file containing definitions
+│       └── Measure.lean     # A file that imports Dilemma.lean
 ```
 
-Source files that are "top-level entrypoints" (like `/Main.lean` and `/RiddleProofs.lean`) have to be declared in the `lakefile.lean` file.
+In this case, there are two build targets:
 
-Extra dependencies, needed later on during development, will also be added to `lakefile.lean`. For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-package-configuration).
+- The main executable `Main`.
+- The main exported library: `RiddleProof`
+
+Both have to be declared in the `lakefile.lean` as build targets. Extra dependencies, needed later on during development, will also be added to `lakefile.lean`. For more information see the [Lake documentation](https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/#--tech-term-pe-configuration).
 
 _Remark: You might see references to `lakefile.toml` format in some documentation. This workshop uses the `lakefile.lean` format which allows for more flexible configuration using Lean code itself._
 
@@ -95,28 +106,9 @@ leanprover/lean4:v4.22.0-rc3
 
 This will be updated automatically when you run `lake update`. If you update this manually, make sure the version is compatible with Mathlib or other dependencies.
 
-## Managing dependencies (optional)
+## Managing dependencies
 
 You can skip this section if you are not interested in using external dependencies.
-
-### Mathlib dependency
-
-Mathlib is the de-facto standard library of Lean 4 and contains the official standard library as well. It is recommended to add it to every new project. To add Mathlib as a dependency, add this to your `lakefile.lean` file:
-
-```lean
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "5c5a8deb94353f2b659cb9c578fe833f90febac7"
-```
-
-**Important**: Since compiling Mathlib from source takes several hours, you must download a pre-compiled cache to avoid long build times.
-
-```bash
-lake exe cache get
-```
-
-Pre-compiled caches are only available for Mathlib. Other dependencies must be compiled from source.
-
-By default, Lake automatically selects a compatible Mathlib version. You can optionally pin to specific versions.
 
 ### Adding dependencies in general
 
@@ -146,25 +138,16 @@ You can also point to local directories for dependencies. The `lakefile.lean` fo
 
 ### Updating dependencies
 
-When you have updated a local or remote dependency, or you want to point to a new version of a dependency, you can update the `lakefile.lean` file with the new version or path.
+Steps: 
 
-You then need to update the source code of the dependency. This can be done with the `lake update` command:
+1. Update the `lakefile.lean` file with the new version or path
+2. Run the `lake update` command to fetch the new version and update the `lake-manifest.json` file (a kind of version lock-file).
+   ```bash
+   lake update # Update all exact versions in lock-file
+   lake update [DEP_NAME] # Update a specific dependency in lock-file
+   ```
 
-```bash
-lake update [DEP_NAME] 
-```
 
-If you don't want to trigger post-update hooks for Mathlib, you can use:
-
-```bash
-MATHLIB_NO_CACHE_ON_UPDATE=1 lake update ennreal-arith --no-build
-```
-
-To update all dependencies (and the Lean compiler) in the project, you can run:
-
-```bash
-lake update
-```
 
 ### Download Mathlib cache (when needed)
 
@@ -206,9 +189,9 @@ If the reference manual is not enough, you can also ask questions on the [Lean Z
 
 Don't forget to set your location on the [Lean community map](https://leanprover-community.github.io/meet.html#community-guidelines). You can find in-person Lean courses and workshops on the [event page](https://leanprover-community.github.io/events.html).
 
-### Importing definitions
+### Importing modules
 
-If you need data structures or things that live in the standard libraries, you have to import the definitions from either the standard library, Mathlib (if it is installed) or other dependencies.
+If you need data structures or things that live in the standard libraries, you have to import the definitions from either the standard library, Mathlib (if it is installed) or other dependencies. Definitions are imported by importing the module that contains it.
 
 Imports have to be placed on the top of the file and are written like this:
 
@@ -218,25 +201,54 @@ import Std.Data.Foo
 
 After inserting a new import, you might need to restart the language server of Lean. VS Code shortcut: `Ctrl + Shift + P` then search for "Lean 4: Restart Server".
 
+
 ### Namespaces
 
-If you do not want to write `Foo.theorem_1` to reference a theorem inside the `Foo` module, you can also open the namespace `Foo` with `open Foo`. Then you only have to write `theorem_1`. Every module file in Lean is also a namespace. You might have also have nested namespaces inside the module file, like `namespace Bar` in the example below:
+Let's say you are working in a file `Foo.lean` and you have identical identifiers for two different parts of the file. You can separate both using namespaces.
 
+So in `Foo.lean` you would write
 ```lean
--- In Foo.lean
-namespace Bar
-  theorem nested_theorem : True := trivial
-end Bar
+namespace Foo
+  theorem duplicated_id : True := trivial
+end Foo
 
-theorem top_level_theorem : True := trivial
+theorem duplicated_id : True := trivial
 ```
 
-In this case, you can import the module and open the `Bar` namespace like this:
+The identifiers don't clash, because they are in different namespaces. You can access the first one using `Foo.duplicated_id`. You can also **open a namespace**, but then the identifiers cannot clash (or you will get an error):
+
+```lean
+namespace Foo
+  theorem id : True := trivial
+end Foo 
+
+open Foo
+#check id
+```
+
+In this case, you didn't need to write `Foo.id`, because you opened the `Foo` namespace. If you had another `id` in the global namespace, it would have caused a clash.
+
+### Modules as namespaces
+
+By default, when you import a module, you open the namespace associated with that module. Every module is by default also a namespace. A **namespace in Lean** is a bit like `mod` in Rust.
+
+When you have two files in your sub-module: `Foo.lean` and `Bar.lean`, can import `Foo` from `Bar`.
+
+So `Foor.lean` might contain a definition like:
+
+```lean
+def sum (a b : Nat) : Nat := a + b
+```
+
+And `Bar.lean` imports it like this:
 
 ```lean
 import Foo
-open Foo.Bar
+#eval sum 3 4 -- This will evaluate to 7
 ```
+
+When you wrote `import Foo`, you imported the `Foo` module as a namespace. This means you do not have to write `Foo.sum` to access the `sum` function. 
+
 
 ### Obtaining import paths
 
@@ -348,7 +360,14 @@ When you have had enough of formalised (in Lean) problems, you can have a look a
 
 You can make your own packages and redistribute them on GitHub.
 
-If certain requirements are met, your package will be automatically listed by [Reservoir](https://reservoir.lean-lang.org/).
+Your package will be automatically listed by [Reservoir](https://reservoir.lean-lang.org/) when it is hosted on Github (and meets the criteria).
+
+
+
+## CI
+
+Use the official [Github action](https://github.com/leanprover/lean-action).
+
 
 ### Linting
 
@@ -375,51 +394,70 @@ Core Lean 4.22.0-rc3 Linters:
 | `unusedSectionVars`         | Warn about unused section variables          | Yes                | Basic    |
 | `missingDocs`               | Require documentation for public definitions | No                 | Advanced |
 
-So, for example, the fully qualified import path of `unusedVariables` is `linter.unusedVariables`. You can enable it with `set_option linter.unusedVariables true`.
+So, for example, the fully qualified import path of `unusedVariables` is `linter.unusedVariables`. You can enable it with:
+
+- A command in a module:
+  ```lean
+  set_option linter.unusedVariables true
+  ```
+- Or globally in your `lakefile.lean` file:
+  ```lean
+  import Lake
+  open Lake DSL
+  package «riddle-proofs» where
+    leanOptions := #[
+      ⟨`linter.unusedVariables, true⟩,
+    ]
+  ```
 
 Mathlib Linters (only available when Mathlib is a dependency):
 
-| Name                        | Description                                  | Enabled by default | Kind     |
-|-----------------------------|----------------------------------------------|--------------------|----------|
-| `style.longLine`            | Enforce 100 character line limit            | Yes                | Style    | 
-| `style.commandStart`        | Commands should start at line beginning     | Yes                | Style    | 
-| `style.multiGoal`           | Warn on multiple active goals               | Yes                | Style    | 
-| `style.refine`              | Catch refine' usage                          | Yes                | Style    |
-| `style.docString`           | Enforce docstring format                     | No                 | Style    |
-| `style.header`              | Enforce strict header format                | No                 | Style    | 
-| `style.longFile`            | Warn on files > 1500 lines                  | Yes                | Style    | 
-| `style.cdot`                | Check proper cdot usage                      | Yes                | Style    |
-| `style.lambdaSyntax`        | Prefer 'fun' over 'λ'                        | Yes                | Style    |
-| `style.dollarSyntax`        | Prefer '<|' over '$'                         | Yes                | Style    |
-| `style.openClassical`       | Scope classical logic opens                 | Yes                | Style    | 
-| `style.admit`               | Catch admit usage                            | Yes                | Style    |
-| `style.nameCheck`           | Check naming conventions                     | Yes                | Style    |
-| `oldObtain`                 | Modernize obtain usage                       | Yes                | Advanced |
-| `haveLet`                   | Suggest 'let' for non-propositions          | Yes                | Advanced | 
-| `unusedTactic`              | Catch tactics that do nothing               | Yes                | Advanced | 
-| `minImports`                | Check minimal imports                        | No                 | Advanced |
-| `flexible`                  | Check tactic flexibility                     | Yes                | Advanced |
-| `unnecessarySimpa`          | Suggest simpler simp usage                   | Yes                | Advanced |
-| `omit`                      | Warn against 'omit' usage                   | Yes                | Advanced | 
+| Name                        | Description                                  | Kind     |
+|-----------------------------|----------------------------------------------|----------|
+| `style.longLine`            | Enforce 100 character line limit            | Style    | 
+| `style.commandStart`        | Commands should start at line beginning     | Style    | 
+| `style.multiGoal`           | Warn on multiple active goals               | Style    | 
+| `style.refine`              | Catch refine' usage                          | Style    |
+| `style.docString`           | Enforce docstring format                     | Style    |
+| `style.header`              | Enforce strict header format                | Style    | 
+| `style.longFile`            | Warn on files > 1500 lines                  | Style    | 
+| `style.cdot`                | Check proper cdot usage                      | Style    |
+| `style.lambdaSyntax`        | Prefer 'fun' over 'λ'                        | Style    |
+| `style.dollarSyntax`        | Prefer '<|' over '$'                         | Style    |
+| `style.openClassical`       | Scope classical logic opens                 | Style    | 
+| `style.admit`               | Catch admit usage                            | Style    |
+| `style.nameCheck`           | Check naming conventions                     | Style    |
+| `oldObtain`                 | Modernize obtain usage                       | Advanced |
+| `haveLet`                   | Suggest 'let' for non-propositions          | Advanced | 
+| `unusedTactic`              | Catch tactics that do nothing               | Advanced | 
+| `minImports`                | Check minimal imports                        | Advanced |
+| `flexible`                  | Check tactic flexibility                     | Advanced |
+| `unnecessarySimpa`          | Suggest simpler simp usage                   | Advanced |
+| `omit`                      | Warn against 'omit' usage                   | Advanced | 
 
+Most are enabled by default when you use Mathlib as a dependency. There are two ways to explicitly enable / disable them:
+
+- Enable them globally in your `lakefile.lean` file:
+  ```lean
+  import Lake
+  open Lake DSL
+  package «riddle-proofs» where
+    leanOptions := #[
+      ⟨`linter.style.longLine, true⟩,
+    ]
+  ```
+- Import the `#lint` command from Mathlib and use it in your Lean files:
+  
+  ```lean
+  import Mathlib.Tactic.Linter
+  #lint                    -- Run all linters
+  #lint only flexible      -- Run only specific linter
+  #lint- only oldObtain     -- Run all except specified
+  ```
+  
 
 See the [Mathlib documentation](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Tactic/Linter.html) for a complete list of available linters for Mathlib.
 
-### Global linter options
-
-You can also set linter options globally for a particular build target in the `lakefile.lean` file:
-
-```lean
-import Lake
-open Lake DSL
-
-package «riddle-proofs» where
-  version := v!"0.0.1"
-  leanOptions := #[
-    ⟨`linter.all, false⟩,                         
-    ⟨`linter.unusedVariables, true⟩,                  
-  ]
-```
 
 Turn linter warnings into errors:
 
@@ -437,15 +475,6 @@ lean_lib «RiddleProofs» where
 There is no standard formatter as of July 2025.
 
 
-### Profiling
-
-For benchmarking compilation and type-checking time:
-
-```lean
-set_option profiler true
-```
-
-Use `#lint` for catching stylistic issues in Mathlib.
 
 
 ### Tests
@@ -468,6 +497,12 @@ lean_lib «RiddleTest» where
 
 Then you can just run `lake test` to run all tests defined under the sub-directory `RiddleTest`.
 
-## CI
+### Profiling
 
-Use the official [Github action](https://github.com/leanprover/lean-action).
+For benchmarking compilation and type-checking time of user-defined tactics or definitions, you can enable the Lean profiler:
+
+```lean
+set_option profiler true
+```
+
+
