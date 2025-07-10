@@ -38,6 +38,10 @@ The mathematical notation (ℤ/2ℤ)^(m×n) means: a group where each of the m×
 can be either 0 (don't press) or 1 (press), with addition modulo 2.
 -/
 
+
+variable {m n : ℕ} [NeZero m] [NeZero n]
+
+
 -- The group of button selections is just the function type with pointwise addition
 instance : Add (ButtonSelection m n) := Pi.instAdd
 instance : Zero (ButtonSelection m n) := Pi.instZero
@@ -57,11 +61,14 @@ axiom button_selection_order_two (sel : ButtonSelection m n) :
 
 -- The fundamental property: button order doesn't matter
 -- This follows from the commutativity of addition in ℤ/2ℤ
-axiom button_selections_commute (sel1 sel2 : ButtonSelection m n) (state : LightState m n) :
-  applySelection (applySelection state sel1) sel2 = applySelection (applySelection state sel2) sel1
+axiom button_selections_commute (sel1 sel2 : ButtonSelection m n)
+    (state : LightState m n) :
+  applySelection (applySelection state sel1) sel2 =
+    applySelection (applySelection state sel2) sel1
 
 /-- Decidability of solvability -/
-instance [Fintype (Fin m)] [Fintype (Fin n)] : DecidablePred (isSolvable : LightState m n → Prop) := by
+instance [Fintype (Fin m)] [Fintype (Fin n)] :
+    DecidablePred (isSolvable : LightState m n → Prop) := by
   intro initial
   unfold isSolvable
   have : Fintype (ButtonSelection m n) := by

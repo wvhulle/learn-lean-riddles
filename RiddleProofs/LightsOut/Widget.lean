@@ -76,8 +76,12 @@ def showSequence : ProofWidgets.Html :=
 
   <div>
     <h3>{.text "Solving the Cross Pattern"}</h3>
-    <div style={json% {display: "flex", flexDirection: "row", gap: "15px", alignItems: "center", flexWrap: "wrap"}}>
-      {...(elements.toList.intersperse (<span style={json% {fontSize: "24px"}}>{.text "→"}</span>)).toArray}
+    <div style={json% {
+      display: "flex", flexDirection: "row", gap: "15px",
+      alignItems: "center", flexWrap: "wrap"
+    }}>
+      {...(elements.toList.intersperse
+        (<span style={json% {fontSize: "24px"}}>{.text "→"}</span>)).toArray}
     </div>
   </div>
 

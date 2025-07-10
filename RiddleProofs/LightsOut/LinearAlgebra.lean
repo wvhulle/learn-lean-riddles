@@ -4,6 +4,15 @@ import Mathlib.GroupTheory.GroupAction.Basic
 import RiddleProofs.LightsOut.Statement
 
 
+
+
+variable {m n : ℕ} [NeZero m] [NeZero n]
+
+lemma toVector_injective : Function.Injective (@toVector m n) := by
+  intros M N eq
+  funext i j
+  exact congr_fun eq ⟨i, j⟩
+
 /-- Linear map induced by button matrix -/
 def buttonLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
   Matrix.toLin' buttonMatrix
@@ -20,24 +29,9 @@ lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
 
 
 
-lemma toVector_injective : Function.Injective (@toVector m n) := by
-  intros M N eq
-  funext i j
-  exact congr_fun eq ⟨i, j⟩
 
-/-- **Main theorem**: Solvability criterion using linear algebra
 
-This theorem establishes the fundamental connection between the puzzle and linear algebra.
-A Lights Out puzzle is solvable if and only if the initial state belongs to the
-image (range) of the button linear map.
-
-**What this means**: The button linear map represents all possible effects we can
-achieve by pressing buttons. If our initial state is in the image of this map,
-then there exists some combination of button presses that will get us to the all-off state.
-
-**Why this is useful**: Instead of trying all 2^(m*n) possible button combinations,
-we can use linear algebra to determine solvability in polynomial time.
--/
+/-- Solvability criterion: initial state in button linear map image -/
 theorem solvable_iff_in_image (initial : LightState m n) :
   isSolvable initial ↔
   toVector initial ∈ Set.range buttonLinearMap := by
@@ -45,7 +39,8 @@ theorem solvable_iff_in_image (initial : LightState m n) :
       ↔ ∃ selection, applySelection initial selection = allOff := Iff.rfl
       _ ↔ ∃ selection, initial + fromVector (buttonMatrix.mulVec selection) = allOff := by
           rfl
-      _ ↔ ∃ selection, toVector (initial + fromVector (buttonMatrix.mulVec selection)) = toVector allOff := by
+      _ ↔ ∃ selection, toVector (initial + fromVector (buttonMatrix.mulVec selection)) =
+            toVector allOff := by
           constructor
           · rintro ⟨selection, h⟩; use selection; rw [h]
           · rintro ⟨selection, h⟩; use selection; exact toVector_injective h

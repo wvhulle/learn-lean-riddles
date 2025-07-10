@@ -20,7 +20,8 @@ games and count how many lead to wins for each strategy.
 open Door
 
 @[ext]
-theorem Game.ext {g₁ g₂ : Game} : g₁.car = g₂.car → g₁.pick = g₂.pick → g₁.host = g₂.host → g₁ = g₂ := by
+theorem Game.ext {g₁ g₂ : Game} : g₁.car = g₂.car → g₁.pick = g₂.pick →
+    g₁.host = g₂.host → g₁ = g₂ := by
   intro h₁ h₂ h₃
   cases g₁ with | mk c₁ p₁ h₁ =>
   cases g₂ with | mk c₂ p₂ h₂ =>
@@ -43,7 +44,7 @@ lemma fin_to_door_injective : Function.Injective fin_to_door := by
 def pairs := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3 × Fin 3) )
 
 -- Systematically enumerate all possible Monty Hall games
-def game_enumeration: Finset Game :=
+def game_enumeration : Finset Game :=
   pairs.map ⟨(fun x => match x with
     | (car_idx, pick_idx, host_idx) =>
       {car := fin_to_door car_idx, pick := fin_to_door pick_idx, host := fin_to_door host_idx}),
@@ -58,5 +59,5 @@ def game_enumeration: Finset Game :=
 theorem equivalence_game_repr : (Finset.univ : Finset Game) = game_enumeration := by
   rfl
 
-instance fin_outcome: Finset Game :=
+instance fin_outcome : Finset Game :=
   Finset.univ

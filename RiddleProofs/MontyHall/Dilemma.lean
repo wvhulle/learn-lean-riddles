@@ -134,7 +134,7 @@ lemma prob_car_middle_pick_left_host_right :
 
 -- **THE MAIN RESULT**: Probability of winning if you stay with your original choice
 -- P(car at left | picked left, host opened right) = 1/3
-theorem monty_hall_stay_probability:
+theorem monty_hall_stay_probability :
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
   have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
     apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
@@ -152,7 +152,7 @@ theorem monty_hall_stay_probability:
 -- **THE MAIN RESULT**: Probability of winning if you switch to the other door
 -- P(car at middle | picked left, host opened right) = 2/3
 -- This proves that switching is the better strategy!
-theorem monty_hall_switch_probability:
+theorem monty_hall_switch_probability :
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
     apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete

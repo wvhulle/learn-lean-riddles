@@ -27,8 +27,7 @@ structure RiverCrossingState where
   notebooks : Vector  RiverBank num_mathematicians
   deriving Repr, DecidableEq
 
--- Safety condition: no notebook is ever with another mathematician unless its owner is present
--- (i.e., notebook i cannot be with mathematician j unless mathematician i is also present, for i ≠ j)
+-- Safety: no notebook alone with another mathematician unless owner present
 def no_notebook_left_behind (s : RiverCrossingState) : Prop :=
   ∀ i j : Fin num_mathematicians, (i ≠ j) →
     let mathematician_i_note_bank := s.notebooks[i]
@@ -80,15 +79,12 @@ def move_boat (b : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
 { s with boat := b }
 
 -- To be able to use numerals like 4 for creating terms of type `Fin 4`, we have to implement a procedure to automatically determine `4 < num_mathematicians`. In this case it is just `decide`.
-instance : OfNat (Fin num_mathematicians) n where
+instance {n: Nat} : OfNat (Fin num_mathematicians) n where
   ofNat := ⟨n % num_mathematicians, Nat.mod_lt n (by decide)⟩
 
 end Helpers
 
 section Solution
-/-
-**Warning!**: Do not read this section before you have made a few attempts.
- -/
 
 private def n_transfers : Nat := 11
 private def n_states := n_transfers + 1

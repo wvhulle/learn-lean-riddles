@@ -94,19 +94,22 @@ def opposite_bank : RiverBank → RiverBank
 | .right => .left
 
 /-- Update a single person's position in the state. -/
-def update_person_state (p : Person) (new_bank : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
+def update_person_state (p : Person) (new_bank : RiverBank)
+    (s : RiverCrossingState) : RiverCrossingState :=
   match p with
   | .husband i => {s with husbands := s.husbands.set i new_bank}
   | .wife i => {s with wives := s.wives.set i new_bank}
 
 /-- List of all people in the puzzle for iteration purposes. -/
 def all_people : List Person := [
-  Person.husband ⟨0, by decide⟩, Person.husband ⟨1, by decide⟩, Person.husband ⟨2, by decide⟩,
+  Person.husband ⟨0, by decide⟩, Person.husband ⟨1, by decide⟩,
+  Person.husband ⟨2, by decide⟩,
   Person.wife ⟨0, by decide⟩, Person.wife ⟨1, by decide⟩, Person.wife ⟨2, by decide⟩
 ]
 
 /-- Helper function: update person's position only if they're part of the move. -/
-def update_if_present (p : Person) (people : Finset Person) (new_bank : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
+def update_if_present (p : Person) (people : Finset Person) (new_bank : RiverBank)
+    (s : RiverCrossingState) : RiverCrossingState :=
   if p ∈ people then update_person_state p new_bank s else s
 
 /-- Apply a move to a state, producing the new state after the move.
@@ -119,7 +122,8 @@ def apply_simple_move (m : Move) (s : RiverCrossingState) : RiverCrossingState :
   let new_boat := opposite_bank s.boat
   let base_state := {s with boat := new_boat}
   let people := m.people
-  all_people.foldl (fun acc_state p => update_if_present p people new_boat acc_state) base_state
+  all_people.foldl (fun acc_state p => update_if_present p people new_boat acc_state)
+    base_state
 
 /-- Check if a person is on the same bank as the boat (boarding requirement). -/
 def person_on_boat_side (p : Person) (people : Finset Person) (s : RiverCrossingState) : Bool :=
@@ -150,7 +154,10 @@ def simple_move_valid (m : Move) (s : RiverCrossingState) : Bool :=
       all_people.any (fun p2 =>
         p1 ≠ p2 && people = {p1, p2} &&
         (p1.couple_id = p2.couple_id ||
-         (match p1, p2 with | .husband _, .husband _ => true | .wife _, .wife _ => true | _, _ => false))))
+         (match p1, p2 with
+         | .husband _, .husband _ => true
+         | .wife _, .wife _ => true
+         | _, _ => false))))
   else true
   all_on_boat && pair_valid
 

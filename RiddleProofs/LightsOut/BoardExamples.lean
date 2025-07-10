@@ -4,11 +4,7 @@ import Mathlib.GroupTheory.GroupAction.Basic
 import RiddleProofs.LightsOut.Statement
 
 
-/-!
-## Examples
-
-Let's work through some concrete examples to see how the theory works in practice!
--/
+/-! Examples demonstrating the theory in practice. -/
 
 section Examples
 
@@ -53,9 +49,9 @@ theorem example2x2_solution :
     simp
     decide }
 
-/-- Prove that our 2×2 puzzle is solvable using linear algebra -/
+/-- 2×2 puzzle is solvable via linear algebra -/
 theorem example2x2_solvable : isSolvable example2x2 := by
-  -- The solution is to press buttons (0,0), (0,1), (1,0) - encode this as a selection vector
+  -- Solution: press (0,0), (0,1), (1,0)
   use fun btn => if btn ∈ ({(0, 0), (0, 1), (1, 0)} : Finset (Button 2 2)) then 1 else 0
   simp [applySelection, fromVector, buttonMatrix, toVector]
   funext i j
@@ -64,18 +60,16 @@ theorem example2x2_solvable : isSolvable example2x2 := by
     areAdjacent]
     decide }
 
--- Example states
 def cross3x3 : LightState 3 3 := Matrix.of fun i j =>
   if i = 1 || j = 1 then 1 else 0
 
-instance: Inhabited (LightState 3 3) := ⟨cross3x3⟩
+instance : Inhabited (LightState 3 3) := ⟨cross3x3⟩
 
-/-- 3×3 cross pattern -/
 def example3x3Cross : LightState 3 3 :=
   Matrix.of fun i j =>
     if (i = 1) ∨ (j = 1) then 1 else 0
 
-/-- The all-on 3×3 pattern is solvable by pressing all corners -/
+/-- All-on 3×3 solved by pressing corners -/
 def allOn3x3_solution : LightState 3 3 → LightState 3 3 :=
   fun initial =>
     let corners : Finset (Button 3 3) := {(0, 0), (0, 2), (2, 0), (2, 2)}

@@ -7,40 +7,21 @@ package «riddle-proofs» where
 @[default_target]
 lean_lib «RiddleProofs» where
   leanOptions := #[
-    -- Core linters
-    ⟨`linter.all, false⟩,                              -- Don't enable ALL linters (too strict)
-    ⟨`linter.unusedVariables, true⟩,                   -- Catch unused variables
-    ⟨`linter.unusedVariables.funArgs, true⟩,          -- Including function arguments
-    ⟨`linter.unusedVariables.patternVars, true⟩,      -- Including pattern variables
-    ⟨`linter.unusedVariables.analyzeTactics, true⟩,   -- Analyze tactics for unused vars
-    ⟨`linter.constructorNameAsVariable, true⟩,        -- Warn when variable names match constructors
+    -- Basic linters
+    ⟨`linter.all, false⟩,                             -- Don't enable ALL linters (too strict)
+    ⟨`linter.unusedVariables, true⟩,                  -- Catch unused variables
     ⟨`linter.deprecated, true⟩,                       -- Warn about deprecated features
+    ⟨`linter.constructorNameAsVariable, true⟩,        -- Warn when variable names match constructors
     ⟨`linter.missingDocs, false⟩,                     -- Don't require docs for exercises
-    ⟨`linter.unnecessarySimpa, true⟩,                 -- Suggest simpler simp usage
-
-    -- Style linters (mathlib-style)
-    ⟨`linter.style.lambdaSyntax, true⟩,               -- Prefer 'fun' over 'λ'
-    ⟨`linter.style.dollarSyntax, true⟩,               -- Prefer '<|' over '$'
-    ⟨`linter.style.longLine, true⟩,                   -- Enforce 100 character line limit
-    ⟨`linter.style.longFile, true⟩,                   -- Warn on files > 1500 lines
-    ⟨`linter.style.commandStart, true⟩,               -- Commands should start at line beginning
-    ⟨`linter.style.cdot, true⟩,                       -- Check proper cdot usage
-
-    -- Advanced linters for proof quality
-    ⟨`linter.haveLet, true⟩,                             -- Suggest 'let' for non-propositions
-    ⟨`linter.unusedTactic, true⟩,                     -- Catch tactics that do nothing
-    ⟨`linter.minImports, false⟩,                      -- Don't check minimal imports (too pedantic)
-    ⟨`linter.oldObtain, true⟩,                        -- Modernize obtain usage
-    ⟨`linter.style.multiGoal, true⟩,                  -- Warn on multiple active goals
-    ⟨`linter.style.refine, true⟩,                     -- Catch refine' usage
-    ⟨`linter.style.admit, true⟩,                      -- Catch admit usage
-    ⟨`linter.style.openClassical, true⟩,              -- Scope classical logic opens
-    ⟨`linter.style.header, false⟩,                    -- Don't enforce strict header format
-    ⟨`linter.style.docString, false⟩,                 -- Don't enforce docstring format
-    ⟨`linter.style.nameCheck, true⟩,                  -- Check naming conventions
-    ⟨`linter.flexible, true⟩,                         -- Check tactic flexibility
-    ⟨`linter.omit, true⟩                              -- Warn against 'omit' usage
+    
+    -- Other options
+    ⟨`linter.unusedSectionVars, false⟩,               -- Unused section variables are okay
+    ⟨`autoImplicit, false⟩,                           -- Disable auto-implicit arguments
+    ⟨`pp.structureInstances, false⟩,                  -- Don't pretty print structures
+    ⟨`pp.funBinderTypes, true⟩,                       -- Show function binder types
+    ⟨`warningAsError, false⟩,                         -- Don't treat warnings as errors
   ]
+
 
 /- **Main executable**: Runs welcome message and project info -/
 lean_exe «riddle-proofs» where

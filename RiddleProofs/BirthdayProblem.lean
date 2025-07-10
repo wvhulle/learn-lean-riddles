@@ -12,12 +12,12 @@ import Mathlib.Probability.Notation
 
 This file proves Theorem 93 from the [100 Theorems List](https://www.cs.ru.nl/~freek/100/).
 
-**The problem**: In a group of 23 people, what's the probability that at least two people 
+**The problem**: In a group of 23 people, what's the probability that at least two people
 share the same birthday? (Assume 365 days in a year and ignore leap years.)
 
 **The surprising answer**: More than 50%! Specifically, about 50.7%.
 
-**Mathematical approach**: Instead of calculating the probability directly, we calculate 
+**Mathematical approach**: Instead of calculating the probability directly, we calculate
 the probability that everyone has different birthdays, then subtract from 1.
 
 ## Mathematical Intuition: Why This Result is Surprising
@@ -39,7 +39,7 @@ Most people's intuition severely **underestimates** the probability of birthday 
 Let's build up the intuition step by step:
 
 **2 people**: P(different) = 364/365 ≈ 99.7%
-**3 people**: P(different) = (364/365) × (363/365) ≈ 99.2%  
+**3 people**: P(different) = (364/365) × (363/365) ≈ 99.2%
 **10 people**: P(different) ≈ 88.3%
 **20 people**: P(different) ≈ 58.9%
 **23 people**: P(different) ≈ **49.3%** ⟹ P(same) ≈ **50.7%**
@@ -58,7 +58,7 @@ of these decreasing fractions quickly drives the probability below 50%.
 - See how measure theory works in Lean for finite probability spaces
 - Practice working with decidable computations
 
-**Key insight**: We model "everyone has different birthdays" as an injective function 
+**Key insight**: We model "everyone has different birthdays" as an injective function
 from people to days. The number of such functions is counted by `Fintype.card (α ↪ β)`.
 
 As opposed to the standard probabilistic statement, we instead state the birthday problem
@@ -73,12 +73,12 @@ namespace Theorems100
 local notation "|" x "|" => Finset.card x    -- cardinality of finite sets
 local notation "‖" x "‖" => Fintype.card x   -- cardinality of finite types
 
-/-- **Birthday Problem**: set cardinality interpretation. 
-    
+/-- **Birthday Problem**: set cardinality interpretation.
+
 This theorem shows that:
 - For 23 people: less than half of all birthday assignments have everyone with different birthdays
 - For 22 people: more than half of all birthday assignments have everyone with different birthdays
-    
+
 The crossover point is between 22 and 23 people! -/
 theorem birthday :
     2 * ‖Fin 23 ↪ Fin 365‖ < ‖Fin 23 → Fin 365‖ ∧ 2 * ‖Fin 22 ↪ Fin 365‖ > ‖Fin 22 → Fin 365‖ := by
@@ -90,7 +90,7 @@ theorem birthday :
   decide  -- Lean can verify this by direct computation!
 
 section MeasureTheory
-/-! 
+/-!
 ## Measure Theory Approach
 
 This section proves the birthday problem using measure theory - the rigorous mathematical

@@ -34,10 +34,10 @@ belief, and reasoning about what others know. Let's break down the key concepts:
 
 1. **Individual Knowledge**: "I know that at least one person has blue eyes"
    - Each islander could see this before the announcement
-   
+
 2. **Mutual Knowledge**: "I know that you know that at least one person has blue eyes"
    - Before the announcement, this wasn't guaranteed
-   
+
 3. **Common Knowledge**: "I know that you know that I know that... (infinitely) at least one person has blue eyes"
    - This is what the public announcement creates!
 
@@ -91,19 +91,19 @@ instance : DecidablePred (fun i : Islander => islanderEyeColors i = EyeColor.blu
 
 /-- Models what an islander can deduce about their own eye color based on:
     - The observed eye colors of others
-    - The fact that someone would leave if they knew they had blue eyes  
+    - The fact that someone would leave if they knew they had blue eyes
     - Common knowledge accumulated over days
-    
+
     **The deduction logic**: On day N, a blue-eyed islander who observes (N-1) other
     blue-eyed people can reason: "If there were only (N-1) blue-eyed people total,
     they would have all left by now. Since they haven't, there must be at least N.
     Since I see exactly (N-1), I must be the Nth one!"
-    
+
     **Implementation**: An islander can deduce their eye color on day D if and only if:
     1. They actually have blue eyes, AND
     2. D equals the total number of blue-eyed people on the island -/
 def can_deduce_own_eye_color (i : Islander) (day : ℕ) : Prop :=
-  let blue_eyed_islanders := (Finset.univ.filter (λ j => islanderEyeColors j = EyeColor.blue))
+  let blue_eyed_islanders := (Finset.univ.filter (fun j => islanderEyeColors j = EyeColor.blue))
   let num_blue_eyed := blue_eyed_islanders.card
   (islanderEyeColors i = EyeColor.blue) ∧ (day = num_blue_eyed)
 
@@ -111,16 +111,20 @@ def leaves_on_night (i : Islander) (night : ℕ) : Prop :=
   can_deduce_own_eye_color i night
 
 def count_blue_eyed : ℕ :=
-  (Finset.univ.filter (λ i : Islander => islanderEyeColors i = EyeColor.blue)).card
+  (Finset.univ.filter (fun i : Islander => islanderEyeColors i = EyeColor.blue)).card
 
 
 
 /-!
 ## Solution
 
-**Answer**: All blue-eyed islanders will leave on the 100th night, and no brown-eyed islanders ever leave.
+**Answer**: All blue-eyed islanders will leave on the 100th night, and no
+brown-eyed islanders ever leave.
 
-The key insight is that the announcement provides common knowledge. Each blue-eyed person can see 99 other blue-eyed people. On night n, if n-1 blue-eyed people haven't left, then there must be at least n blue-eyed people total. When n equals the actual number of blue-eyed people, everyone with blue eyes can deduce their own eye color.
+The key insight is that the announcement provides common knowledge. Each blue-eyed
+person can see 99 other blue-eyed people. On night n, if n-1 blue-eyed people haven't
+left, then there must be at least n blue-eyed people total. When n equals the actual
+number of blue-eyed people, everyone with blue eyes can deduce their own eye color.
 -/
 
 -- The main theorem of the Blue-Eyed Islanders puzzle.

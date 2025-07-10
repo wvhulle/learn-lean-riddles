@@ -54,6 +54,7 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 import Mathlib.GroupTheory.GroupAction.Basic
 
 
+
 variable {m n : ℕ} [NeZero m] [NeZero n]
 
 -- 𝔽₂ is mathematical notation for "the field with 2 elements" = {0, 1}
@@ -71,7 +72,8 @@ instance : DecidableEq (Button m n) :=
 def LightState (m n : ℕ) := Matrix (Fin m) (Fin n) 𝔽₂
 
 instance : Add (LightState m n) := inferInstanceAs (Add (Matrix (Fin m) (Fin n) 𝔽₂))
-instance : AddCommMonoid (LightState m n) := inferInstanceAs (AddCommMonoid (Matrix (Fin m) (Fin n) 𝔽₂))
+instance : AddCommMonoid (LightState m n) :=
+  inferInstanceAs (AddCommMonoid (Matrix (Fin m) (Fin n) 𝔽₂))
 instance : DecidableEq (LightState m n) := inferInstanceAs (DecidableEq (Matrix (Fin m) (Fin n) 𝔽₂))
 
 def allOff : LightState m n := fun _ _ => 0

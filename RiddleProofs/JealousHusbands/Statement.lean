@@ -36,10 +36,10 @@ This encoding demonstrates how **social constraints** become **logical predicate
 that can be automatically verified by the computer.
 -/
 
-/-- Number of couples in the puzzle. Fixed at 3 for the classic version. -/
-def num_couples: Nat := 3
+/-- Number of couples in the puzzle -/
+def num_couples : Nat := 3
 
-/-- The two sides of the river. The boat can be on either side. -/
+/-- Two sides of the river -/
 inductive RiverBank
 | left
 | right
@@ -139,11 +139,11 @@ def initial_state : RiverCrossingState :=
 def final_state : RiverCrossingState :=
   { boat := right, husbands := Vector.replicate 3 right, wives := Vector.replicate 3 right }
 
-theorem final_safe: state_safe final_state = true := by
+theorem final_safe : state_safe final_state = true := by
   unfold state_safe bank_safe final_state
   native_decide
 
-instance : OfNat (Fin num_couples) n where
+instance (n : Nat) : OfNat (Fin num_couples) n where
   ofNat := ⟨n % num_couples, Nat.mod_lt n (by decide)⟩
 
 def n_transfers : Nat := 11
