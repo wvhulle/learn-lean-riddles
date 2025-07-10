@@ -25,7 +25,7 @@ inductive Direction
 deriving DecidableEq, Repr
 
 /-- A move consists of 1-2 people traveling in a specific direction.
-    
+
     The `valid_size` constraint ensures:
     - At least 1 person (boat can't travel empty)
     - At most 2 people (boat capacity limit) -/
@@ -50,10 +50,10 @@ def pair (p1 p2 : Person) (dir : Direction) (h : p1 ≠ p2) : Move :=
     · simp [Finset.card_pair h]⟩
 
 /-- Custom syntax for readable move notation.
-    
+
     Examples:
     - `R {H 0}`: Husband 0 moves right (alone)
-    - `L {W 1}`: Wife 1 moves left (alone)  
+    - `L {W 1}`: Wife 1 moves left (alone)
     - `R {H 0, W 0}`: Couple 0 moves right (together)
     - `L {H 1, H 2}`: Husbands 1 and 2 move left (together) -/
 syntax:50 "R" "{" term "}" : term
@@ -94,7 +94,7 @@ def opposite_bank : RiverBank → RiverBank
 | .right => .left
 
 /-- Update a single person's position in the state. -/
-def update_person_state (p : Person) (new_bank : RiverBank) (s : State) : State :=
+def update_person_state (p : Person) (new_bank : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
   match p with
   | .husband i => {s with husbands := s.husbands.set i new_bank}
   | .wife i => {s with wives := s.wives.set i new_bank}
@@ -106,43 +106,43 @@ def all_people : List Person := [
 ]
 
 /-- Helper function: update person's position only if they're part of the move. -/
-def update_if_present (p : Person) (people : Finset Person) (new_bank : RiverBank) (s : State) : State :=
+def update_if_present (p : Person) (people : Finset Person) (new_bank : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
   if p ∈ people then update_person_state p new_bank s else s
 
 /-- Apply a move to a state, producing the new state after the move.
-    
+
     **What happens during a move**:
     1. The boat travels to the opposite bank
     2. All people in the move travel with the boat to the new bank
     3. People not in the move stay where they are -/
-def apply_simple_move (m : Move) (s : State) : State :=
+def apply_simple_move (m : Move) (s : RiverCrossingState) : RiverCrossingState :=
   let new_boat := opposite_bank s.boat
   let base_state := {s with boat := new_boat}
   let people := m.people
   all_people.foldl (fun acc_state p => update_if_present p people new_boat acc_state) base_state
 
 /-- Check if a person is on the same bank as the boat (boarding requirement). -/
-def person_on_boat_side (p : Person) (people : Finset Person) (s : State) : Bool :=
+def person_on_boat_side (p : Person) (people : Finset Person) (s : RiverCrossingState) : Bool :=
   if p ∈ people then Person.bank p s == s.boat else true
 
 /-- Validate whether a move is legal in the current state.
-    
+
     **Validation rules**:
     1. **Boarding rule**: All people in the move must be on the same bank as the boat
     2. **Travel rule**: If 2 people travel together, they must be either:
        - A married couple (same couple_id), OR
        - Two people of the same gender (two husbands or two wives)
-    
-    **Why the travel rule?** 
+
+    **Why the travel rule?**
     - A husband and wife from different couples cannot travel alone together
     - This prevents creating jealousy situations during the boat ride itself
-    
+
     **Examples**:
     - ✅ H₀ and W₀ together (married couple)
     - ✅ H₀ and H₁ together (both husbands)
-    - ✅ W₁ and W₂ together (both wives)  
+    - ✅ W₁ and W₂ together (both wives)
     - ❌ H₀ and W₁ together (unmarried opposite-gender pair) -/
-def simple_move_valid (m : Move) (s : State) : Bool :=
+def simple_move_valid (m : Move) (s : RiverCrossingState) : Bool :=
   let people := m.people
   let all_on_boat := all_people.all (person_on_boat_side · people s)
   let pair_valid := if people.card = 2 then
@@ -157,7 +157,7 @@ def simple_move_valid (m : Move) (s : State) : Bool :=
 
 
 def validate_solution (moves : List Move) : Bool :=
-  let rec check_moves (s : State) (ms : List Move) : Bool :=
+  let rec check_moves (s : RiverCrossingState) (ms : List Move) : Bool :=
     match ms with
     | [] => s == final_state
     | m :: rest =>
@@ -169,7 +169,7 @@ def validate_solution (moves : List Move) : Bool :=
       else false
   check_moves initial_state moves
 
-def generate_valid_moves (s : State) : List Move :=
+def generate_valid_moves (s : RiverCrossingState) : List Move :=
   let couples : List (Fin num_couples) := [⟨0, by decide⟩, ⟨1, by decide⟩, ⟨2, by decide⟩]
   let direction := if s.boat == RiverBank.left then Direction.toRight else Direction.toLeft
 

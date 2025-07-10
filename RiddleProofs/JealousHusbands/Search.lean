@@ -1,9 +1,9 @@
 import RiddleProofs.JealousHusbands.Moves
 
-instance : DecidableEq State := by infer_instance
+instance : DecidableEq RiverCrossingState := by infer_instance
 
 partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
-  let rec bfs (queue : List (State × List Move)) (visited : List State) : Option (List Move) :=
+  let rec bfs (queue : List (RiverCrossingState × List Move)) (visited : List RiverCrossingState) : Option (List Move) :=
     match queue with
     | [] => none
     | (current_state, moves) :: rest =>
