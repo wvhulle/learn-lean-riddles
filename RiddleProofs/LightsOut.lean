@@ -79,7 +79,7 @@ def allOff : State m n := fun _ _ => 0
 
 def isWin (state : State m n) : Prop := state = allOff
 
--- Check if two positions are adjacent (Manhattan distance = 1) 
+-- Check if two positions are adjacent (Manhattan distance = 1)
 def areAdjacent (pos1 pos2 : Button m n) : Bool :=
   let (i1, j1) := pos1
   let (i2, j2) := pos2
@@ -106,9 +106,9 @@ end Statement
 /-!
 ## Linear algebraic formulation
 
-**Key idea**: Instead of thinking about the puzzle as a game, we can think of it as 
-a linear algebra problem! Each button press is a linear transformation, and we want 
-to find a combination of button presses that transforms our initial state to the 
+**Key idea**: Instead of thinking about the puzzle as a game, we can think of it as
+a linear algebra problem! Each button press is a linear transformation, and we want
+to find a combination of button presses that transforms our initial state to the
 all-off state.
 
 This is much more efficient than trying all possible button combinations.
@@ -123,7 +123,7 @@ def toVector (state : State m n) : Button m n → ZMod 2 :=
 def fromVector (v : Button m n → ZMod 2) : State m n :=
   Function.curry v
 
--- Button effect matrix A where Ae_i = effect of pressing button i 
+-- Button effect matrix A where Ae_i = effect of pressing button i
 def buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2) :=
   Matrix.of fun pos btn => toVector (effect btn) pos
 
@@ -158,7 +158,7 @@ Let's work through some concrete examples to see how the theory works in practic
 
 section Examples
 
-/-- A simple 2×2 puzzle: single light at top-left corner (0,0) 
+/-- A simple 2×2 puzzle: single light at top-left corner (0,0)
     Visual representation:
     ┌───┬───┐
     │ ● │ ○ │
@@ -250,13 +250,13 @@ lemma toVector_injective : Function.Injective (@toVector m n) := by
   exact congr_fun eq ⟨i, j⟩
 
 /-- **Main theorem**: Solvability criterion using linear algebra
-    
+
 This theorem establishes the fundamental connection between the puzzle and linear algebra.
-A Lights Out puzzle is solvable if and only if the initial state belongs to the 
+A Lights Out puzzle is solvable if and only if the initial state belongs to the
 image (range) of the button linear map.
 
-**What this means**: The button linear map represents all possible effects we can 
-achieve by pressing buttons. If our initial state is in the image of this map, 
+**What this means**: The button linear map represents all possible effects we can
+achieve by pressing buttons. If our initial state is in the image of this map,
 then there exists some combination of button presses that will get us to the all-off state.
 
 **Why this is useful**: Instead of trying all 2^(m*n) possible button combinations,
@@ -317,17 +317,36 @@ theorem button_press_comm (button₁ button₂ : Button m n) (state : State m n)
 /-!
 ## Group structure on button selections
 
-The button presses form an abelian group under the operation of "pressing both sets of buttons".
-This is isomorphic to (ℤ/2ℤ)^(m×n) with componentwise addition.
+### What is a group?
 
-**Key insight**: Instead of thinking about pressing individual buttons, we can think about
-"button selections" - sets of buttons to press. These selections form a mathematical group:
+A **group** is a mathematical structure that captures the idea of symmetry and reversible operations.
+Think of it like a set of actions where:
+1. You can combine any two actions to get another action
+2. There's a "do nothing" action (the identity)
+3. Every action can be undone (has an inverse)
+4. The order of grouping doesn't matter when combining multiple actions
+
+### The Lights Out group
+
+In Lights Out, button presses form a special kind of group called an **abelian group**
+(named after mathematician Niels Abel). This means the order of button presses doesn't matter:
+pressing button A then B gives the same result as pressing B then A.
+
+**The group structure**:
+- **Elements**: Each "button selection" is a choice of which buttons to press
+- **Operation**: Combine two selections by pressing all buttons from both selections
 - **Identity**: The empty selection (don't press any buttons)
-- **Inverse**: In ℤ/2ℤ, every element is its own inverse (pressing twice = not pressing)
-- **Associativity**: The order of combining selections doesn't matter
-- **Commutativity**: The group is abelian (order of operations doesn't matter)
+- **Inverse**: In our puzzle, every button press is its own inverse! This happens because
+  we're working in ℤ/2ℤ (integers modulo 2), where 1 + 1 = 0. Pressing a button twice
+  returns to the original state.
+- **Commutativity**: press(A) + press(B) = press(B) + press(A)
 
-This group structure is fundamental to solving the puzzle efficiently using linear algebra.
+**Why this matters**: This group structure transforms a seemingly complex puzzle into
+a linear algebra problem that can be solved efficiently. Instead of trying all 2^(m×n)
+possible button combinations, we can use the group structure to find solutions systematically.
+
+The mathematical notation (ℤ/2ℤ)^(m×n) means: a group where each of the m×n positions
+can be either 0 (don't press) or 1 (press), with addition modulo 2.
 -/
 
 -- The group of button selections is just the function type with pointwise addition

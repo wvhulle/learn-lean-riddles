@@ -24,6 +24,47 @@ The rules are:
 **Key insight**: The announcement creates "common knowledge" which is different from
 everyone just knowing the fact individually. This common knowledge is what enables
 the logical deduction that leads to the blue-eyed islanders eventually leaving.
+
+## Epistemic Logic: The Science of Knowledge and Belief
+
+This puzzle is a classic example of **epistemic logic** - the formal study of knowledge,
+belief, and reasoning about what others know. Let's break down the key concepts:
+
+### Levels of Knowledge
+
+1. **Individual Knowledge**: "I know that at least one person has blue eyes"
+   - Each islander could see this before the announcement
+   
+2. **Mutual Knowledge**: "I know that you know that at least one person has blue eyes"
+   - Before the announcement, this wasn't guaranteed
+   
+3. **Common Knowledge**: "I know that you know that I know that... (infinitely) at least one person has blue eyes"
+   - This is what the public announcement creates!
+
+### Why Common Knowledge Matters
+
+**Before the announcement**: Each blue-eyed person sees 99 blue-eyed others and thinks:
+- "Maybe I have brown eyes, and there are exactly 99 blue-eyed people"
+- "If so, those 99 can't deduce their eye color (they each see only 98 others)"
+- "So no one will leave tonight"
+
+**After the announcement**: The same person now knows:
+- "Everyone knows there's at least one blue-eyed person"
+- "If there were only 1 blue-eyed person, they'd see 0 others and leave immediately"
+- "If there were 2, they'd each see 1 other, realize they must have blue eyes after the first night, and leave on night 2"
+- "By induction, if there are N blue-eyed people, they'll all leave on night N"
+
+### The Inductive Reasoning Process
+
+For a blue-eyed islander observing 99 others with blue eyes:
+
+**Day 1**: "If there were only 1 blue-eyed person (me), they'd leave tonight"
+**Day 2**: "If there were only 2 blue-eyed people (me + 1 other), we'd both leave tonight"
+...
+**Day 100**: "If there were only 100 blue-eyed people (me + 99 others), we'd all leave tonight"
+
+When no one leaves on nights 1-99, each blue-eyed person learns there are at least 100.
+Since they can see exactly 99 others, they deduce: "I must be the 100th!"
 -/
 
 inductive EyeColor where
@@ -48,8 +89,19 @@ def islanderEyeColors : Islander → EyeColor :=
 instance : DecidablePred (fun i : Islander => islanderEyeColors i = EyeColor.blue) :=
   fun i => by unfold islanderEyeColors; infer_instance
 
--- The key insight: on day N, if there are N blue-eyed people total,
--- then each blue-eyed person can deduce their own eye color
+/-- Models what an islander can deduce about their own eye color based on:
+    - The observed eye colors of others
+    - The fact that someone would leave if they knew they had blue eyes  
+    - Common knowledge accumulated over days
+    
+    **The deduction logic**: On day N, a blue-eyed islander who observes (N-1) other
+    blue-eyed people can reason: "If there were only (N-1) blue-eyed people total,
+    they would have all left by now. Since they haven't, there must be at least N.
+    Since I see exactly (N-1), I must be the Nth one!"
+    
+    **Implementation**: An islander can deduce their eye color on day D if and only if:
+    1. They actually have blue eyes, AND
+    2. D equals the total number of blue-eyed people on the island -/
 def can_deduce_own_eye_color (i : Islander) (day : ℕ) : Prop :=
   let blue_eyed_islanders := (Finset.univ.filter (λ j => islanderEyeColors j = EyeColor.blue))
   let num_blue_eyed := blue_eyed_islanders.card
