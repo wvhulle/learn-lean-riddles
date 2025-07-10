@@ -2,8 +2,8 @@
     "recommendations": [
         "tamasfe.even-better-toml",
         "leanprover.lean4",
-        "davidanson.vscode-markdownlint",
         "ms-vscode-remote.remote-wsl",
         "christian-kohler.path-intellisense",
+        "yzhang.markdown-all-in-one",
     ]
 }

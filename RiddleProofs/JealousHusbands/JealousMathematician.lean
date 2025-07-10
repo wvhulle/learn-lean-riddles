@@ -21,7 +21,7 @@ deriving DecidableEq, Repr, Inhabited
 
 open RiverBank
 
-structure State where
+structure RiverCrossingState where
   boat : RiverBank
   mathematicians : Vector RiverBank num_mathematicians
   notebooks : Vector  RiverBank num_mathematicians
@@ -29,7 +29,7 @@ structure State where
 
 -- Safety condition: no notebook is ever with another mathematician unless its owner is present
 -- (i.e., notebook i cannot be with mathematician j unless mathematician i is also present, for i ≠ j)
-def no_notebook_left_behind (s : State) : Prop :=
+def no_notebook_left_behind (s : RiverCrossingState) : Prop :=
   ∀ i j : Fin num_mathematicians, (i ≠ j) →
     let mathematician_i_note_bank := s.notebooks[i]
     let mathematician_j_bank := s.mathematicians[j]
@@ -46,11 +46,11 @@ instance : DecidablePred no_notebook_left_behind := by
   infer_instance
 
 -- Everyone and everything on the left bank
-def initial_state : State :=
+def initial_state : RiverCrossingState :=
   { boat := left, mathematicians := Vector.replicate 3 left, notebooks := Vector.replicate 3 left }
 
 -- Everyone and everything on the right bank
-def final_state : State :=
+def final_state : RiverCrossingState :=
   { boat := right, mathematicians := Vector.replicate 3 right, notebooks := Vector.replicate 3 right }
 
 theorem final_safe: no_notebook_left_behind (final_state):= by
@@ -60,7 +60,7 @@ theorem final_safe: no_notebook_left_behind (final_state):= by
   simp
 
 theorem fly_safe :
-  ∃ (path : List State),
+  ∃ (path : List RiverCrossingState),
     path.head? = some  initial_state ∧
     path.getLast? = some final_state ∧
     True :=
@@ -70,25 +70,22 @@ section Helpers
 
 
 
-def move_mathematician (n : Fin num_mathematicians) (b : RiverBank) (s : State) : State :=
+def move_mathematician (n : Fin num_mathematicians) (b : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
 { s with mathematicians := s.mathematicians.set n b }
 
-def move_notebook (n : Fin num_mathematicians) (b : RiverBank) (s : State) : State :=
+def move_notebook (n : Fin num_mathematicians) (b : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
 { s with notebooks := s.notebooks.set n b }
 
-def move_boat (b : RiverBank) (s : State) : State :=
+def move_boat (b : RiverBank) (s : RiverCrossingState) : RiverCrossingState :=
 { s with boat := b }
 
 -- To be able to use numerals like 4 for creating terms of type `Fin 4`, we have to implement a procedure to automatically determine `4 < num_mathematicians`. In this case it is just `decide`.
-instance : OfNat (Fin num_mathematicians) n where
+instance {n: Nat} : OfNat (Fin num_mathematicians) n where
   ofNat := ⟨n % num_mathematicians, Nat.mod_lt n (by decide)⟩
 
 end Helpers
 
 section Solution
-/-
-**Warning!**: Do not read this section before you have made a few attempts.
- -/
 
 private def n_transfers : Nat := 11
 private def n_states := n_transfers + 1
@@ -102,7 +99,7 @@ This problem is similar to the "jealous husbands" riddle. The solution is identi
 See [Wikipedia](https://en.wikipedia.org/wiki/Missionaries_and_cannibals_problem).
  -/
 
-def transfers : Vector (State → State) n_states :=
+def transfers : Vector (RiverCrossingState → RiverCrossingState) n_states :=
   Vector.ofFn (fun ⟨ k, _ ⟩  => match k with
     | 0 => move_boat right ∘ move_notebook 0  right ∘ move_mathematician 0 right
     | 1 => move_boat left ∘ move_notebook 0 left ∘ move_mathematician 0 left
@@ -129,13 +126,13 @@ A kind of recursion that is easy to check for termination. Termination can be ch
 In the following, the size of the argument changes `n + 1` -> `n` in the recursive call at the end of the recursive function body.
 -/
 
-def intermediate_states_structural_rec : (n: Nat) -> n < n_states → State
+def intermediate_states_structural_rec : (n: Nat) -> n < n_states → RiverCrossingState
   | 0, _ => initial_state
   | n + 1, h =>
     let prev := intermediate_states_structural_rec n (Nat.lt_of_succ_lt h)
     (transfers.get ⟨n, Nat.lt_of_succ_lt h⟩) prev
 
-def intermediate_states_structural : Fin n_states → State := (fun n =>  intermediate_states_structural_rec n.val n.isLt)
+def intermediate_states_structural : Fin n_states → RiverCrossingState := (fun n =>  intermediate_states_structural_rec n.val n.isLt)
 
 end StructuralRecursion
 
@@ -147,7 +144,7 @@ Some types of recursion may lead to infinite loops. Well-founded recursion is a 
 The result of `measure` allows argument j := <n+1,_> to fix to be compared against the recursive argument i:= <n,_> by mapping these arguments to the natural numbers.
 -/
 
-noncomputable def intermediate_states : Fin n_states → State :=
+noncomputable def intermediate_states : Fin n_states → RiverCrossingState :=
   WellFounded.fix (measure (fun (i : Fin n_states) => i.val)).wf
     (fun i rec => match i with
       | ⟨0, _⟩ => initial_state
