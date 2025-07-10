@@ -27,7 +27,8 @@ structure RiverCrossingState where
   notebooks : Vector  RiverBank num_mathematicians
   deriving Repr, DecidableEq
 
--- Safety: no notebook alone with another mathematician unless owner present
+-- Safety condition: no notebook is ever with another mathematician unless its owner is present
+-- (i.e., notebook i cannot be with mathematician j unless mathematician i is also present, for i ≠ j)
 def no_notebook_left_behind (s : RiverCrossingState) : Prop :=
   ∀ i j : Fin num_mathematicians, (i ≠ j) →
     let mathematician_i_note_bank := s.notebooks[i]

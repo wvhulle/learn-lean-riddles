@@ -352,7 +352,7 @@ If certain requirements are met, your package will be automatically listed by [R
 
 ### Linting
 
-For detecting enabling all lints:
+For detecting enabling all lints in a particular module:
 
 ```lean
 set_option linter.all true
@@ -362,7 +362,9 @@ If you want to be more specific, you can use tab-autocompletion in the `set_opti
 
 Or have a look at the [Lean linter source code](https://github.com/leanprover/lean4/blob/master/src/Lean/Linter.lean).
 
-An overview of lints (for Lean 4.22.0-rc3):
+### Overview available linters
+
+Core Lean 4.22.0-rc3 Linters:
 
 | Name                        | Description                                  | Enabled by default | Kind     |
 |-----------------------------|----------------------------------------------|--------------------|----------|
@@ -370,11 +372,42 @@ An overview of lints (for Lean 4.22.0-rc3):
 | `unusedVariables`           | Warn about unused variables                  | Yes                | Basic    |
 | `deprecated`                | Warn about deprecated features               | Yes                | Basic    |
 | `constructorNameAsVariable` | Warn when variable names match constructors  | Yes                | Basic    |
-| `missingDocs`               | Require documentation for public definitions | No                 | Advanced |
 | `unusedSectionVars`         | Warn about unused section variables          | Yes                | Basic    |
+| `missingDocs`               | Require documentation for public definitions | No                 | Advanced |
+
+So, for example, the fully qualified import path of `unusedVariables` is `linter.unusedVariables`. You can enable it with `set_option linter.unusedVariables true`.
+
+Mathlib Linters (only available when Mathlib is a dependency):
+
+| Name                        | Description                                  | Enabled by default | Kind     |
+|-----------------------------|----------------------------------------------|--------------------|----------|
+| `style.longLine`            | Enforce 100 character line limit            | Yes                | Style    | 
+| `style.commandStart`        | Commands should start at line beginning     | Yes                | Style    | 
+| `style.multiGoal`           | Warn on multiple active goals               | Yes                | Style    | 
+| `style.refine`              | Catch refine' usage                          | Yes                | Style    |
+| `style.docString`           | Enforce docstring format                     | No                 | Style    |
+| `style.header`              | Enforce strict header format                | No                 | Style    | 
+| `style.longFile`            | Warn on files > 1500 lines                  | Yes                | Style    | 
+| `style.cdot`                | Check proper cdot usage                      | Yes                | Style    |
+| `style.lambdaSyntax`        | Prefer 'fun' over 'λ'                        | Yes                | Style    |
+| `style.dollarSyntax`        | Prefer '<|' over '$'                         | Yes                | Style    |
+| `style.openClassical`       | Scope classical logic opens                 | Yes                | Style    | 
+| `style.admit`               | Catch admit usage                            | Yes                | Style    |
+| `style.nameCheck`           | Check naming conventions                     | Yes                | Style    |
+| `oldObtain`                 | Modernize obtain usage                       | Yes                | Advanced |
+| `haveLet`                   | Suggest 'let' for non-propositions          | Yes                | Advanced | 
+| `unusedTactic`              | Catch tactics that do nothing               | Yes                | Advanced | 
+| `minImports`                | Check minimal imports                        | No                 | Advanced |
+| `flexible`                  | Check tactic flexibility                     | Yes                | Advanced |
+| `unnecessarySimpa`          | Suggest simpler simp usage                   | Yes                | Advanced |
+| `omit`                      | Warn against 'omit' usage                   | Yes                | Advanced | 
 
 
-You can also set linter options in the `lakefile.lean` file:
+See the [Mathlib documentation](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Tactic/Linter.html) for a complete list of available linters for Mathlib.
+
+### Global linter options
+
+You can also set linter options globally for a particular build target in the `lakefile.lean` file:
 
 ```lean
 import Lake
@@ -382,11 +415,9 @@ open Lake DSL
 
 package «riddle-proofs» where
   version := v!"0.0.1"
-  -- Enable comprehensive linting for better code quality
   leanOptions := #[
-    -- Core linters
-    ⟨`linter.all, false⟩,                              -- Don't enable ALL linters (too strict)
-    ⟨`linter.unusedVariables, true⟩,                   -- Catch unused variables
+    ⟨`linter.all, false⟩,                         
+    ⟨`linter.unusedVariables, true⟩,                  
   ]
 ```
 
@@ -401,17 +432,10 @@ lean_lib «RiddleProofs» where
   ]
 ```
 
-### Mathlib linting
+### Formatting
 
-Mathlib uses a macro for linting:
+There is no standard formatter as of July 2025.
 
-Import this: `import Mathlib.Tactic.Linter` and then you can write `#lint` at the end of your file to run the linter on the current file.
-
-For specific linters only:
-
-```lean
-#lint only docBlame unusedArguments
-```
 
 ### Profiling
 
@@ -423,7 +447,6 @@ set_option profiler true
 
 Use `#lint` for catching stylistic issues in Mathlib.
 
-There is no standard formatter as of July 2025.
 
 ### Tests
 
