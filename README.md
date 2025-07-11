@@ -191,7 +191,7 @@ Don't forget to set your location on the [Lean community map](https://leanprover
 
 ### Importing modules
 
-If you need data structures or things that live in the standard libraries, you have to import the definitions from either the standard library, Mathlib (if it is installed) or other dependencies. Definitions are imported by importing the module that contains it.
+If you need data structures or things that live in the standard libraries, you have to import the definitions from either the standard library, Mathlib (if it is installed) or other dependencies. Definitions are imported by importing the module that contains them.
 
 Imports have to be placed on the top of the file and are written like this:
 
@@ -215,7 +215,7 @@ end Foo
 theorem duplicated_id : True := trivial
 ```
 
-The identifiers don't clash, because they are in different namespaces. You can access the first one using `Foo.duplicated_id`. You can also **open a namespace**, but then the identifiers cannot clash (or you will get an error):
+The identifiers don't clash, because they are in different namespaces. You can access the first one using `Foo.duplicated_id`. You can also **open a namespace** to avoid writing the full qualified name, but then the identifiers cannot clash (or you will get an error):
 
 ```lean
 namespace Foo
@@ -228,11 +228,11 @@ open Foo
 
 In this case, you didn't need to write `Foo.id`, because you opened the `Foo` namespace. If you had another `id` in the global namespace, it would have caused a clash.
 
-### Modules as namespaces
+### Modules and namespaces
 
-By default, when you import a module, you automatically `open` the namespace associated with that module (see above). Every module is by default also a namespace. A **namespace in Lean** is a bit like `mod` in Rust.
+Every module in Lean creates a namespace with the same name. However, **importing a module does NOT automatically open its namespace**. A **namespace in Lean** is a way to organize identifiers to avoid naming conflicts.
 
-When you have two files in your sub-module: `Foo.lean` and `Bar.lean`, can import `Foo` from `Bar`.
+When you have two files `Foo.lean` and `Bar.lean`, you can import `Foo` from `Bar`.
 
 So `Foo.lean` might contain a definition:
 
@@ -244,10 +244,16 @@ And `Bar.lean` imports it:
 
 ```lean
 import Foo
-#eval sum 3 4 -- This will evaluate to 7
+#eval Foo.sum 3 4 -- This will evaluate to 7
 ```
 
-When you wrote `import Foo`, you imported the `Foo` module as a namespace. This means you do not have to write `Foo.sum` to access the `sum` function. 
+When you wrote `import Foo`, you imported the `Foo` module, which makes its definitions available under the `Foo` namespace. You need to write `Foo.sum` to access the `sum` function, unless you explicitly open the namespace:
+
+```lean
+import Foo
+open Foo
+#eval sum 3 4 -- Now this works without qualification
+``` 
 
 
 ### Obtaining import paths
