@@ -134,7 +134,15 @@ lean_exe «riddle-proofs» where
   root := `Main
 ```
 
-You can also point to local directories for dependencies. The `lakefile.lean` format gives you the full power of Lean's programming language to configure your build system.
+You can also point to local directories for dependencies.
+
+```lean
+require «ennreal-arith» from
+  "../ennreal"
+```
+
+
+The `lakefile.lean` format gives you the full power of Lean's programming language to configure your build system.
 
 ### Updating dependencies
 
@@ -293,6 +301,13 @@ Lean is not only a powerful functional programming language, but is also known f
 
 The best learning resource for mathematics with Lean is the book [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean). It is quite long, but has a lot of step-wise exercises to learn the language and the Mathlib library.
 
+### Search proof state
+
+Copy-paste the current proof state in:
+
+https://premise-search.com/
+
+
 ### Searching mathematical patterns
 
 The collection of definitions and theorems in Mathlib is large. Sometimes the naming of the modules, namespaces and proofs is not entirely consistent. Use these resources to find the definitions and theorems you need:
@@ -324,8 +339,17 @@ Examples of Loogle searches:
   ```lean
   (?P 0) → (∀ n, ?P n → ?P (n + 1)) → ∀ n, ?P n
   ```
+
+- Lemma's defined for the type `ENNReal` (extended non-negative real numbers):
   
+  ```lean
+  ENNReal _ / _ = _ ↔ _
+  ````
+  
+
+
 ### Searching mathematical concepts
+
 
 You can also search using English / natural language on [Moogle](https://moogle.ai/) or [Lean Explore](https://www.leanexplore.com). For natural language search, simply describe what you're looking for in plain English:
 
@@ -480,7 +504,11 @@ lean_lib «RiddleProofs» where
 
 There is no standard formatter as of July 2025.
 
+### Visibility
 
+Usually people put code that should be private within a module inside a namespace, named after the build target / project.
+
+The same namespace can be used across different files. Definitions nested under the same namespace (in other files) can see eachother.
 
 
 ### Tests
@@ -511,4 +539,27 @@ For benchmarking compilation and type-checking time of user-defined tactics or d
 set_option profiler true
 ```
 
+### Tracing
 
+Built-in tracing
+
+```lean
+set_option trace.Meta.Tactic.simp true
+```
+
+Custom tracing. In library code:
+
+```lean4
+open Lean 
+
+initialize
+  registerTraceClass `ENNRealArith
+  registerTraceClass `ENNRealArith.conversion
+```
+
+In unit tests:
+
+```lean
+set_option trace.ENNRealArith.conversion true in
+lemma test_solve_as_real_inverse_1 : (5 : ENNReal)⁻¹ = 1 / 5 := by solve_as_real
+```

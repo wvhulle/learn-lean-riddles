@@ -4,3 +4,4 @@
 .env
 .github/copilot-instructions.md
 claude-auto-resume.sh
+.vscode/settings.json
