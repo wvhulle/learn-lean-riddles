@@ -104,7 +104,7 @@ The `lean-toolchain` file in your project root specifies which Lean version to u
 leanprover/lean4:v4.22.0-rc3
 ```
 
-This will be updated automatically when you run `lake update`. If you update this manually, make sure the version is compatible with Mathlib or other dependencies.
+If you update this manually, make sure the version is compatible with Mathlib or other dependencies.
 
 ## Managing dependencies
 
