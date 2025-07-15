@@ -95,53 +95,75 @@ theorem buttonSelection_dimension_grid [NeZero m] [NeZero n] [Fintype (Fin m)] [
 theorem button_effect_as_matrix_vector (btn : Button m n) :
   toVector (effect btn) = buttonMatrix.mulVec (Pi.single btn 1) := by
   funext pos
-  simp only [buttonMatrix, toVector, Matrix.mulVec, Pi.single]
-  -- The goal is: Function.uncurry (effect btn) pos = (fun j => Function.uncurry (effect j) pos) ⬝ᵥ Function.update 0 btn 1
-  -- This is a dot product, so let's unfold it
-  simp only [dotProduct]
-  -- Now we have a sum that equals the function value when only btn contributes
+  simp only [buttonMatrix, Matrix.mulVec, Pi.single, Matrix.of_apply, dotProduct]
+  -- Pi.single btn 1 selects only the btn column from the matrix
   rw [Finset.sum_eq_single btn]
-  · simp only [Function.update_apply]
-    -- The goal is: Function.uncurry (effect btn) pos = Matrix.of (...) pos btn * (if btn = btn then 1 else 0)
-    simp only [ite_true, mul_one]
-    -- This reduces to showing Matrix.of (fun pos btn => Function.uncurry (effect btn) pos) pos btn = Function.uncurry (effect btn) pos
-    rw [Matrix.of_apply]
-  · intro b hb_mem hb_ne
-    simp only [Function.update_apply]
-    -- The goal is: Matrix.of (...) pos b * (if b = btn then 1 else 0) = 0
-    simp only [hb_ne, if_false]
-    exact rfl
-  · intro hbtn_not_mem
+  · simp only [Function.update_apply, if_true, mul_one]
+  · intro b _ hb_ne
+    simp only [Function.update_apply, if_neg hb_ne]
+    -- The function application gives us 0, so we have: toVector (effect b) pos * 0 = 0
+    -- Note: (0 : Button m n → ZMod 2) b = 0
+    change toVector (effect b) pos * (0 : ZMod 2) = 0
+    rw [mul_zero]
+  · intro h
     exfalso
-    exact hbtn_not_mem (Finset.mem_univ btn)
+    exact h (Finset.mem_univ btn)
 
 -- The kernel characterizes "null" button combinations
-theorem kernel_characterization_incomplete (sel : ButtonSelection m n) :
+theorem kernel_characterization (sel : ButtonSelection m n) :
   sel ∈ LinearMap.ker buttonLinearMap ↔
   applySelection allOff sel = allOff := by
-  simp only [LinearMap.mem_ker, buttonLinearMap]
-  simp only [applySelection]
-  show (Matrix.toLin' buttonMatrix) sel = 0 ↔ allOff + fromVector (buttonMatrix.mulVec sel) = allOff
+  simp only [LinearMap.mem_ker, buttonLinearMap, applySelection]
   constructor
   · intro h
-    -- If buttonMatrix.mulVec sel = 0, then fromVector (buttonMatrix.mulVec sel) = fromVector 0 = allOff
-    -- So allOff + fromVector (buttonMatrix.mulVec sel) = allOff + allOff = allOff
-    rw [Matrix.toLin'_apply] at h
-    rw [h]
-    simp only [fromVector]
-    exact rfl
+    -- If buttonLinearMap sel = 0, then applying sel to allOff gives allOff
+    -- buttonLinearMap sel = Matrix.toLin' buttonMatrix sel = buttonMatrix.mulVec sel
+    have h_mulVec : (buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2)).mulVec sel = 0 := by
+      rw [← Matrix.toLin'_apply (buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2))]
+      exact h
+    have fromVector_zero : fromVector (0 : Button m n → ZMod 2) = allOff := by
+      unfold fromVector allOff
+      rfl
+    calc allOff + fromVector (buttonMatrix.mulVec sel)
+      = allOff + fromVector 0 := by rw [h_mulVec]
+      _ = allOff + allOff := by rw [fromVector_zero]
+      _ = allOff := by 
+        funext i j
+        simp only [allOff]
+        exact add_zero 0
   · intro h
-    -- If allOff + fromVector (buttonMatrix.mulVec sel) = allOff, then fromVector (buttonMatrix.mulVec sel) = 0
-    -- Since toVector and fromVector are inverses, this means buttonMatrix.mulVec sel = 0
-    rw [Matrix.toLin'_apply]
-    have h1 : fromVector (buttonMatrix.mulVec sel) = 0 := by
-      exact (eq_zero_iff_eq_zero_of_add_eq_zero h).mp rfl
-    -- Now we need to show buttonMatrix.mulVec sel = 0
-    -- Since fromVector and toVector are inverses, this follows from h1
-    have h2 : toVector (fromVector (buttonMatrix.mulVec sel)) = toVector 0 := by
-      rw [h1]
-    simp only [toVector] at h2
-    exact h2
+    -- If applying sel to allOff gives allOff, then buttonLinearMap sel = 0
+    -- From h: allOff + fromVector (buttonMatrix.mulVec sel) = allOff
+    -- This means fromVector (buttonMatrix.mulVec sel) = allOff
+    have h_zero : fromVector ((buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2)).mulVec sel) = allOff := by
+      have : allOff + fromVector (buttonMatrix.mulVec sel) = allOff + allOff := by
+        rw [h]
+        funext i j
+        simp only [allOff]
+        exact add_zero 0
+      have cancel : ∀ (a b c : LightState m n), a + b = a + c → b = c := by
+        intros a b c h_eq
+        funext i j
+        have : a i j + b i j = a i j + c i j := by
+          exact congr_fun (congr_fun h_eq i) j
+        exact add_left_cancel this
+      exact cancel allOff (fromVector (buttonMatrix.mulVec sel)) allOff this
+    -- Since toVector ∘ fromVector = id, we have buttonMatrix.mulVec sel = 0
+    have toVector_fromVector_id : ∀ v : Button m n → ZMod 2, toVector (fromVector v) = v := by
+      intro v
+      unfold toVector fromVector
+      simp
+    have mulVec_zero : (buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2)).mulVec sel = 0 := by
+      rw [← toVector_fromVector_id (buttonMatrix.mulVec sel)]
+      rw [h_zero]
+      unfold toVector allOff
+      rfl
+    -- Now we need to show: (Matrix.toLin' buttonMatrix) sel = 0
+    -- We know buttonMatrix.mulVec sel = 0, and (Matrix.toLin' buttonMatrix) sel = buttonMatrix.mulVec sel
+    calc (Matrix.toLin' (buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2))) sel
+      = (buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2)).mulVec sel := by
+          exact Matrix.toLin'_apply (buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2)) sel
+      _ = 0 := mulVec_zero
 
 -- A concrete 2×2 example
 section TwoByTwo
