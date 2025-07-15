@@ -2,6 +2,15 @@ import Mathlib.LinearAlgebra.Matrix.ToLin
 import RiddleProofs.LightsOut.Statement
 
 
+/-- Decidability of solvability -/
+instance [Fintype (Fin m)] [Fintype (Fin n)] :
+    DecidablePred (isSolvable : LightState m n → Prop) := by
+  intro initial
+  unfold isSolvable
+  have : Fintype (ButtonSelection m n) := by
+    unfold ButtonSelection
+    infer_instance
+  apply Fintype.decidableExistsFintype
 
 
 variable {m n : ℕ} [NeZero m] [NeZero n]

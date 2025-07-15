@@ -10,9 +10,9 @@ import Mathlib.Probability.Notation
 This file proves the famous Monty Hall result using rigorous probability theory.
 
 **The main theorems**:
-- `monty_hall_stay_probability`: If you stay with your original choice, 
+- `monty_hall_stay_probability`: If you stay with your original choice,
   you win with probability 1/3
-- `monty_hall_switch_probability`: If you switch to the other door, 
+- `monty_hall_switch_probability`: If you switch to the other door,
   you win with probability 2/3
 
 **Mathematical approach**:
@@ -56,7 +56,7 @@ lemma prob_density_car_eq_pick (car pick host : Door) (h_eq : car = pick) (h_val
 lemma prob_density_car_ne_pick (car pick host : Door) (h_ne : car ≠ pick) (h_valid : host ≠ pick ∧ host ≠ car) :
   game_density {car := car, pick := pick, host := host} = (1 : ENNReal) / 9 := by
   simp only [game_density, h_ne, h_valid.1, h_valid.2, if_false]
-  ennreal_arith
+  eq_as_reals
 
 lemma prob_density_left_left_right :
   game_density {car := left, pick := left, host := right} = 1/18 := by
@@ -103,7 +103,7 @@ lemma prob_pick_left_host_right :
                    prob_density_left_left_right,
                    prob_density_middle_left_right,
                    prob_density_right_left_right]
-    _ = 1/6 := by ennreal_arith
+    _ = 1/6 := by eq_as_reals
 
 lemma prob_car_at_given_pick_host (car : Door) :
   ℙ[{ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = car}] =
@@ -147,7 +147,7 @@ theorem monty_hall_stay_probability :
         simp only [car_at, pick_door, host_opens]
     _ = (1/6)⁻¹ * (1/18) := by
         rw [prob_pick_left_host_right, prob_car_left_pick_left_host_right]
-    _ = 1/3 := by ennreal_arith
+    _ = 1/3 := by eq_as_reals
 
 -- **THE MAIN RESULT**: Probability of winning if you switch to the other door
 -- P(car at middle | picked left, host opened right) = 2/3
@@ -165,4 +165,4 @@ theorem monty_hall_switch_probability :
         simp only [car_at, pick_door, host_opens]
     _ = (1/6)⁻¹ * (1/9) := by
         rw [prob_pick_left_host_right, prob_car_middle_pick_left_host_right]
-    _ = 2/3 := by ennreal_arith
+    _ = 2/3 := by eq_as_reals

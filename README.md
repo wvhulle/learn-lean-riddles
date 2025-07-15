@@ -32,8 +32,7 @@ This workshop is suitable for everyone who:
 Several options:
 
 1. Use the online [Lean Web Editor](https://live.lean-lang.org/) and don't install anything locally.
-2. Download VS Code and install the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
-3. Install Lean locally on your computer and choose your editor:
+2. Install Lean locally on your computer and choose your editor:
     - Use [Visual Studio Code](https://code.visualstudio.com/) with the [Lean 4 extension](https://marketplace.visualstudio.com/items?itemName=leanprover.lean4).
     - Use [Emacs](https://www.gnu.org/software/emacs/) with [Lean4 mode](https://github.com/leanprover-community/lean4-mode)
     - Use [Vim](https://www.vim.org/) with [lean.nvim](https://github.com/Julian/lean.nvim) plugin
@@ -154,7 +153,8 @@ Steps:
    lake update # Update all exact versions in lock-file
    lake update [DEP_NAME] # Update a specific dependency in lock-file
    ```
-
+   
+You don't have to run `lake update` when you modify a local dependency referenced in a local folder.
 
 
 ### Download Mathlib cache (when needed)
@@ -181,36 +181,71 @@ You can also compile single files or folders by specifying the module import spe
 lake build RiddleProofs.MontyHall
 ```
 
-## Learning Resources
+## Learning Lean
 
-### Beginner documentation
+### Documentation for beginners
 
-If you need a fast-paced introduction you can read [Hitchhiker's Guide to Logical Verification (2023 Edition)](https://lean-forward.github.io/hitchhikers-guide/2023/).
+How to choose?
 
-While learning, you may have further questions. Consult the [reference manual](https://lean-lang.org/doc/reference/latest/) for information about the core language. Refer to it for information about the syntax, type system, and other language features.
-
-A few educational interactive problems are provided as games at [University Düsseldorf](https://adam.math.hhu.de/).
-
-### Community resources
-
-If the reference manual is not enough, you can also ask questions on the [Lean Zulip chat](https://leanprover.zulipchat.com/). The community is very welcoming and helpful, so don't hesitate to ask questions.
+- You are a **mathematician**? 
+  - Start with the interactive tutorial "Mathematics in Lean".
+  - Look at "100 theorems in Lean".
+  - Look at the Mathlib4 index page.
+  - Join the "math" channel on [Lean Zulip chat](https://leanprover.zulipchat.com/).
+- You are a **developer**? 
+  - Start with "Functional programming Lean"
+  - Read the [Lean reference manual](https://lean-lang.org/doc/reference/latest/)
+- You are a **language nerd**?
+  - [Hitchhiker's Guide to Logical Verification (2023 Edition)](https://lean-forward.github.io/hitchhikers-guide/2023/)
+  - Read "Tactic programming guide"
+  - Read "Metaprogramming in Lean"
+- You are **something else**? Try the interactive "Natural number game" at [Lean games (University Düsseldorf)](https://adam.math.hhu.de/).
 
 Don't forget to set your location on the [Lean community map](https://leanprover-community.github.io/meet.html#community-guidelines). You can find in-person Lean courses and workshops on the [event page](https://leanprover-community.github.io/events.html).
 
-### Importing modules
+### How Lean works
 
-If you need data structures or things that live in the standard libraries, you have to import the definitions from either the standard library, Mathlib (if it is installed) or other dependencies. Definitions are imported by importing the module that contains them.
+Lean code lives in two "worlds": the world of **syntax** (what you write) and the world of **expressions** (what it means).
 
-Imports have to be placed on the top of the file and are written like this:
+#### User's World: `Syntax`
 
-```lean
-import Std.Data.Foo
-```
+When you write code in a `.lean` file, Lean first sees it as just text. Its first job is to parse this text into a structure called `Syntax`. Think of `Syntax` as a blueprint that describes your code's structure—its notations, commands, and layout.
 
-After inserting a new import, you might need to restart the language server of Lean. VS Code shortcut: `Ctrl + Shift + P` then search for "Lean 4: Restart Server".
+  * **Macros:** Lean is highly customizable. You can define your own notation (like `a ∣ b` for "a divides b") using **macros**. Macros are rules that transform `Syntax` into other `Syntax` before anything else happens. This lets you shape the language to your needs.
 
+#### Logic's world: `Expr`
+
+For Lean to understand the *mathematical meaning* of your code, it must leave the world of `Syntax`. It converts your code's blueprint into a core logical object called an `Expr` (short for "Expression").
+
+An `Expr` is the fundamental data structure for everything in Lean's logic:
+
+  * A **term** like `$5$` is an `Expr`.
+  * A **type** like `ℕ` (the natural numbers) is an `Expr`.
+  * A **theorem statement** like `$2 + 2 = 4$` is an `Expr`.
+  * A **proof** of that theorem is also an `Expr`.
+
+So types, proofs and terms are just a special kind of `Expr`.  `Expr` is where Lean performs its magic: type checking, proof verification, and logical computation.
+
+
+#### The bridge: elaboration and the environment
+
+How does `Syntax` become an `Expr`? Through a crucial process called **elaboration**. The elaborator is Lean's "brain." It takes your user-friendly syntax and:
+
+1.  Infers types.
+2.  Resolves notation.
+3.  Checks for logical correctness.
+4.  Translates it all into a well-typed `Expr`.
+
+Once a definition or theorem is successfully elaborated into an `Expr`, it's stored in a global library called the **environment**. When you import `mathlib4`, you are loading its tens of thousands of `Expr`s into this environment, ready for you to use.
+
+
+#### Talking back to you: delaboration
+
+When Lean needs to show you something—like a proof goal or an error message—it does the reverse process. It takes an internal, computer-readable `Expr` and **delaborates** it back into human-readable `Syntax` to display on your screen.
 
 ### Namespaces
+
+Libraries in Lean organise definitions using **namespaces**. A namespace in Lean is a way to categorize identifiers to avoid naming conflicts. Namespaces with the same name in different files are automatically merged when you import the file modules that contain them.
 
 Let's say you are working in a file `Foo.lean` and you have identical identifiers for two different parts of the file. You can separate both using namespaces.
 
@@ -236,32 +271,43 @@ open Foo
 
 In this case, you didn't need to write `Foo.id`, because you opened the `Foo` namespace. If you had another `id` in the global namespace, it would have caused a clash.
 
-### Modules and namespaces
+### Imports
 
-Every module in Lean creates a namespace with the same name. However, **importing a module does NOT automatically open its namespace**. A **namespace in Lean** is a way to organize identifiers to avoid naming conflicts.
+Imports in Lean are different than in other languages. An `import` statement in Lean seems to be a namespace that is also a file inside directory containing a `lakefile.lean`.
 
-When you have two files `Foo.lean` and `Bar.lean`, you can import `Foo` from `Bar`.
-
-So `Foo.lean` might contain a definition:
+The path used in the import statement starts with the name of the external library or the current library and is continued with the relative folder path, separated by dots. For example, if you need a data structure `Foo` from the standard library, you can import it like this:
 
 ```lean
-def sum (a b : Nat) : Nat := a + b
+import Std.Data.Foo
 ```
 
-And `Bar.lean` imports it:
+But if you have a local module `Foo.lean` in the current library, you always have to specify the full path relative to the root of the current library:
 
 ```lean
-import Foo
-#eval Foo.sum 3 4 -- This will evaluate to 7
+import CurrentLibrary.SubModule.Foo
 ```
 
-When you wrote `import Foo`, you imported the `Foo` module, which makes its definitions available under the `Foo` namespace. You need to write `Foo.sum` to access the `sum` function, unless you explicitly open the namespace:
+Imports have to be placed before any definitions or `open` statements. Importing a module does NOT automatically open its namespace. You still have to prefix references to definitions in the imported module with the module name, unless you explicitly open the namespace:
 
 ```lean
-import Foo
-open Foo
-#eval sum 3 4 -- Now this works without qualification
-``` 
+import CurrentLibrary.SubModule.Foo
+#eval CurrentLibrary.SubModule.Foo.someFunction 42 -- Accessing a function in Foo
+
+-- Opening the module to avoid the prefix
+open CurrentLibrary.SubModule.Foo
+#eval someFunction 42 -- Now you can use the function without the prefix
+```
+
+After changing the import graph of your library (by adding or removing imports from Lean files), you might need to restart the language server of Lean. Find the option in the 'forall'-symbol in the upper-right corner (VS Code shortcut: `Ctrl + Shift + P` then search for "Lean 4: Restart Server".) 
+
+It can be partially automated by setting an option for the Lean LSP in VS Code:
+
+```json
+{
+  "lean4.automaticallyBuildDependencies": true,
+}
+```
+
 
 
 ### Obtaining import paths
@@ -286,6 +332,7 @@ It is easier to use the `Mathlib` dependency instead (which includes the standar
    import Std.Data.Foo
    ```
 
+
 ### Finding syntax
 
 For finding special syntax, you can use:
@@ -301,11 +348,7 @@ Lean is not only a powerful functional programming language, but is also known f
 
 The best learning resource for mathematics with Lean is the book [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean). It is quite long, but has a lot of step-wise exercises to learn the language and the Mathlib library.
 
-### Search proof state
 
-Copy-paste the current proof state in:
-
-https://premise-search.com/
 
 
 ### Searching mathematical patterns
@@ -346,8 +389,6 @@ Examples of Loogle searches:
   ENNReal _ / _ = _ ↔ _
   ````
   
-
-
 ### Searching mathematical concepts
 
 
@@ -361,30 +402,30 @@ You can also search using English / natural language on [Moogle](https://moogle.
 
 If you prefer reading documentation in your browser, you can search on the [HTML pages](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) with cross-references and syntax highlighting.
 
-## Exercises
 
-In this workshop, we will try to solve some well-known riddles using Lean.
+There is a new place where you can copy-paste the current proof state and search for theorems that can help you solve it: https://premise-search.com/.
 
-### Famous riddles
+## Practice
 
-Problem statements and solutions for this workshop are located in the [`RiddleProofs`](./RiddleProofs) sub-directory.
+
+### Computational problems
+
+For this workshop, I prepared some example problems. Although not necessarily riddles, the computational problems they involve offer a good starting point for learning: see [`RiddleProofs`](./RiddleProofs) sub-directory.
+
 
 _**Note**: This is a work in progress. The code is not complete yet, but the riddles are mostly solvable. Still looking for more riddles! Most of the educational comments are generated by Claude Opus 4._
+
 
 ### Advanced Lean problems
 
 If you are ready for it, continue with more challenging problems. Use the techniques in the proofs to improve your skills.
 
 - Solutions to recent International Mathematical Olympiad problems: <https://dwrensha.github.io/compfiles/imo.html>
-- Have a look at the [math index page](https://leanprover-community.github.io/mathlib-overview.html).
+- Have a look at the [100 problems](https://leanprover-community.github.io/100.html). The list is inspired by <https://www.cs.ru.nl/~freek/100/>.
 
 ### Unformalised problems
 
-When you have had enough of formalised (in Lean) problems, you can have a look at problems that are unformalised:
-
-- Larger, older, well-known (solved) problems in mathematics: <https://www.cs.ru.nl/~freek/100/>
-
-- Also have a look at [Project Euler](https://projecteuler.net/) if you want to solve new riddles or problems and compete with others.
+When you have had enough of formalised (in Lean) problems, you can find new problems to formalize and solve in [Project Euler](https://projecteuler.net/) if you want to solve new riddles or problems and compete with others.
 
 ## Extending the Lean ecosystem
 
@@ -394,7 +435,7 @@ Your package will be automatically listed by [Reservoir](https://reservoir.lean-
 
 
 
-## CI
+## Basic checks in CI
 
 Use the official [Github action](https://github.com/leanprover/lean-action).
 
@@ -411,7 +452,7 @@ If you want to be more specific, you can use tab-autocompletion in the `set_opti
 
 Or have a look at the [Lean linter source code](https://github.com/leanprover/lean4/blob/master/src/Lean/Linter.lean).
 
-### Overview available linters
+### Overview built-in linters
 
 Core Lean 4.22.0-rc3 Linters:
 
@@ -439,6 +480,8 @@ So, for example, the fully qualified import path of `unusedVariables` is `linter
       ⟨`linter.unusedVariables, true⟩,
     ]
   ```
+
+### List of Mathlib Linters
 
 Mathlib Linters (only available when Mathlib is a dependency):
 
@@ -506,10 +549,9 @@ There is no standard formatter as of July 2025.
 
 ### Visibility
 
-Usually people put code that should be private within a module inside a namespace, named after the build target / project.
+Usually people put code that should be private within a module inside a namespace, named after the build target / project. The definitions nested under the namespace will not be imported automatically when you import the module. You have to explicitly open the namespace to access them.
 
-The same namespace can be used across different files. Definitions nested under the same namespace (in other files) can see eachother.
-
+The same namespace can be used across different files. Definitions nested under the same namespace (in different imported files) can see eachother.
 
 ### Tests
 
@@ -541,15 +583,20 @@ set_option profiler true
 
 ### Tracing
 
-Built-in tracing
+Lean has support for tracing built-in. You can enable display of the tracing for the built-in `simp` tactic with
 
 ```lean
 set_option trace.Meta.Tactic.simp true
 ```
 
-Custom tracing. In library code:
+Notice that you can click on the objects mentioned in the trace output to see their definitions and types. This is possible because the `trace` command (just like the logging commands) can print either `Syntax` or `Expr` objects. 
 
-```lean4
+- Printing `Syntax` is what you would do in any other language and works like `trace[SCOPE] s!"A = {}"`.
+- Printing `Expr` is more powerful. The command `trace[SCOPE] m!"A = {A}"` will print the elaborated `Expr` of `A`, which you can click to see its definition and type.
+
+Tracing can be created in a library that is consumed by another file / library.
+
+```lean
 open Lean 
 
 initialize
@@ -557,7 +604,7 @@ initialize
   registerTraceClass `ENNRealArith.conversion
 ```
 
-In unit tests:
+The library that imports the library / file with tracing can then (selectively) enable the display of tracing output in the InfoView window:
 
 ```lean
 set_option trace.ENNRealArith.conversion true in
