@@ -47,6 +47,12 @@ instance : Module (ZMod 2) (ButtonSelection m n) := Pi.module _ _ _
 def buttonVectorIso : ButtonSelection m n ≃ₗ[ZMod 2] (Button m n → ZMod 2) :=
   LinearEquiv.refl _ _
 
+-- Connection to linear algebra: solvability characterization
+theorem solvability_via_vector_space (initial : LightState m n) :
+  isSolvable initial ↔
+  toVector initial ∈ Set.range (buttonLinearMap : (Button m n → ZMod 2) →ₗ[ZMod 2] (Button m n → ZMod 2)) := by
+  exact solvable_iff_in_image initial
+
 omit [NeZero m] [NeZero n]
 
 -- Extensionality for button selections
@@ -98,11 +104,7 @@ theorem buttonSelection_dimension_explicit [Fintype (Fin m)] [Fintype (Fin n)] :
   rw [h1, h2]
 
 
--- Connection to linear algebra: solvability characterization
-theorem solvability_via_vector_space (initial : LightState m n) :
-  isSolvable initial ↔
-  toVector initial ∈ Set.range (buttonLinearMap : (Button m n → ZMod 2) →ₗ[ZMod 2] (Button m n → ZMod 2)) := by
-  exact solvable_iff_in_image initial
+
 
 -- Button effect is a linear combination of basis vectors
 theorem button_effect_linear (btn : Button m n) :
