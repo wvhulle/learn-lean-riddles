@@ -84,14 +84,14 @@ theorem buttonSelection_dimension [NeZero m] [NeZero n] [Fintype (Button m n)] :
   -- ButtonSelection m n = Button m n → ZMod 2
   -- This is a finite product of copies of ZMod 2
   -- ZMod 2 is a field, giving us the StrongRankCondition needed for Module.finrank_pi
-  
+
   -- Try to establish that 2 is prime and get field instance
   haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-  
+
   -- With the Fact instance, ZMod 2 should automatically be a field
   -- Let's try to use Module.finrank_pi directly
   unfold ButtonSelection
-  
+
   -- Apply Module.finrank_pi which should work now that we have the Fact instance
   apply Module.finrank_pi
 
@@ -120,14 +120,19 @@ theorem button_effect_linear (btn : Button m n) :
   simp only [buttonMatrix, toVector, Matrix.mulVec, Pi.single]
   -- The goal is: Function.uncurry (effect btn) pos = (fun j => Function.uncurry (effect j) pos) ⬝ᵥ Function.update 0 btn 1
   -- This is a dot product, so let's unfold it
-  simp only [Matrix.dotProduct]
+  simp only [dotProduct]
   -- Now we have a sum that equals the function value when only btn contributes
   rw [Finset.sum_eq_single btn]
-  · simp only [Function.update_apply, if_pos rfl, mul_one]
+  · simp only [Function.update_apply]
+    -- The goal is: Function.uncurry (effect btn) pos = Matrix.of (...) pos btn * (if btn = btn then 1 else 0)
+    simp only [ite_true, mul_one]
     -- This reduces to showing Matrix.of (fun pos btn => Function.uncurry (effect btn) pos) pos btn = Function.uncurry (effect btn) pos
     rw [Matrix.of_apply]
   · intro b hb_mem hb_ne
-    simp only [Function.update_apply, if_neg hb_ne, mul_zero]
+    simp only [Function.update_apply]
+    -- The goal is: Matrix.of (...) pos b * (if b = btn then 1 else 0) = 0
+    simp only [hb_ne, if_false]
+    exact rfl
   · intro hbtn_not_mem
     exfalso
     exact hbtn_not_mem (Finset.mem_univ btn)
@@ -138,7 +143,27 @@ theorem kernel_characterization (sel : ButtonSelection m n) :
   applySelection allOff sel = allOff := by
   simp only [LinearMap.mem_ker, buttonLinearMap]
   simp only [applySelection]
-  sorry -- This would require careful kernel computation
+  show (Matrix.toLin' buttonMatrix) sel = 0 ↔ allOff + fromVector (buttonMatrix.mulVec sel) = allOff
+  constructor
+  · intro h
+    -- If buttonMatrix.mulVec sel = 0, then fromVector (buttonMatrix.mulVec sel) = fromVector 0 = allOff
+    -- So allOff + fromVector (buttonMatrix.mulVec sel) = allOff + allOff = allOff
+    rw [Matrix.toLin'_apply] at h
+    rw [h]
+    simp only [fromVector]
+    exact rfl
+  · intro h
+    -- If allOff + fromVector (buttonMatrix.mulVec sel) = allOff, then fromVector (buttonMatrix.mulVec sel) = 0
+    -- Since toVector and fromVector are inverses, this means buttonMatrix.mulVec sel = 0
+    rw [Matrix.toLin'_apply]
+    have h1 : fromVector (buttonMatrix.mulVec sel) = 0 := by
+      exact (eq_zero_iff_eq_zero_of_add_eq_zero h).mp rfl
+    -- Now we need to show buttonMatrix.mulVec sel = 0
+    -- Since fromVector and toVector are inverses, this follows from h1
+    have h2 : toVector (fromVector (buttonMatrix.mulVec sel)) = toVector 0 := by
+      rw [h1]
+    simp only [toVector] at h2
+    exact h2
 
 -- A concrete 2×2 example
 section TwoByTwo
