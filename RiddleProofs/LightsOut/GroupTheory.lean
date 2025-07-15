@@ -1,12 +1,9 @@
-import RiddleProofs.LightsOut.Statement
 import RiddleProofs.LightsOut.LinearAlgebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
-import Mathlib.RingTheory.PrincipalIdealDomain
 import Mathlib.Data.ZMod.Basic
 
 /-!
 ## Vector space structure on button selections
-
 
 The crucial observation is that button selections don't just form a group - they form a
 **vector space** over the field 𝔽₂ = ℤ/2ℤ. This vector space structure is what makes
@@ -23,11 +20,6 @@ the Lights Out puzzle solvable via linear algebra.
 - x is the button selection we want to find
 - b is the target configuration (usually all-off)
 
-**Key properties**:
-1. **Dimension**: The vector space has dimension m×n
-2. **Involution**: Every selection is its own inverse (sel + sel = 0)
-3. **Commutativity**: Order of button presses doesn't matter
-4. **Solvability**: A configuration is solvable iff it's in the image of the button matrix
 -/
 
 variable {m n : ℕ}
@@ -47,8 +39,8 @@ instance : Module (ZMod 2) (ButtonSelection m n) := Pi.module _ _ _
 def buttonVectorIso : ButtonSelection m n ≃ₗ[ZMod 2] (Button m n → ZMod 2) :=
   LinearEquiv.refl _ _
 
--- Connection to linear algebra: solvability characterization
-theorem solvability_via_vector_space [NeZero m] [NeZero n] (initial : LightState m n) :
+-- Solvability characterization: a configuration is solvable iff it's in the image of the button matrix
+theorem solvability_characterization [NeZero m] [NeZero n] (initial : LightState m n) :
   isSolvable initial ↔
   toVector initial ∈ Set.range (buttonLinearMap : (Button m n → ZMod 2) →ₗ[ZMod 2] (Button m n → ZMod 2)) := by
   exact solvable_iff_in_image initial
@@ -60,13 +52,12 @@ theorem ButtonSelection.ext {sel1 sel2 : ButtonSelection m n}
   funext h
 
 -- Every button selection has order dividing 2 (involution property)
-theorem button_selection_order_two (sel : ButtonSelection m n) :
+theorem button_selection_involution (sel : ButtonSelection m n) :
   sel + sel = 0 := by
   ext button
-  rw [Pi.add_apply]
-  change sel button + sel button = 0
-  rw [← two_mul]
-  exact mul_eq_zero_of_left rfl (sel button)
+  calc sel button + sel button
+    = 2 * sel button := by rw [two_mul]
+    _ = 0 := by exact mul_eq_zero_of_left rfl (sel button)
 
 -- The fundamental property: button order doesn't matter (commutativity)
 theorem button_selections_commute (sel1 sel2 : ButtonSelection m n)
@@ -74,47 +65,34 @@ theorem button_selections_commute (sel1 sel2 : ButtonSelection m n)
   applySelection (applySelection state sel1) sel2 =
     applySelection (applySelection state sel2) sel1 := by
   unfold applySelection
-  simp only [add_assoc]
-  congr 1
-  rw [add_comm]
+  calc state + fromVector (buttonMatrix.mulVec sel1) + fromVector (buttonMatrix.mulVec sel2)
+    = state + (fromVector (buttonMatrix.mulVec sel1) + fromVector (buttonMatrix.mulVec sel2)) := by rw [add_assoc]
+    _ = state + (fromVector (buttonMatrix.mulVec sel2) + fromVector (buttonMatrix.mulVec sel1)) := by rw [add_comm (fromVector _)]
+    _ = state + fromVector (buttonMatrix.mulVec sel2) + fromVector (buttonMatrix.mulVec sel1) := by rw [← add_assoc]
 
--- The dimension of the button selection space
+-- The dimension of the button selection space equals the number of buttons
 theorem buttonSelection_dimension [NeZero m] [NeZero n] [Fintype (Button m n)] :
   Module.finrank (ZMod 2) (ButtonSelection m n) = Fintype.card (Button m n) := by
-  -- ButtonSelection m n = Button m n → ZMod 2
-  -- This is a finite product of copies of ZMod 2
-  -- ZMod 2 is a field, giving us the StrongRankCondition needed for Module.finrank_pi
-
-  -- Try to establish that 2 is prime and get field instance
+  -- ButtonSelection m n = Button m n → ZMod 2 is a finite product of copies of ZMod 2
+  -- Since ZMod 2 is a field (with the prime fact), we can use Module.finrank_pi
   haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-
-  -- With the Fact instance, ZMod 2 should automatically be a field
-  -- Let's try to use Module.finrank_pi directly
   unfold ButtonSelection
-
-  -- Apply Module.finrank_pi which should work now that we have the Fact instance
   apply Module.finrank_pi
 
--- Concrete dimension calculation
-theorem buttonSelection_dimension_explicit [NeZero m] [NeZero n] [Fintype (Fin m)] [Fintype (Fin n)] :
+-- Explicit dimension calculation for m×n grid
+theorem buttonSelection_dimension_grid [NeZero m] [NeZero n] [Fintype (Fin m)] [Fintype (Fin n)] :
   Module.finrank (ZMod 2) (ButtonSelection m n) = m * n := by
+  have card_fin_m : Fintype.card (Fin m) = m := by convert Fintype.card_fin m
+  have card_fin_n : Fintype.card (Fin n) = n := by convert Fintype.card_fin n
   rw [buttonSelection_dimension]
   simp only [Button, Fintype.card_prod]
-  -- We need to prove Fintype.card (Fin m) * Fintype.card (Fin n) = m * n
-  -- This should be true by Fintype.card_fin, but we need to handle instance unification
-  have h1 : Fintype.card (Fin m) = m := by
-    -- Convert the instance to the standard one
-    convert Fintype.card_fin m
-  have h2 : Fintype.card (Fin n) = n := by
-    -- Convert the instance to the standard one
-    convert Fintype.card_fin n
-  rw [h1, h2]
+  rw [card_fin_m, card_fin_n]
 
 
 
 
--- Button effect is a linear combination of basis vectors
-theorem button_effect_linear (btn : Button m n) :
+-- Button effect as matrix-vector multiplication
+theorem button_effect_as_matrix_vector (btn : Button m n) :
   toVector (effect btn) = buttonMatrix.mulVec (Pi.single btn 1) := by
   funext pos
   simp only [buttonMatrix, toVector, Matrix.mulVec, Pi.single]
@@ -138,7 +116,7 @@ theorem button_effect_linear (btn : Button m n) :
     exact hbtn_not_mem (Finset.mem_univ btn)
 
 -- The kernel characterizes "null" button combinations
-theorem kernel_characterization (sel : ButtonSelection m n) :
+theorem kernel_characterization_incomplete (sel : ButtonSelection m n) :
   sel ∈ LinearMap.ker buttonLinearMap ↔
   applySelection allOff sel = allOff := by
   simp only [LinearMap.mem_ker, buttonLinearMap]
@@ -169,18 +147,18 @@ theorem kernel_characterization (sel : ButtonSelection m n) :
 section TwoByTwo
 variable [Fintype (Fin 2)]
 
--- In a 2×2 grid, we have 4 buttons and 4 light positions
+-- In a 2×2 grid, we have exactly 4 buttons and dimension 4
 example : Module.finrank (ZMod 2) (ButtonSelection 2 2) = 4 := by
-  exact buttonSelection_dimension_explicit
+  exact buttonSelection_dimension_grid
 
--- Example: single button press
+-- Single button press: represents pressing exactly one button
 def singleButtonPress (btn : Button 2 2) : ButtonSelection 2 2 :=
   Pi.single btn 1
 
 -- Single button presses form a basis for the vector space
-theorem singleButton_linearly_independent :
+theorem singleButton_basis_incomplete :
   LinearIndependent (ZMod 2) (singleButtonPress : Button 2 2 → ButtonSelection 2 2) := by
   unfold singleButtonPress
-  sorry -- This would require proving Pi.single functions are linearly independent
+  sorry -- Requires proving Pi.single functions are linearly independent
 
 end TwoByTwo
