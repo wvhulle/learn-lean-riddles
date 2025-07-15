@@ -46,9 +46,9 @@ theorem density_sum_one : ∑ ω : Game, game_density ω = 1 := by
   simp [game_density]
   simp [equivalence_game_repr, game_enumeration, pairs]
   simp [Finset.sum_product]
-  split_ifs <;> ennreal_arith
-  -- TODO: Why is the following line necessary? And why does ennreal_arith not work on its own?
-  ennreal_fraction_add
+  simp [fin_to_door]
+  eq_as_reals
+
 
 lemma prob_density_zero_outside : ∀ a ∉ (Finset.univ : Finset Game), game_density a = 0 := by
   intro a ha
