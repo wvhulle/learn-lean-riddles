@@ -13,7 +13,7 @@ instance [Fintype (Fin m)] [Fintype (Fin n)] :
   apply Fintype.decidableExistsFintype
 
 
-variable {m n : ℕ} [NeZero m] [NeZero n]
+variable {m n : ℕ}
 
 lemma toVector_injective : Function.Injective (@toVector m n) := by
   intros M N eq
