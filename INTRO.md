@@ -94,7 +94,7 @@ How to choose?
 
 ---
 
-# Basics
+# Mathematics = Programming
 
 Starting point of this workshop:
 
@@ -103,24 +103,41 @@ Starting point of this workshop:
 
 What does this mean?
 
+- Proving things in mathematics is like writing programs.
+- Writing programs is like proving things in mathematics.
+
+Also known as the;
+
+- **Propositions as types**.
+- **Proofs as programs**.
+
+Discovered by Brouwer, Heyting, Kolmogorov, Curry, Howard, and many others.
+
+
+---
+
+# Formally in Lean
+
+Example: **polar coordinates**
+
 - A program that computes polar coordinates from cartesian coordinates = theorem that shows polar coordinates exist, given cartesian coordinates exist.
 - A theorem that shows polar coordinates exist for each cartesian coordinate = a program that computes polar coorindates from cartesian coordinates.
 
-Programming:
+A Lean definition of this function:
 
 ```lean4
 def polar_to_cartesian: Cart -> Pol :=
   sorry
 ```
 
-Mathematics:
+This is **exactly the same** as a Lean theorem:
 
 ```lean
 theorem polar_to_cartesian: Cart -> Pol :=
   sorry
 ```
 
-**Both are equivalent** in Lean.
+(`sorry` is a placeholder for "I don't know how to prove this yet".)
 
 ---
 
@@ -164,9 +181,9 @@ def pureGreen : RGB :=
 
 ```lean
 def shuffle (c : RGB) : RGB :=
-{ red := RGB.green c
-  green := RGB.blue c
-  blue := RGB.red c }
+  { red := RGB.green c
+    green := RGB.blue c
+    blue := RGB.red c }
 ```
 
 - Safe recursion with termination
@@ -241,14 +258,18 @@ I recommend to start with one of these:
 
 ## Advanced
 
-If you are new to proof assistants, but you have written code, you can have a look at the `Statement.lean` files in the repository of this workshop.
 
-- First, you will need to clone: `git@github.com:wvhulle/learn-lean-riddles.git`.
+
+If you are new to proof assistants, but you have written code, you can have a look at the `Statement.lean` files in the repository of this workshop. (Of course, you are free to use other resources, available online.)
+
+For playing with the Lean content in this repository:
+
+- You will need to clone: `git@github.com:wvhulle/learn-lean-riddles.git`.
 - Then run `lake build` to build everything. First time can take a while.
 - Open the Lean files in VS code with the Lean4 extension.
 - Open the infoview and step through proofs interactively.
 
-In the following slides, I put some challenges for each riddle.
+In the following slides, there is a brief sketch of each riddle / problem.
 
 ---
 
@@ -271,11 +292,20 @@ Look at examples in `BoardExamples.lean` and visualisation in `Widget.Lean`.
 
 Mathematical interpretation is in `LinearAlgebra.lean`.
 
-- Are there start configurations that always solvable?
-- Start configurations that are always insolvable?
-- Can you write a function to search solutions?
+- Can you write a brute-force function (in Lean) to search solutions?
+- Which start configurations are solvable?
+- Which start configurations are insolvable?
+
+
+Frontend:
+
+- Define a way to visualize steps, one at a time, while manually testing the puzzle.
 - Make cells in the widget clickable.
-- Can you prove some results for the group theory formalisation?
+
+Group theory:
+
+- Try to read and understand the lemmas used in `GroupTheory.lean`.
+- Try to compute a product of two matrices.
 
 ---
 
@@ -294,3 +324,25 @@ First look at `Statement.lean`.
 # Birthday problem
 
 - What if there were more days in a year?
+- Understand what kind of probability distributions are available for Lean in Mathlib4 (or other projects?).
+- Model another similar probabilistic problem / paradox, using another distribution.
+
+
+---
+
+# Learning resources Lean
+
+Where should you start?
+
+- Official list: https://leanprover-community.github.io/learn.html
+- My notes for this workshop: https://github.com/wvhulle/learn-lean-riddles
+  - contains instructions for installation
+  - computation problems (riddles), partially or fully solved
+  - tips for creating Lean modules
+
+How to choose?
+
+- You are a **mathematician**? Start with "Mathematics in Lean"
+- You are a **developer**? Start with "Functional programming Lean"
+- You are a **language nerd**? Read "Tactic programming guide"
+- You are **something else**? Try the interactive "Natural number game"

@@ -3,7 +3,7 @@ import RiddleProofs.MontyHall.Statement
 /-!
 # Monty Hall Problem: Enumeration approach
 
-This file takes a computational approach to the Monty Hall problem by enumerating 
+This file takes a computational approach to the Monty Hall problem by enumerating
 all possible game scenarios and counting outcomes.
 
 **Key insight**: Since there are only 3 doors and 3 choices for each variable
@@ -43,7 +43,7 @@ lemma fin_to_door_injective : Function.Injective fin_to_door := by
 -- This gives us 3 × 3 × 3 = 27 different scenarios
 def pairs := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3 × Fin 3) )
 
--- Systematically enumerate all possible Monty Hall games
+-- Alternative enumeration of Game using pairs. `deriving Fintype` already provides something similar.
 def game_enumeration : Finset Game :=
   pairs.map ⟨(fun x => match x with
     | (car_idx, pick_idx, host_idx) =>
@@ -57,7 +57,7 @@ def game_enumeration : Finset Game :=
       simp [h1, h2, h3]⟩
 
 theorem equivalence_game_repr : (Finset.univ : Finset Game) = game_enumeration := by
-  rfl
+  rfl -- Both sides are definitionally equal by construction.
 
 instance fin_outcome : Finset Game :=
   Finset.univ

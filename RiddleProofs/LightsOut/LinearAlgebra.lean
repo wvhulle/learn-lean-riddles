@@ -2,7 +2,6 @@ import Mathlib.LinearAlgebra.Matrix.ToLin
 import RiddleProofs.LightsOut.Statement
 
 
-/-- Decidability of solvability -/
 instance [Fintype (Fin m)] [Fintype (Fin n)] :
     DecidablePred (isSolvable : LightState m n → Prop) := by
   intro initial
@@ -33,9 +32,6 @@ lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
          _ = 0 + b := by rw [h]
          _ = b := by rw [zero_add]
   · intro h; rw [h, ← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
-
-
-
 
 
 /-- Solvability criterion: initial state in button linear map image -/
