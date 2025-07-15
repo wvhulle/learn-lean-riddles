@@ -1,5 +1,6 @@
 import RiddleProofs.LightsOut.LinearAlgebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
+import Mathlib.LinearAlgebra.StdBasis
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -109,7 +110,50 @@ theorem button_effect_as_matrix_vector (btn : Button m n) :
     exfalso
     exact h (Finset.mem_univ btn)
 
--- The kernel characterizes "null" button combinations
+/--
+  In plain English: A button selection is in the kernel of the button linear map
+  if and only if applying that selection to the all-off state leaves you in the
+  all-off state.
+
+  Intuitive meaning
+
+  The Kernel = "Null" Button Combinations
+
+  The kernel of the button linear map consists of all button selections that have
+   no net effect on any light configuration. These are the "useless" or "null"
+  button combinations.
+
+  What this means for the puzzle:
+
+  1. If you press buttons according to a kernel selection starting from all
+  lights off, you'll end up with all lights still off
+  2. More generally, if you press buttons according to a kernel selection
+  starting from any configuration, you'll end up with the same configuration you
+  started with
+
+  Examples of kernel elements:
+
+  - The empty selection (press no buttons) - obviously does nothing
+  - Any button pressed twice - since pressing the same button twice cancels out
+  in 𝔽₂
+  - "Canceling patterns" - combinations where the effects exactly cancel each
+  other out
+
+  Why this matters for solvability:
+
+  This theorem connects to a fundamental principle in linear algebra:
+  - If you can solve the puzzle from some initial state, then you can solve it
+  from any state that differs from the first by a kernel element
+  - Conversely, if two states differ by a kernel element, they have the same
+  solvability status
+
+  A concrete example
+
+  Imagine you found a button sequence that solves a particular puzzle. If you
+  also know a kernel element (a "useless" button combination), then:
+  - Adding the kernel element to your solution gives you another solution
+  - The kernel element by itself applied to the all-off state keeps it all-off
+-/
 theorem kernel_characterization (sel : ButtonSelection m n) :
   sel ∈ LinearMap.ker buttonLinearMap ↔
   applySelection allOff sel = allOff := by
@@ -127,7 +171,7 @@ theorem kernel_characterization (sel : ButtonSelection m n) :
     calc allOff + fromVector (buttonMatrix.mulVec sel)
       = allOff + fromVector 0 := by rw [h_mulVec]
       _ = allOff + allOff := by rw [fromVector_zero]
-      _ = allOff := by 
+      _ = allOff := by
         funext i j
         simp only [allOff]
         exact add_zero 0
@@ -178,9 +222,19 @@ def singleButtonPress (btn : Button 2 2) : ButtonSelection 2 2 :=
   Pi.single btn 1
 
 -- Single button presses form a basis for the vector space
-theorem singleButton_basis_incomplete :
+theorem singleButton_basis :
   LinearIndependent (ZMod 2) (singleButtonPress : Button 2 2 → ButtonSelection 2 2) := by
   unfold singleButtonPress
-  sorry -- Requires proving Pi.single functions are linearly independent
+  -- singleButtonPress btn = Pi.single btn 1
+  -- This is exactly the standard basis for Button 2 2 → ZMod 2
+  -- The Pi.basisFun basis has the property that (Pi.basisFun R η) i = Pi.single i 1
+  have basis_eq : ∀ i, (Pi.basisFun (ZMod 2) (Button 2 2)) i = Pi.single i 1 :=
+    Pi.basisFun_apply (ZMod 2) (Button 2 2)
+  -- Since the basis function equals our singleButtonPress function, they have the same linear independence
+  have func_eq : (Pi.basisFun (ZMod 2) (Button 2 2) : Button 2 2 → ButtonSelection 2 2) = fun btn => Pi.single btn 1 := by
+    funext btn
+    exact basis_eq btn
+  rw [← func_eq]
+  exact (Pi.basisFun (ZMod 2) (Button 2 2)).linearIndependent
 
 end TwoByTwo
