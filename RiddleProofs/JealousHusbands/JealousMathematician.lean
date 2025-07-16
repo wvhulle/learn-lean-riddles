@@ -7,6 +7,8 @@ Three jealous mathematicians and their three secret notebooks must cross a river
 - The boat carries at most two items (people or notebooks).
 - No mathematician may be left alone with another’s notebook unless the owner is present.
 
+## Problem
+
 Can they all get across safely?
 -/
 
