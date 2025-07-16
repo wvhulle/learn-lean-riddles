@@ -24,16 +24,14 @@ The **jealousy constraint** is the key challenge. For example:
 - ✅ W₁, H₁, and H₂ can be together (H₁ protects his wife)
 - ✅ H₁ and H₂ can be alone together (no wives involved)
 
-## Mathematical modeling
 
-We represent this as a **state space search problem**:
-- **RiverCrossingState**: Position of each person (left/right bank) + boat location
-- **Actions**: Valid moves respecting all constraints
-- **Goal**: All people and boat on the right bank
-- **Safety predicate**: No jealousy violations at any intermediate state
+## Challenges
 
-This encoding demonstrates how **social constraints** become **logical predicates**
-that can be automatically verified by the computer.
+- Can you generalize to N couples?
+- What about more than 2 people in a boat?
+- Can you optimize my BFS in `Search.lean`?
+- Like `JealousMathematician.lean`, can you write a version for "cannibals and missionaries"?
+
 -/
 
 /-- Number of couples in the puzzle -/

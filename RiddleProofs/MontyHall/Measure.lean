@@ -1,31 +1,13 @@
+/- This file constructs the proper probability measure for the Monty Hall problem.
+The key insight is that not all 27 possible games are equally likely - we need
+to account for the host's strategy and the rules of the game.
+-/
+
 import RiddleProofs.MontyHall.Enumeration
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import ENNRealArith
 
-/-!
-# Monty Hall Problem: Probability measure approach
 
-This file constructs the proper probability measure for the Monty Hall problem.
-The key insight is that not all 27 possible games are equally likely - we need
-to account for the host's strategy and the rules of the game.
-
-**The probability model**:
-- The car is equally likely to be behind any of the 3 doors (1/3 each)
-- The contestant picks a door uniformly at random (1/3 each)
-- The host must open a door that: (1) wasn't picked by contestant, (2) doesn't have the car
-- If the host has multiple valid choices, they choose randomly
-
-**Mathematical setup**:
-- Games where host violates the rules get probability 0
-- Valid games get probability proportional to the number of host's valid choices
-- This gives us a proper probability measure that sums to 1
-
-**Learning goals**:
-- Understand conditional probability and measure theory
-- Learn about probability mass functions (PMF) in Lean
-- See how to construct measures from density functions
-- Practice with ENNReal (extended non-negative reals)
--/
 
 open MeasureTheory Door ENNRealArith
 

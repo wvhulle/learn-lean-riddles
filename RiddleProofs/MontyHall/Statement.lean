@@ -5,7 +5,7 @@ import Mathlib.Probability.Notation
 
 This file formalizes the Monty Hall problem, a classic probability puzzle.
 
-**The Problem**
+## Statement**
 
 You are a contestant on a game show. You are presented with three closed doors. Behind one door is a car (the prize), and behind the other two are goats.
 
@@ -21,31 +21,22 @@ You complete the following steps:
 2. The host, who knows where the car is, opens one of the other two doors to reveal a goat.
 3. The host asks if you want to switch your choice to the remaining closed door.
 
-**The Question**
+## Question
 
 Is it to your advantage to switch doors?
 
-**The Answer (Spoiler)**
+## Challenges
 
-Yes! Switching gives you a 2/3 probability of winning, while staying gives you only 1/3.
 
-**Mathematical Intuition**
+- Derive a statement for the "total probability" law
+- Proof the total probability law as a theorem / lemma.
+- Replace boilerplate proof code in `Dilemma.lean` by the total probability law.
 
-When you first pick a door, there's a 1/3 chance the car is behind it, and a 2/3 chance 
-the car is behind one of the other two doors. When the host opens one of the other doors 
-to reveal a goat, all of that 2/3 probability gets concentrated on the remaining door.
-
-**Learning goals for this formalization**
-
-- Learn how to define custom data types in Lean using `inductive`
-- Understand how to work with finite types (`Fintype`)
-- See how to model discrete probability problems
-- Practice working with structures to represent game states
 -/
 
 inductive Door : Type
 | left    -- Door 1
-| middle  -- Door 2  
+| middle  -- Door 2
 | right   -- Door 3
 deriving DecidableEq, Repr, Fintype
 

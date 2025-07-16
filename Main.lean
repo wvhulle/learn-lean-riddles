@@ -22,7 +22,7 @@ Start here if you're new to Lean or proof assistants:
 - **Math concepts**: Conditional probability, Bayesian thinking
 - **Skills learned**: Writing simple proofs, working with rationals
 
-**BirthdayProblem.lean** 🎂
+**BirthdayProblem/Statement.lean** 🎂
 - **Lean concepts**: Finite types, cardinality functions, `decide` tactic
 - **Math concepts**: Combinatorics, probability paradoxes, injective functions
 - **Skills learned**: Computational proofs, understanding why intuition fails

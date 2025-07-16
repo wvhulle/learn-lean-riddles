@@ -1,34 +1,10 @@
+/- This file proves the famous Monty Hall result. -/
+
 import RiddleProofs.MontyHall.Measure
 import RiddleProofs.MontyHall.Enumeration
 import RiddleProofs.MontyHall.Statement
 import ENNRealArith
 import Mathlib.Probability.Notation
-
-/-!
-# Monty Hall Problem: The main result
-
-This file proves the famous Monty Hall result using rigorous probability theory.
-
-**The main theorems**:
-- `monty_hall_stay_probability`: If you stay with your original choice,
-  you win with probability 1/3
-- `monty_hall_switch_probability`: If you switch to the other door,
-  you win with probability 2/3
-
-**Mathematical approach**:
-We use conditional probability: P(car at door | contestant picked door A, host opened door B)
-This requires careful measure theory to ensure all the calculations are rigorous.
-
-**Key insight**: The asymmetry comes from the host's knowledge and constraints.
-The host can't open the door with the car, so their choice gives information
-about where the car is likely to be.
-
-**Learning goals**:
-- Understand conditional probability in measure theory
-- Learn about measurable sets and probability measures
-- See how to prove probabilistic statements rigorously
-- Practice with ENNReal arithmetic
--/
 
 open ProbabilityTheory ENNReal Door ENNRealArith
 

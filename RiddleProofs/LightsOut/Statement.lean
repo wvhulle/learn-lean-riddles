@@ -19,34 +19,28 @@ neighborhood (orthogonally adjacent cells).
 
   Example: 5×5 Lights Out grid. ● = on, ○ = off
 
-**The goal**: Turn all lights off by pressing buttons according to the rules.
+## Goal
 
-**Learning goals for this formalization**
-- Understand how to model puzzles using linear algebra over finite fields
-- Learn about matrices and linear maps in Lean
-- See how group theory applies to puzzle games
-- Practice working with ℤ/2ℤ (integers modulo 2)
+Turn all lights off by pressing buttons according to the rules.
 
-## Mathematical structure
 
-The puzzle exhibits rich algebraic structure:
+## Challenges
 
-- **LightState space**: Matrix (Fin m) (Fin n) (ℤ/2ℤ)  -- Each cell is 0 or 1
-- **Action group**: (ℤ/2ℤ)^(m×n) acting by componentwise addition
-- **Key insight**: Button presses form an abelian group where each element has order 2
-  (pressing the same button twice cancels out)
+- Can you write a brute-force function (in Lean) to search solutions?
+- Which start configurations are solvable?
+- Which start configurations are insolvable?
 
-The puzzle reduces to solving a linear system over 𝔽₂:
-  ```
-  Ax = b  where A is the button effect matrix
-  ```
 
-Solvability is equivalent to b ∈ Im(A), making this a problem in linear algebra
-over finite fields rather than combinatorial search.
+Frontend:
 
-**Why this works**: Since each button press toggles lights (addition in ℤ/2ℤ),
-and pressing a button twice returns to the original state, the order of button
-presses doesn't matter - only which buttons are pressed an odd number of times.
+- Define a way to visualize steps, one at a time, while manually testing the puzzle.
+- Make cells in the widget clickable.
+
+Group theory:
+
+- Try to read and understand the lemmas used in `GroupTheory.lean`.
+- Try to compute a product of two matrices.
+
 -/
 
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs

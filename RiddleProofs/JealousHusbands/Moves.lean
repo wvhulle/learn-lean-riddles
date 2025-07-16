@@ -1,22 +1,6 @@
 import RiddleProofs.JealousHusbands.Statement
 import Mathlib.Data.Finset.Card
 
-/-!
-# Move definitions and validation logic
-
-This module defines how people can move across the river and validates
-whether moves are legal according to the puzzle rules.
-
-## Key concepts
-
-- **Direction**: Whether the boat is going left-to-right or right-to-left
-- **Move**: A set of 1-2 people traveling together in a specific direction
-- **Move validation**: Checking boat capacity, boarding rules, and social constraints
-- **Custom syntax**: Domain-specific notation like `R {H 0, W 0}` for readability
-
-The validation logic encodes both **physical constraints** (boat capacity)
-and **social constraints** (who can travel together).
--/
 
 /-- Direction the boat travels. The boat must shuttle back and forth. -/
 inductive Direction
@@ -24,14 +8,14 @@ inductive Direction
 | toLeft   -- From right bank to left bank
 deriving DecidableEq, Repr
 
-/-- A move consists of 1-2 people traveling in a specific direction.
 
-    The `valid_size` constraint ensures:
-    - At least 1 person (boat can't travel empty)
-    - At most 2 people (boat capacity limit) -/
 structure Move where
+  /-- A move consists of 1-2 people traveling in a specific direction. -/
   people : Finset Person
   direction : Direction
+  /-- Constraint ensures:
+    - At least 1 person (boat can't travel empty)
+    - At most 2 people (boat capacity limit)-/
   valid_size : people.card ≤ 2 ∧ people.card > 0
 deriving DecidableEq
 
@@ -48,6 +32,7 @@ def pair (p1 p2 : Person) (dir : Direction) (h : p1 ≠ p2) : Move :=
     constructor
     · simp [Finset.card_pair h]
     · simp [Finset.card_pair h]⟩
+
 
 /-- Custom syntax for readable move notation.
 
@@ -107,17 +92,16 @@ def all_people : List Person := [
   Person.wife ⟨0, by decide⟩, Person.wife ⟨1, by decide⟩, Person.wife ⟨2, by decide⟩
 ]
 
-/-- Helper function: update person's position only if they're part of the move. -/
+/-- Update person's position only if they're part of the move. -/
 def update_if_present (p : Person) (people : Finset Person) (new_bank : RiverBank)
     (s : RiverCrossingState) : RiverCrossingState :=
   if p ∈ people then update_person_state p new_bank s else s
 
-/-- Apply a move to a state, producing the new state after the move.
-
-    **What happens during a move**:
-    1. The boat travels to the opposite bank
-    2. All people in the move travel with the boat to the new bank
-    3. People not in the move stay where they are -/
+/--
+Apply a move to a state, producing the new state after the move.
+1. The boat travels to the opposite bank
+2. All people in the move travel with the boat to the new bank
+3. People not in the move stay where they are -/
 def apply_simple_move (m : Move) (s : RiverCrossingState) : RiverCrossingState :=
   let new_boat := opposite_bank s.boat
   let base_state := {s with boat := new_boat}
@@ -129,23 +113,14 @@ def apply_simple_move (m : Move) (s : RiverCrossingState) : RiverCrossingState :
 def person_on_boat_side (p : Person) (people : Finset Person) (s : RiverCrossingState) : Bool :=
   if p ∈ people then Person.bank p s == s.boat else true
 
-/-- Validate whether a move is legal in the current state.
+/--
 
-    **Validation rules**:
-    1. **Boarding rule**: All people in the move must be on the same bank as the boat
-    2. **Travel rule**: If 2 people travel together, they must be either:
-       - A married couple (same couple_id), OR
-       - Two people of the same gender (two husbands or two wives)
-
-    **Why the travel rule?**
-    - A husband and wife from different couples cannot travel alone together
-    - This prevents creating jealousy situations during the boat ride itself
-
-    **Examples**:
-    - ✅ H₀ and W₀ together (married couple)
-    - ✅ H₀ and H₁ together (both husbands)
-    - ✅ W₁ and W₂ together (both wives)
-    - ❌ H₀ and W₁ together (unmarried opposite-gender pair) -/
+Validate whether a move is legal in the current state:
+1. **Boarding rule**: All people in the move must be on the same bank as the boat
+2. **Travel rule**: If 2 people travel together, they must be either:
+  - A married couple (same couple_id), OR
+  - Two people of the same gender (two husbands or two wives)
+-/
 def simple_move_valid (m : Move) (s : RiverCrossingState) : Bool :=
   let people := m.people
   let all_on_boat := all_people.all (person_on_boat_side · people s)
