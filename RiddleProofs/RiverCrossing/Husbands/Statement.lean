@@ -1,6 +1,11 @@
 import Init.WF
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
+import RiddleProofs.RiverCrossing.Common
+
+namespace RiverCrossing.Husbands
+
+open RiverBank
 
 /-!
 # Problem statement: The jealous husbands puzzle
@@ -36,12 +41,6 @@ The **jealousy constraint** is the key challenge. For example:
 
 /-- Number of couples in the puzzle -/
 def num_couples : Nat := 3
-
-/-- Two sides of the river -/
-inductive RiverBank
-| left
-| right
-deriving DecidableEq, Repr, Inhabited, BEq
 
 open RiverBank
 
@@ -82,67 +81,51 @@ def Person.couple_id : Person → Fin num_couples
     - `boat = left`: The boat is on the left bank
     - `husbands = [left, right, left]`: H₀ and H₂ on left, H₁ on right
     - `wives = [left, left, right]`: W₀ and W₁ on left, W₂ on right -/
-structure RiverCrossingState where
-  boat : RiverBank
-  husbands : Vector RiverBank num_couples
-  wives : Vector RiverBank num_couples
-deriving DecidableEq
+abbrev JealousHusbandsState := RiverCrossingState Person Person num_couples
 
-instance : BEq RiverCrossingState where
+instance : BEq JealousHusbandsState where
   beq s1 s2 := s1.boat == s2.boat &&
-               s1.husbands.toList == s2.husbands.toList &&
-               s1.wives.toList == s2.wives.toList
+               s1.entities_a.toList == s2.entities_a.toList &&
+               s1.entities_b.toList == s2.entities_b.toList
 
 /-- Get the current bank location of a person in the given state. -/
-def Person.bank (p : Person) (s : RiverCrossingState) : RiverBank :=
+def Person.bank (p : Person) (s : JealousHusbandsState) : RiverBank :=
 match p with
-| .husband i => s.husbands.get i
-| .wife i => s.wives.get i
+| .husband i => s.entities_a.get i
+| .wife i => s.entities_b.get i
 
-/-- Checks if a state satisfies the jealousy constraint.
+/-- Helper function to check if a wife is alone with another husband.
+    Returns true if wife i is on the same bank as husband j, but husband i is not. -/
+def wife_alone_with_other_husband (s : JealousHusbandsState) (wife_i : Fin num_couples) (husband_j : Fin num_couples) : Bool :=
+  let wife_bank := s.entities_b[wife_i]!
+  let other_husband_bank := s.entities_a[husband_j]!
+  let own_husband_bank := s.entities_a[wife_i]!
+  wife_bank = other_husband_bank && own_husband_bank ≠ other_husband_bank
 
-    **The jealousy rule**: A wife cannot be on the same bank with another husband
-    unless her own husband is also present on that bank.
+/-- Checks if a state satisfies the jealousy constraint.-/
+def bank_safe (s : JealousHusbandsState) : Bool :=
+  let pairs : List (Fin num_couples) := List.finRange num_couples
+  pairs.all (fun wife_i =>
+    pairs.all (fun husband_j =>
+      wife_i = husband_j || !wife_alone_with_other_husband s wife_i husband_j))
 
-    **Logic breakdown**:
-    - For each wife i and each different husband j (where i ≠ j)
-    - For each bank (left or right)
-    - Check: NOT (wife_i is on bank AND husband_j is on bank AND husband_i is NOT on bank)
-
-    **Example violations**:
-    - W₀ and H₁ alone on left bank (H₀ is on right bank) → unsafe
-    - W₀, H₀, and H₁ all on left bank → safe (H₀ protects W₀)
-    - H₀ and H₁ alone on left bank → safe (no wives involved) -/
-def bank_safe (s : RiverCrossingState) : Bool :=
-  let couples := #[0, 1, 2]
-  let banks := #[RiverBank.left, RiverBank.right]
-  couples.all fun i =>
-    couples.all fun j =>
-      if i = j then true
-      else
-        banks.all fun bank =>
-          !(s.wives[i]! = bank && s.husbands[j]! = bank && s.husbands[i]! ≠ bank)
-
-def state_safe (s : RiverCrossingState) : Bool := bank_safe s
-
-def state_safe_prop (s : RiverCrossingState) : Prop := state_safe s = true
+def state_safe_prop (s : JealousHusbandsState) : Prop := bank_safe s = true
 
 instance : DecidablePred state_safe_prop := by
   unfold state_safe_prop
   infer_instance
 
-def initial_state : RiverCrossingState :=
-  { boat := left, husbands := Vector.replicate 3 left, wives := Vector.replicate 3 left }
+def jealous_husbands_initial_state : JealousHusbandsState :=
+  initial_state Person Person num_couples
 
-def final_state : RiverCrossingState :=
-  { boat := right, husbands := Vector.replicate 3 right, wives := Vector.replicate 3 right }
+def jealous_husbands_final_state : JealousHusbandsState :=
+  final_state Person Person num_couples
 
-theorem final_safe : state_safe final_state = true := by
-  unfold state_safe bank_safe final_state
-  native_decide
+theorem final_safe : bank_safe jealous_husbands_final_state = true := by
+  unfold bank_safe jealous_husbands_final_state
+  decide
 
 instance (n : Nat) : OfNat (Fin num_couples) n where
   ofNat := ⟨n % num_couples, Nat.mod_lt n (by decide)⟩
 
-def n_transfers : Nat := 11
-def n_states := n_transfers + 1
+end RiverCrossing.Husbands

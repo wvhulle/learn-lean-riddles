@@ -1,4 +1,4 @@
-import RiddleProofs.JealousHusbands.Moves
+import RiddleProofs.RiverCrossing.Husbands.Moves
 
 open Move
 
