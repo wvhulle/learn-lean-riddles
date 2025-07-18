@@ -1,8 +1,45 @@
-import RiddleProofs.RiverCrossing.Husbands.Moves
+import RiddleProofs.RiverCrossing.Husbands.Notation
+import RiddleProofs.RiverCrossing.Husbands.Validate
+
 
 open RiverCrossing.Husbands
 
-instance : DecidableEq JealousHusbandsState := by infer_instance
+
+
+
+def generate_valid_moves (s : JealousHusbandsState) : List Move :=
+  let couples : List (Fin num_couples) := [0, 1, 2]
+  let direction := if s.boat == RiverBank.left then Direction.toRight else Direction.toLeft
+
+  let single_moves :=
+    couples.flatMap fun i =>
+      if direction == Direction.toRight then
+        [R {Person.husband i}, R {Person.wife i}]
+      else
+        [L {Person.husband i}, L {Person.wife i}]
+
+  let pair_moves :=
+    couples.flatMap fun i =>
+      couples.flatMap fun j =>
+        if h : i.val < j.val then
+          let ne_proof : i ≠ j := Fin.ne_of_lt h
+          if direction == Direction.toRight then
+            [pair (Person.husband i) (Person.husband j) Direction.toRight (by simp [ne_proof]),
+             pair (Person.wife i) (Person.wife j) Direction.toRight (by simp [ne_proof])]
+          else
+            [pair (Person.husband i) (Person.husband j) Direction.toLeft (by simp [ne_proof]),
+             pair (Person.wife i) (Person.wife j) Direction.toLeft (by simp [ne_proof])]
+        else []
+
+  let couple_moves :=
+    couples.map fun i =>
+      if direction == Direction.toRight then
+        R {Person.husband i, Person.wife i}
+      else
+        L {Person.husband i, Person.wife i}
+
+  (single_moves ++ pair_moves ++ couple_moves).filter (simple_move_valid · s)
+
 
 partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
   let rec bfs (queue : List (JealousHusbandsState × List Move))
@@ -31,10 +68,8 @@ partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
 
 def search_solution : Option (List Move) := solve_with_bfs 15
 
-axiom search_solution_correct : ∀ sol, search_solution = some sol → validate_solution sol = true
 
--- Uncomment to see an internal representation of the solution found
--- Cannot be reduced fully because of partiality
--- #reduce search_solution.get!
--- Eval cannot evaluate it because the output (and Move) does not implement `Repr` yet
--- #eval search_solution.get!
+-- #reduce computes by definitional unfolding (slow but works in proofs)
+-- #eval uses compiled bytecode for efficiency (fast but not usable in proofs)
+#reduce search_solution
+#eval search_solution

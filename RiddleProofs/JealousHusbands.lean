@@ -1,5 +1,6 @@
 import RiddleProofs.RiverCrossing.Husbands.Statement
-import RiddleProofs.RiverCrossing.Husbands.Moves
+import RiddleProofs.RiverCrossing.Husbands.Notation
 import RiddleProofs.RiverCrossing.Husbands.Search
 import RiddleProofs.RiverCrossing.Husbands.Solution
-import RiddleProofs.RiverCrossing.Mathematicians.Statement
+import RiddleProofs.RiverCrossing.Husbands.Validate
+import RiddleProofs.RiverCrossing.Mathematicians.Solution

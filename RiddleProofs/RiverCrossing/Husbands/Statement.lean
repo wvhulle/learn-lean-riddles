@@ -1,7 +1,7 @@
 import Init.WF
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Fintype.Basic
-import RiddleProofs.RiverCrossing.Common
+import RiddleProofs.RiverCrossing.Basic
 
 namespace RiverCrossing.Husbands
 
@@ -51,23 +51,7 @@ inductive Person
 | wife (i : Fin num_couples)
 deriving DecidableEq, Repr
 
-instance : ToString Person where
-  toString p := match p with
-  | .husband i => s!"H{i.val}"
-  | .wife i => s!"W{i.val}"
 
-notation "H" n => Person.husband ⟨n, by decide⟩
-notation "W" n => Person.wife ⟨n, by decide⟩
-
-@[app_unexpander Person.husband]
-def unexpandHusband : Lean.PrettyPrinter.Unexpander
-  | `($_ ⟨$n, $_⟩) => `(H $n)
-  | _ => throw ()
-
-@[app_unexpander Person.wife]
-def unexpandWife : Lean.PrettyPrinter.Unexpander
-  | `($_ ⟨$n, $_⟩) => `(W $n)
-  | _ => throw ()
 
 /-- Extract the couple identifier from a person.
     Both husband and wife of couple i have couple_id = i. -/
@@ -125,7 +109,6 @@ theorem final_safe : bank_safe jealous_husbands_final_state = true := by
   unfold bank_safe jealous_husbands_final_state
   decide
 
-instance (n : Nat) : OfNat (Fin num_couples) n where
-  ofNat := ⟨n % num_couples, Nat.mod_lt n (by decide)⟩
+instance {n: Nat} : OfNat (Fin num_couples) n := mkFinOfNat num_couples (by decide)
 
 end RiverCrossing.Husbands

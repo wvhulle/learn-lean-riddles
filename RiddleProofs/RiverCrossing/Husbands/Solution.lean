@@ -1,4 +1,6 @@
-import RiddleProofs.RiverCrossing.Husbands.Moves
+import RiddleProofs.RiverCrossing.Husbands.Notation
+import RiddleProofs.RiverCrossing.Husbands.Validate
+
 
 open Move
 
