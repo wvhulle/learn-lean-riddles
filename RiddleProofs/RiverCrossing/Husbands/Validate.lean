@@ -2,13 +2,14 @@ import RiddleProofs.RiverCrossing.Husbands.Notation
 
 open RiverCrossing.Husbands
 
+instance : SafetyConstraint Person Person num_couples where
+  is_safe := bank_safe
+  is_safe_decidable := by infer_instance
 
-/-- Get the opposite bank from the current one. -/
 def opposite_bank : RiverBank → RiverBank
 | .left => .right
 | .right => .left
 
-/-- Update a single person's position in the state using Basic.lean tools. -/
 def update_person_state (p : Person) (new_bank : RiverBank)
     (s : JealousHusbandsState) : JealousHusbandsState :=
   match p with

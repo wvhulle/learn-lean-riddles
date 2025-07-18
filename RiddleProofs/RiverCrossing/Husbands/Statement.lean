@@ -30,47 +30,25 @@ The **jealousy constraint** is the key challenge. For example:
 - ✅ H₁ and H₂ can be alone together (no wives involved)
 
 
-## Challenges
-
-- Can you generalize to N couples?
-- What about more than 2 people in a boat?
-- Can you optimize my BFS in `Search.lean`?
-- Like `JealousMathematician.lean`, can you write a version for "cannibals and missionaries"?
 
 -/
 
-/-- Number of couples in the puzzle -/
 def num_couples : Nat := 3
 
 open RiverBank
 
-/-- A person is either a husband or wife, identified by their couple index.
-    For example: `husband ⟨0, _⟩` represents the first husband (H₀). -/
 inductive Person
 | husband (i : Fin num_couples)
 | wife (i : Fin num_couples)
 deriving DecidableEq, Repr
 
 
-
-/-- Extract the couple identifier from a person.
-    Both husband and wife of couple i have couple_id = i. -/
 def Person.couple_id : Person → Fin num_couples
 | .husband i => i
 | .wife i => i
 
-/-- The complete state of the puzzle: boat location + position of all people.
-
-    Example state representation:
-    - `boat = left`: The boat is on the left bank
-    - `husbands = [left, right, left]`: H₀ and H₂ on left, H₁ on right
-    - `wives = [left, left, right]`: W₀ and W₁ on left, W₂ on right -/
 abbrev JealousHusbandsState := RiverCrossingState Person Person num_couples
 
-instance : BEq JealousHusbandsState where
-  beq s1 s2 := s1.boat == s2.boat &&
-               s1.entities_a.toList == s2.entities_a.toList &&
-               s1.entities_b.toList == s2.entities_b.toList
 
 /-- Get the current bank location of a person in the given state. -/
 def Person.bank (p : Person) (s : JealousHusbandsState) : RiverBank :=

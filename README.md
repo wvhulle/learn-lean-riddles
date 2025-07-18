@@ -266,6 +266,7 @@ open MyLibrary
 
 Namespaces with the same name across different files are automatically merged when imported.
 
+
 ### Imports
 
 **Imports** bring definitions from other files into your current file. They're completely different from namespaces.
@@ -329,6 +330,25 @@ open MyProject.Utils
 
 5. **For Mathlib**: Use the [API documentation](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) which shows both namespace and import path 
 
+#### Visibility modifiers
+
+**`private`**: Hides definitions from both namespace opening and imports. Private definitions are only accessible within the same file where they're defined.
+
+**`protected`**: Prevents access via namespace opening but allows access through imports using the full qualified name.
+
+```lean
+namespace MyLib
+  private def internal_helper : Nat := 42        -- Only visible in this file
+  protected def safe_function : Nat := 100       -- Requires MyLib.safe_function even after opening
+  def public_function : Nat := 200               -- Accessible as usual
+end MyLib
+
+open MyLib
+#check public_function     -- ✓ Works
+#check safe_function       -- ✗ Error: must use MyLib.safe_function  
+#check MyLib.safe_function -- ✓ Works
+#check internal_helper     -- ✗ Error: not accessible from other files
+```
 
 
 #### Selective re-export
