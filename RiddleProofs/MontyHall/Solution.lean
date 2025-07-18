@@ -1,5 +1,3 @@
-/- This file proves the famous Monty Hall result. -/
-
 import RiddleProofs.MontyHall.Measure
 import RiddleProofs.MontyHall.Enumeration
 import RiddleProofs.MontyHall.Statement
@@ -108,8 +106,9 @@ lemma prob_car_middle_pick_left_host_right :
   ℙ[{ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}] = 1/9 := by
   rw [prob_car_at_given_pick_host, prob_density_middle_left_right]
 
--- **THE MAIN RESULT**: Probability of winning if you stay with your original choice
--- P(car at left | picked left, host opened right) = 1/3
+/- Probability of winning if you stay with your original choice
+P(car at left | picked left, host opened right) = 1/3
+-/
 theorem monty_hall_stay_probability :
   Prob[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
   have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
@@ -125,9 +124,10 @@ theorem monty_hall_stay_probability :
         rw [prob_pick_left_host_right, prob_car_left_pick_left_host_right]
     _ = 1/3 := by eq_as_reals
 
--- **THE MAIN RESULT**: Probability of winning if you switch to the other door
--- P(car at middle | picked left, host opened right) = 2/3
--- This proves that switching is the better strategy!
+/-- Probability of winning if you switch to the other door
+ P(car at middle | picked left, host opened right) = 2/3
+This proves that switching is the better strategy!
+-/
 theorem monty_hall_switch_probability :
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
   have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
@@ -142,3 +142,15 @@ theorem monty_hall_switch_probability :
     _ = (1/6)⁻¹ * (1/9) := by
         rw [prob_pick_left_host_right, prob_car_middle_pick_left_host_right]
     _ = 2/3 := by eq_as_reals
+
+
+/-
+
+## Challenges
+
+
+- Derive a statement for the "total probability" law
+- Proof the total probability law as a theorem / lemma.
+- Replace boilerplate proof code in `Dilemma.lean` by the total probability law.
+
+-/

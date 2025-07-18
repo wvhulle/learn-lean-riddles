@@ -1,5 +1,6 @@
-import RiddleProofs.JealousHusbands.Statement
-import RiddleProofs.JealousHusbands.Moves
-import RiddleProofs.JealousHusbands.Search
-import RiddleProofs.JealousHusbands.Solution
-import RiddleProofs.JealousHusbands.JealousMathematician
+import RiddleProofs.RiverCrossing.Husbands.Statement
+import RiddleProofs.RiverCrossing.Husbands.Notation
+import RiddleProofs.RiverCrossing.Husbands.Search
+import RiddleProofs.RiverCrossing.Husbands.Solution
+import RiddleProofs.RiverCrossing.Husbands.Validate
+import RiddleProofs.RiverCrossing.Mathematicians.Solution

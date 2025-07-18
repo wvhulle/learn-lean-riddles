@@ -25,13 +25,6 @@ You complete the following steps:
 
 Is it to your advantage to switch doors?
 
-## Challenges
-
-
-- Derive a statement for the "total probability" law
-- Proof the total probability law as a theorem / lemma.
-- Replace boilerplate proof code in `Dilemma.lean` by the total probability law.
-
 -/
 
 inductive Door : Type

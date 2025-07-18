@@ -1,4 +1,6 @@
-import RiddleProofs.JealousHusbands.Moves
+import RiddleProofs.RiverCrossing.Husbands.Notation
+import RiddleProofs.RiverCrossing.Husbands.Validate
+
 
 open Move
 
@@ -19,3 +21,15 @@ def hardwired_solution : List Move := [
 
 
 theorem hardwired_solution_correct : validate_solution hardwired_solution = true := by decide
+
+
+/-
+## Challenges
+
+- Can you generalize to N couples?
+- What about more than 2 people in a boat?
+- Can you optimize my BFS in `Search.lean`?
+- Like `JealousMathematician.lean`, can you write a version for "cannibals and missionaries"?
+
+
+-/

@@ -394,9 +394,9 @@ open MyNamespace
 
 # File imports
 
-Lean files are namespaces with file path.
+Lean files contain definitions and theorems that can be imported into other files.
 
-For example, the file `RiddleProofs/BlueEyedIslanders.lean` defines the namespace `RiddleProofs.BlueEyedIslanders`.
+For example, the file `RiddleProofs/BlueEyedIslanders.lean` may contain definitions within the namespace `RiddleProofs.BlueEyedIslanders`.
 
 
 You can import a file using the `import` keyword:
@@ -405,7 +405,7 @@ You can import a file using the `import` keyword:
 import RiddleProofs.BlueEyedIslanders
 ```
 
-The **namespace associated with a file import is automatically opened**. 
+When you import a file, all top-level definitions become available. However, **namespaces are not automatically opened** - you need to explicitly open them or use fully qualified names. 
 
 ---
 

@@ -207,7 +207,7 @@ Don't forget to set your location on the [Lean community map](https://leanprover
 
 Lean code lives in two "worlds": the world of **syntax** (what you write) and the world of **expressions** (what it means).
 
-#### User's World: `Syntax`
+#### User's world: `Syntax`
 
 When you write code in a `.lean` file, Lean first sees it as just text. Its first job is to parse this text into a structure called `Syntax`. Think of `Syntax` as a blueprint that describes your code's structure—its notations, commands, and layout.
 
@@ -245,66 +245,137 @@ When Lean needs to show you something—like a proof goal or an error message—
 
 ### Namespaces
 
-Libraries in Lean organise definitions using **namespaces**. A namespace in Lean is a way to categorize identifiers to avoid naming conflicts. Namespaces with the same name in different files are automatically merged when you import the file modules that contain them.
-
-Let's say you are working in a file `Foo.lean` and you have identical identifiers for two different parts of the file. You can separate both using namespaces.
-
-So in `Foo.lean` you would write
-```lean
-namespace Foo
-  theorem duplicated_id : True := trivial
-end Foo
-
-theorem duplicated_id : True := trivial
-```
-
-The identifiers don't clash, because they are in different namespaces. You can access the first one using `Foo.duplicated_id`. You can also **open a namespace** to avoid writing the full qualified name, but then the identifiers cannot clash (or you will get an error):
+**Namespaces** group related definitions to avoid naming conflicts. They work like folders for your code.
 
 ```lean
-namespace Foo
-  theorem id : True := trivial
-end Foo 
+namespace MyLibrary
+  def helper : Nat := 42
+end MyLibrary
 
-open Foo
-#check id
+def helper : String := "different helper"
 ```
 
-In this case, you didn't need to write `Foo.id`, because you opened the `Foo` namespace. If you had another `id` in the global namespace, it would have caused a clash.
+Both `helper` functions can coexist because they're in different namespaces. Access the first one with `MyLibrary.helper`.
+
+**Opening namespaces** lets you use short names:
+
+```lean
+open MyLibrary
+#check helper  -- Now refers to MyLibrary.helper
+```
+
+Namespaces with the same name across different files are automatically merged when imported.
+
 
 ### Imports
 
-Imports in Lean are different than in other languages. An `import` statement in Lean seems to be a namespace that is also a file inside directory containing a `lakefile.lean`.
-
-The path used in the import statement starts with the name of the external library or the current library and is continued with the relative folder path, separated by dots. For example, if you need a data structure `Foo` from the standard library, you can import it like this:
+**Imports** bring definitions from other files into your current file. They're completely different from namespaces.
 
 ```lean
-import Std.Data.Foo
+import Std.Data.List        -- From standard library
+import MyProject.Utils      -- From your project
 ```
 
-But if you have a local module `Foo.lean` in the current library, you always have to specify the full path relative to the root of the current library:
+Import paths follow the file structure:
+- `Std.Data.List` → file at `Std/Data/List.lean`
+- `MyProject.Utils` → file at `MyProject/Utils.lean`
+
+Imports must come before any definitions or `open` statements.
+
+After importing, you can access definitions:
 
 ```lean
-import CurrentLibrary.SubModule.Foo
+import MyProject.Utils
+
+-- Use full name
+#eval MyProject.Utils.myFunction 42
+
+-- Or open the namespace for short names
+open MyProject.Utils
+#eval myFunction 42
 ```
 
-Imports have to be placed before any definitions or `open` statements. 
+**Import transitivity**: Imports in Lean are **not transitive**. If module B imports module A, and you import module B, you will not automatically see the definitions from module A. You must explicitly import A if you want to use its definitions. This design keeps dependencies explicit and prevents accidental transitive dependencies.
 
-Statements on the top-level in the imported file are automatically visible (wihout specifier), but if they are wrapped in an explicit namespace (which can be of the same name as the file), you have to open the namespace to use them without the prefix:
+
+
+
+#### Finding the correct import path
+
+**Common confusion**: Documentation often shows namespace qualifiers (like `Std.HashSet`) that don't match the import path you need.
+
+**Why this happens**:
+- Namespaces organize APIs logically
+- Import paths follow file structure
+- One file can export definitions under different namespaces
+
+**How to find the correct import**:
+
+1. **Try the obvious path first**, then experiment:
+   ```lean
+   import Std.HashSet     -- Might fail
+   import Std.Data.HashMap  -- HashSet is actually here
+   #check Std.HashSet     -- Now this works
+   ```
+
+2. **Use Lean's discovery tools**:
+   ```lean
+   #check Std.HashSet     -- Tells you if it's available and shows type
+   #print Std.HashSet     -- Shows definition if available
+   ```
+
+3. **Use VS Code navigation**: Press F12 on any identifier to see its actual file location
+
+4. **Browse the source**: Check the [Lean 4 repository structure](https://github.com/leanprover/lean4/tree/master/src/Std) to see where things actually live
+
+5. **For Mathlib**: Use the [API documentation](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html) which shows both namespace and import path 
+
+#### Visibility modifiers
+
+**`private`**: Hides definitions from both namespace opening and imports. Private definitions are only accessible within the same file where they're defined.
+
+**`protected`**: Prevents access via namespace opening but allows access through imports using the full qualified name.
 
 ```lean
-import CurrentLibrary.SubModule.Foo
-#eval CurrentLibrary.SubModule.Foo.someFunction 42 -- Accessing a function in Foo
--- Opening the module to avoid the prefix
-open CurrentLibrary.SubModule.Foo
-#eval someFunction 42 -- Now you can use the function without the prefix
+namespace MyLib
+  private def internal_helper : Nat := 42        -- Only visible in this file
+  protected def safe_function : Nat := 100       -- Requires MyLib.safe_function even after opening
+  def public_function : Nat := 200               -- Accessible as usual
+end MyLib
+
+open MyLib
+#check public_function     -- ✓ Works
+#check safe_function       -- ✗ Error: must use MyLib.safe_function  
+#check MyLib.safe_function -- ✓ Works
+#check internal_helper     -- ✗ Error: not accessible from other files
 ```
 
 
+#### Selective re-export
 
+You can selectively control which definitions from imported modules are available to users of your library:
 
-### Obtaining import paths
+```lean
+-- Import a module but don't expose all its definitions
+import SomeLibrary.Internal.Details
 
-The easiest way to find the import paths for modules in the standard library is to install `mathlib` and use its [API documentation site](https://leanprover-community.github.io/mathlib4_docs/Mathlib.html). It also includes and re-exports the standard library of Lean. However, for completeness, this section explains how to find the import paths without installing `mathlib`.
+-- Re-export only specific definitions you want to expose (TRANSITIVE)
+export SomeLibrary.Internal.Details (publicFunction, PublicType)
+
+-- Or selectively open parts of a namespace (LOCAL ONLY)
+open SomeLibrary.Internal.Details (publicFunction PublicType)
+```
+
+**Important distinction**:
+- **`export`**: Makes names available to files that import the current file (transitive)
+- **`open`**: Only creates local aliases within the current file (not transitive)
+
+If you want importing files to access the short names, use `export`. If you only want local convenience aliases, use `open`.
+
+This allows you to:
+- Hide implementation details while exposing only the public API
+- Create a cleaner interface for library users
+- Control which transitive dependencies are visible to users of your library
 
 
 
@@ -513,11 +584,6 @@ lean_lib «RiddleProofs» where
 
 There is no standard formatter as of July 2025.
 
-### Visibility
-
-Usually people put code that should be private within a module inside a namespace, named after the build target / project. The definitions nested under the namespace will not be imported automatically when you import the module. You have to explicitly open the namespace to access them.
-
-The same namespace can be used across different files. Definitions nested under the same namespace (in different imported files) can see eachother.
 
 ### Tests
 
