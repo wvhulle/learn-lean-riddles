@@ -154,7 +154,60 @@ lemma prob_car_middle_joint : monty_joint.toMeasure (car_at middle) = 1/3 := by
   -- 2. Drawing (pick,host) from monty_likelihood(car)
   -- 3. Combining into a Game
   -- The marginal probability P(car=middle) remains 1/3
-  sorry
+
+  -- This follows from the general principle that in a hierarchical model,
+  -- the marginal distribution of the first stage is preserved
+
+  -- Expand definitions
+  simp only [monty_joint, car_at]
+
+  -- Use PMF.toMeasure_bind_apply to expand the bind
+  rw [PMF.toMeasure_bind_apply _ _ _ MeasurableSet.of_discrete]
+
+  -- We need to show: ∑' c, car_prior c * (map ... (monty_likelihood c)).toMeasure {g | g.car = middle} = 1/3
+
+  -- Key insight: For each c, the mapped PMF puts all mass on games with car = c
+  -- So (map ... (monty_likelihood c)).toMeasure {g | g.car = middle} = 1 if c = middle, 0 otherwise
+
+  have h_map_measure : ∀ c : Door,
+    ((monty_likelihood c).map (fun ph : Door × Door => (⟨c, ph.1, ph.2⟩ : Game))).toMeasure
+      {ω | ω.car = middle} = if c = middle then 1 else 0 := by
+    intro c
+    rw [PMF.toMeasure_map_apply
+        (fun ph : Door × Door => (⟨c, ph.1, ph.2⟩ : Game))
+        (monty_likelihood c)
+        {ω | ω.car = middle}
+        (by measurability)
+        MeasurableSet.of_discrete]
+    -- The preimage is {(pick, host) | ⟨c, pick, host⟩.car = middle}
+    simp only [Set.preimage_setOf_eq]
+    split_ifs with h
+    · -- c = middle
+      simp [h, Set.setOf_true]
+    · -- c ≠ middle
+      simp [h, Set.setOf_false]
+
+  -- Apply this to our sum
+  simp only [h_map_measure]
+
+  -- Now we have: ∑' c, car_prior c * (if c = middle then 1 else 0)
+  -- This equals: car_prior middle * 1 + (other terms that are 0)
+  conv_lhs =>
+    arg 1  -- The function inside tsum
+    ext c
+    rw [mul_ite]
+    rw [mul_one, mul_zero]
+
+  -- This becomes: ∑' c, if c = middle then car_prior c else 0
+  rw [tsum_eq_single middle]
+  · -- Show that car_prior middle = 1/3
+    simp only [car_prior, PMF.ofFintype_apply]
+    -- Door has 3 elements, so 1 / 3 is the uniform probability
+    trivial
+
+  · -- Show that for c ≠ middle, the term is 0
+    intro c hc
+    simp [if_neg hc]
 
 lemma prob_car_not_middle_joint : monty_joint.toMeasure (car_at middle)ᶜ = 2/3 := by
   rw [measure_compl MeasurableSet.of_discrete (measure_ne_top _ _)]
