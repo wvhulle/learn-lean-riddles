@@ -3,8 +3,9 @@ import RiddleProofs.MontyHall.Enumeration
 import RiddleProofs.MontyHall.Statement
 import ENNRealArith
 import Mathlib.Probability.Notation
+import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 
-open ProbabilityTheory ENNReal Door ENNRealArith
+open ProbabilityTheory ENNReal Door ENNRealArith MeasureTheory
 
 
 def host_opens (d : Door) : Set Game := {ω | ω.host = d}
@@ -144,13 +145,68 @@ theorem monty_hall_switch_probability :
     _ = 2/3 := by eq_as_reals
 
 
+theorem law_of_total_probability {Ω : Type*} [MeasurableSpace Ω]
+  (μ : Measure Ω) [IsProbabilityMeasure μ] (A B : Set Ω)
+  {hA : MeasurableSet A} {hB : MeasurableSet B} :
+  μ A = μ[A | B] * μ B + μ[A | Bᶜ] * μ Bᶜ := by
+  have h_partition : A = (A ∩ B) ∪ (A ∩ Bᶜ) := by
+    ext ω
+    simp only [Set.mem_union, Set.mem_inter_iff, Set.mem_compl_iff]
+    tauto
+  have h_disjoint : Disjoint (A ∩ B) (A ∩ Bᶜ) := by
+    simp only [Set.disjoint_iff_inter_eq_empty]
+    ext ω
+    simp only [Set.mem_inter_iff, Set.mem_compl_iff, Set.mem_empty_iff_false]
+    constructor
+    · intro ⟨⟨_, hωB⟩, ⟨_, hωBc⟩⟩
+      exact hωBc hωB
+    · intro h
+      exfalso
+      exact h
+  calc μ A
+    _ = μ (A ∩ B ∪ A ∩ Bᶜ) := by
+      exact congrArg (⇑μ) h_partition
+    _ = μ (A ∩ B) + μ (A ∩ Bᶜ) := by
+      rw [measure_union h_disjoint (MeasurableSet.inter hA hB.compl)]
+    _ = μ[A | B] * μ B + μ (A ∩ Bᶜ) := by
+      congr 1
+      rw [Set.inter_comm]
+      rw [← ProbabilityTheory.cond_mul_eq_inter hB A μ]
+    _ = μ[A | B] * μ B + μ[A | Bᶜ] * μ Bᶜ := by
+      congr 2
+      rw [Set.inter_comm]
+      rw [← ProbabilityTheory.cond_mul_eq_inter (by exact MeasurableSet.compl_iff.mpr hB) A μ]
+
+lemma explicit_total: Prob[pick_door left ∩ host_opens right | car_at middle] * p.toMeasure (car_at middle) +
+        Prob[pick_door left ∩ host_opens right | (car_at middle)ᶜ] * p.toMeasure {ω | ω.car = middle}ᶜ = 1/ 6 := by
+          sorry
+
+theorem monty_hall_switch_probability_total_prob :
+  Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
+  have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
+    apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
+  unfold Prob
+  rw [ProbabilityTheory.cond_apply h_meas]
+  calc (ℙ[pick_door left ∩ host_opens right])⁻¹ *
+       ℙ[(pick_door left ∩ host_opens right) ∩ car_at middle]
+    _ = (Prob[(pick_door left ∩ host_opens right) | car_at middle] * ℙ[car_at middle] + Prob[(pick_door left ∩ host_opens right)  | (car_at middle)ᶜ ] * ℙ[{ω | ω.car = middle}ᶜ ] )⁻¹ * ℙ[{ω | ω.pick = left} ∩ {ω | ω.host = right} ∩ {ω | ω.car = middle}] := by
+      rw [<- Prob]
+      rw [law_of_total_probability Prob (pick_door left ∩ host_opens right) (car_at middle)]
+      exact rfl
+      . exact h_meas
+      . exact h_meas
+    _ = (1/6)⁻¹ * (1/9) := by
+      rw [prob_car_middle_pick_left_host_right]
+      rw [explicit_total]
+    _ = 2/3 := by eq_as_reals
+
 /-
 
 ## Challenges
 
 
-- Derive a statement for the "total probability" law
-- Proof the total probability law as a theorem / lemma.
+- Derive a statement for the "total probability" law ✓
+- Proof the total probability law as a theorem / lemma. ✓
 - Replace boilerplate proof code in `Dilemma.lean` by the total probability law.
 
 -/
