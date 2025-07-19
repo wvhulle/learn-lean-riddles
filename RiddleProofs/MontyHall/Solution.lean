@@ -177,9 +177,11 @@ theorem law_of_total_probability {Ω : Type*} [MeasurableSpace Ω]
       rw [Set.inter_comm]
       rw [← ProbabilityTheory.cond_mul_eq_inter (by exact MeasurableSet.compl_iff.mpr hB) A μ]
 
-lemma explicit_total: Prob[pick_door left ∩ host_opens right | car_at middle] * p.toMeasure (car_at middle) +
-        Prob[pick_door left ∩ host_opens right | (car_at middle)ᶜ] * p.toMeasure {ω | ω.car = middle}ᶜ = 1/ 6 := by
-          sorry
+lemma explicit_total: Prob[pick_door left ∩ host_opens right | car_at middle] * p.toMeasure (car_at middle) + Prob[pick_door left ∩ host_opens right | (car_at middle)ᶜ] * p.toMeasure {ω | ω.car = middle}ᶜ = 1/ 6 := by
+    repeat rw [ProbabilityTheory.cond_apply]
+    sorry
+    . exact trivial
+    . exact trivial
 
 theorem monty_hall_switch_probability_total_prob :
   Prob[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
