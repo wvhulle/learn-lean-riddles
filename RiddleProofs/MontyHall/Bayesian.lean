@@ -23,6 +23,9 @@ import ENNRealArith
 
 open Door ProbabilityTheory MeasureTheory ENNReal ENNRealArith
 
+-- Game has a discrete measurable space structure
+instance : MeasurableSingletonClass Game := ⟨fun _ => MeasurableSet.of_discrete⟩
+
 
 
 theorem law_of_total_probability {Ω : Type*} [MeasurableSpace Ω]
@@ -147,406 +150,175 @@ noncomputable def monty_joint : PMF Game :=
   car_prior.bind (fun car =>
     (monty_likelihood car).map (fun (pick, host) => ⟨car, pick, host⟩))
 
--- Helper lemmas for specific probabilities
-lemma prob_car_middle_joint : monty_joint.toMeasure (car_at middle) = 1/3 := by
-  -- The marginal probability of car position is preserved in the joint distribution.
-  -- Since car_prior is uniform (1/3 for each door), P(car = middle) = 1/3.
-
-  -- Expand the joint distribution using PMF.bind
-  simp only [monty_joint, car_at]
-  rw [PMF.toMeasure_bind_apply _ _ _ MeasurableSet.of_discrete]
-
-  -- The sum is: ∑' c, car_prior(c) * P(car = middle | we sampled c from car_prior)
-  -- This equals: car_prior(middle) * 1 + car_prior(left) * 0 + car_prior(right) * 0
-
-  -- For each door c, the mapped distribution assigns probability 1 to games with car = c
-  have h_indicator : ∀ c : Door,
-    ((monty_likelihood c).map (fun ph : Door × Door => (⟨c, ph.1, ph.2⟩ : Game))).toMeasure {ω | ω.car = middle} =
-    if c = middle then 1 else 0 := by
+-- Helper lemma: Measure of singleton for joint distribution
+lemma prob_game_joint_measure (g : Game) : monty_joint.toMeasure {g} =
+    car_prior g.car * likelihood_val g.car g.pick g.host := by
+  rw [PMF.toMeasure_apply_singleton, monty_joint, PMF.bind_apply]
+  -- Simplify the sum over all car positions
+  trans (∑' c, car_prior c * (PMF.map (fun ph => ⟨c, ph.1, ph.2⟩) (monty_likelihood c)) g)
+  · rfl
+  -- Each PMF.map term gives the probability that the constructed game equals g
+  have h_map : ∀ c, (PMF.map (fun ph => ⟨c, ph.1, ph.2⟩) (monty_likelihood c)) g =
+               if c = g.car then monty_likelihood c (g.pick, g.host) else 0 := by
     intro c
-    -- After mapping, all games have car = c, so the measure is 1 if c = middle, 0 otherwise
-    rw [PMF.toMeasure_map_apply _ _ _ (by measurability) MeasurableSet.of_discrete]
-    simp only [Set.preimage_setOf_eq]
-    split_ifs with h <;> simp [h, Set.setOf_true, Set.setOf_false]
+    rw [PMF.map_apply]
+    by_cases hc : c = g.car
+    · -- When c = g.car
+      subst hc
+      simp only [if_true]
+      rw [tsum_eq_single (g.pick, g.host)]
+      · have : (⟨g.car, g.pick, g.host⟩ : Game) = g := by cases g; rfl
+        simp [this]
+      · intro ph hph
+        split_ifs with heq
+        · exfalso
+          have : ph = (g.pick, g.host) := by
+            -- heq says g = ⟨g.car, ph.1, ph.2⟩
+            have h1 : g = (⟨g.car, ph.1, ph.2⟩ : Game) := heq
+            have h2 : g = (⟨g.car, g.pick, g.host⟩ : Game) := by cases g; rfl
+            have h3 : (⟨g.car, ph.1, ph.2⟩ : Game) = (⟨g.car, g.pick, g.host⟩ : Game) := by
+              rw [← h1, h2]
+            injection h3 with _ h4
+            ext
+            . exact h4
+            . (expose_names; exact h_1)
 
-  -- Substitute the indicator values
-  simp only [h_indicator]
-
-  -- The sum reduces to just car_prior(middle)
-  rw [tsum_eq_single middle]
-  · -- car_prior is uniform, so car_prior(middle) = 1/3
-    simp only [car_prior, PMF.ofFintype_apply, if_true]
-    -- Need to show: 1/3 * 1 = 1/3
-    eq_as_reals
-  · -- Other terms are 0
-    intro c hc
-    simp [if_neg hc]
-
-lemma prob_car_not_middle_joint : monty_joint.toMeasure (car_at middle)ᶜ = 2/3 := by
-  rw [measure_compl MeasurableSet.of_discrete (measure_ne_top _ _)]
-  rw [prob_car_middle_joint]
-  simp only [measure_univ]
-  refine ENNReal.sub_eq_of_eq_add_rev ?_ ?_
-  norm_num
-  rw [ENNReal.div_add_div_same]
-  eq_as_reals
-
--- Key conditional probabilities
-lemma cond_prob_E_given_H :
-  ProbabilityTheory.cond (monty_joint.toMeasure) (car_at middle) (pick_door left ∩ host_opens right) = 1/3 := by
-  -- When car is at middle and we pick left, host must open right with probability 1/2
-  -- So P(pick=left, host=right | car=middle) = P(pick=left) * P(host=right | pick=left, car=middle)
-  -- = 1/3 * 1/2 = 1/6
-  -- But wait, that's not right. Let me recalculate...
-  -- Actually: P(E|H) = P(pick=left, host=right | car=middle) = likelihood_val(middle, left, right) = 1/3
-
-  -- Use the definition of conditional probability
-  rw [ProbabilityTheory.cond_apply MeasurableSet.of_discrete]
-  rw [prob_car_middle_joint]
-
-  -- Need to show: (1/3)⁻¹ * P(car=middle ∩ pick=left ∩ host=right) = 1/3
-  -- Which means: P(car=middle ∩ pick=left ∩ host=right) = 1/9
-
-  -- Reorder the intersection
-  have h_inter_eq : car_at middle ∩ (pick_door left ∩ host_opens right) =
-                    (pick_door left ∩ host_opens right) ∩ car_at middle := by
-    ext; simp [Set.inter_comm]
-  rw [h_inter_eq]
-
-  -- The probability of this specific game configuration
-  have h_game_prob : monty_joint.toMeasure ((pick_door left ∩ host_opens right) ∩ car_at middle) = 1/9 := by
-    -- This equals car_prior(middle) * monty_likelihood(middle)(left, right)
-    -- = 1/3 * 1/3 = 1/9
-
-    -- First, rewrite the set as a singleton
-    have h_set_eq : (pick_door left ∩ host_opens right) ∩ car_at middle =
-                    {⟨middle, left, right⟩} := by
-      ext ω
-      simp only [pick_door, host_opens, car_at, Set.mem_inter_iff, Set.mem_setOf_eq,
-                 Set.mem_singleton_iff]
-      constructor
-      · intro ⟨⟨h_pick, h_host⟩, h_car⟩
-        ext <;> simp [h_pick, h_host, h_car]
-      · intro h
+          exact hph this
+        · rfl
+    · -- When c ≠ g.car
+      rw [if_neg hc]
+      simp
+      intros a b h
+      have hc_neg: c = g.car := by
         rw [h]
-        simp
+      contradiction
+  simp only [h_map]
+  -- Sum simplifies to just the g.car term
+  rw [tsum_eq_single g.car]
+  · simp only [if_true, monty_likelihood, PMF.ofFintype_apply]
+  · intro c hc; simp [hc]
+  · measurability
 
-    rw [h_set_eq]
-
-    -- Now compute the probability of this singleton
-    rw [PMF.toMeasure_apply_singleton]
-
-    -- Expand monty_joint
-    simp only [monty_joint, PMF.bind_apply, PMF.map_apply]
-
-    -- The sum has only one non-zero term: when we start with car=middle
-    rw [tsum_eq_single middle]
-    rw [tsum_eq_single]
-    simp [car_prior, PMF.ofFintype_apply]
-    sorry
-    sorry
-    sorry
-    sorry
-    sorry
-
-
-
-
-
-
-  rw [h_game_prob]
-  eq_as_reals
-
-lemma cond_prob_E_given_not_H :
-  ProbabilityTheory.cond (monty_joint.toMeasure) (car_at middle)ᶜ (pick_door left ∩ host_opens right) = 1/12 := by
-  -- When car is not at middle (either left or right)
-  -- We'll prove this directly by computing the probability
-
-  -- Use the definition of conditional probability
-  rw [ProbabilityTheory.cond_apply MeasurableSet.of_discrete]
-  rw [prob_car_not_middle_joint]
-
-  -- Need to show: (2/3)⁻¹ * P((car≠middle) ∩ (pick=left ∩ host=right)) = 1/12
-  -- Which means: P((car≠middle) ∩ (pick=left ∩ host=right)) = 1/12 * 2/3 = 1/18
-
-  -- The complement of car_at middle is the union of car_at left and car_at right
-  have h_compl : (car_at middle)ᶜ ∩ (pick_door left ∩ host_opens right) =
-                 (car_at left ∩ pick_door left ∩ host_opens right) ∪
-                 (car_at right ∩ pick_door left ∩ host_opens right) := by
-    ext ω
-    simp only [car_at, pick_door, host_opens, Set.mem_compl_iff, Set.mem_setOf_eq,
-               Set.mem_inter_iff, Set.mem_union]
+-- Helper lemma: P(pick=left ∩ host=right)
+lemma prob_pick_left_host_right_joint :
+  monty_joint.toMeasure (pick_door left ∩ host_opens right) = 1/6 := by
+  -- This event consists of games where pick=left and host=right, for any car position
+  -- Sum over all three possible car positions
+  -- Decompose the event by car position
+  have h_decomp : pick_door left ∩ host_opens right =
+    {⟨left, left, right⟩} ∪ {⟨middle, left, right⟩} ∪ {⟨right, left, right⟩} := by
+    ext g
+    simp only [pick_door, host_opens, Set.mem_inter_iff, Set.mem_setOf_eq,
+               Set.mem_union, Set.mem_singleton_iff]
     constructor
-    · intro ⟨h_not_middle, h_pick, h_host⟩
-      cases door_cases ω.car with
-      | inl h => left; exact ⟨h, h_pick, h_host⟩
-      | inr h => cases h with
-        | inl h => exfalso; exact h_not_middle h
-        | inr h => right; exact ⟨h, h_pick, h_host⟩
+    · intro ⟨hp, hh⟩
+      -- g.pick = left and g.host = right
+      cases g with
+      | mk car pick host =>
+        simp only at hp hh
+        subst hp hh
+        cases car <;> simp
     · intro h
-      cases h with
-      | inl ⟨h_left, h_pick, h_host⟩ =>
-        exact ⟨fun h => (by rw [h] at h_left; cases h_left), h_pick, h_host⟩
-      | inr ⟨h_right, h_pick, h_host⟩ =>
-        exact ⟨fun h => (by rw [h] at h_right; cases h_right), h_pick, h_host⟩
+      rcases h with (rfl | rfl) | rfl <;> simp
 
-  rw [h_compl]
+  rw [h_decomp]
+  -- The last set has probability 0 since host=car
+  have h_zero : monty_joint.toMeasure {⟨right, left, right⟩} = 0 := by
+    rw [prob_game_joint_measure]
+    simp only [car_prior, PMF.ofFintype_apply, likelihood_val]
+    -- host=right=car, so likelihood is 0
+    norm_num
 
-  -- The two sets are disjoint
-  have h_disj : Disjoint (car_at left ∩ pick_door left ∩ host_opens right)
-                         (car_at right ∩ pick_door left ∩ host_opens right) := by
-    simp only [Set.disjoint_iff_inter_eq_empty]
-    ext ω
-    simp only [car_at, Set.mem_inter_iff, Set.mem_empty_iff_false, Set.mem_setOf_eq]
-    intro ⟨h_left, _, _, h_right, _, _⟩
-    have : left = right := by rw [← h_left, h_right]
-    cases this
+  -- We can rewrite the union
+  rw [Set.union_assoc]
 
-  rw [measure_union h_disj MeasurableSet.of_discrete]
+  -- Since the third set has measure 0, we can calculate the measure of the union
+  have h_disj1 : Disjoint ({⟨left, left, right⟩} : Set Game)
+                         ({⟨middle, left, right⟩} ∪ {⟨right, left, right⟩}) := by
+    rw [Set.disjoint_singleton_left]
+    simp only [Set.mem_union, Set.mem_singleton_iff]
+    push_neg
+    constructor <;> simp
 
-  -- Calculate each part
-  have h_left_prob : monty_joint.toMeasure (car_at left ∩ pick_door left ∩ host_opens right) = 1/18 := by
-    -- This is the configuration {car=left, pick=left, host=right}
-    have h_set : car_at left ∩ pick_door left ∩ host_opens right = {⟨left, left, right⟩} := by
-      ext ω
-      simp only [car_at, pick_door, host_opens, Set.mem_inter_iff, Set.mem_setOf_eq,
-                 Set.mem_singleton_iff]
-      constructor
-      · intro ⟨h_car, h_pick, h_host⟩
-        ext <;> simp [h_car, h_pick, h_host]
-      · intro h
-        rw [h]
-        simp
+  have h_disj2 : Disjoint ({⟨middle, left, right⟩} : Set Game) ({⟨right, left, right⟩} : Set Game) := by
+    simp
+  rw [measure_union h_disj1]
+  rw [measure_union h_disj2]
+  rw [h_zero, add_zero]
 
-    rw [h_set, PMF.toMeasure_apply_singleton]
-    simp only [monty_joint, PMF.bind_apply, PMF.map_apply]
-
-    rw [Finset.sum_eq_single left]
-    · simp only [car_prior, PMF.ofFintype_apply]
-      simp only [monty_likelihood, PMF.ofFintype_apply]
-      simp only [likelihood_val]
-      -- When car=left, pick=left, host=right: valid config with car=pick
-      simp
-      norm_num
-    · intro c hc _
-      simp only [PMF.map_apply]
-      apply Finset.sum_eq_zero
-      intro ph _
-      have : (⟨c, ph.1, ph.2⟩ : Game) ≠ ⟨left, left, right⟩ := by
-        intro h
-        injection h with h_car
-        exact hc h_car
-      simp [this]
-    · simp
-
-  have h_right_prob : monty_joint.toMeasure (car_at right ∩ pick_door left ∩ host_opens right) = 0 := by
-    -- This is the configuration {car=right, pick=left, host=right}
-    -- Invalid because host=car
-    have h_set : car_at right ∩ pick_door left ∩ host_opens right = {⟨right, left, right⟩} := by
-      ext ω
-      simp only [car_at, pick_door, host_opens, Set.mem_inter_iff, Set.mem_setOf_eq,
-                 Set.mem_singleton_iff]
-      constructor
-      · intro ⟨h_car, h_pick, h_host⟩
-        ext <;> simp [h_car, h_pick, h_host]
-      · intro h
-        rw [h]
-        simp
-
-    rw [h_set, PMF.toMeasure_apply_singleton]
-    simp only [monty_joint, PMF.bind_apply, PMF.map_apply]
-
-    rw [Finset.sum_eq_single right]
-    · simp only [car_prior, PMF.ofFintype_apply]
-      simp only [monty_likelihood, PMF.ofFintype_apply]
-      simp only [likelihood_val]
-      -- When car=right, pick=left, host=right: host=car, so 0
-      simp
-    · intro c hc _
-      simp only [PMF.map_apply]
-      apply Finset.sum_eq_zero
-      intro ph _
-      have : (⟨c, ph.1, ph.2⟩ : Game) ≠ ⟨right, left, right⟩ := by
-        intro h
-        injection h with h_car
-        exact hc h_car
-      simp [this]
-    · simp
-
-  rw [h_left_prob, h_right_prob]
+  -- Calculate each probability using prob_game_joint_measure
+  rw [prob_game_joint_measure, prob_game_joint_measure]
+  simp only [car_prior, PMF.ofFintype_apply, likelihood_val]
+  -- For {left, left, right}: car=left, pick=left, host=right
+  -- likelihood_val left left right = 1/6 (car=pick case)
+  -- For {middle, left, right}: car=middle, pick=left, host=right
+  -- likelihood_val middle left right = 1/3 (car≠pick case)
+  simp only [if_true]
+  -- We have (1/3 * 1/6) + (1/3 * 1/3) = 1/18 + 1/9 = 1/18 + 2/18 = 3/18 = 1/6
   simp
   eq_as_reals
 
--- Prove that our Bayesian model matches the original
-lemma monty_joint_eq_p : monty_joint.toMeasure = p.toMeasure := by
-  -- Show the two PMFs give the same probabilities for all games
-  -- Actually, I realize the issue: my likelihood_val is not the same as game_density
-  -- because likelihood_val is conditional on the car position, while game_density
-  -- is the joint probability.
+-- Conditional probability lemmas for the Monty Hall problem
+lemma prob_stay_wins_given_pick_left_host_right :
+  (monty_joint.toMeasure)[car_at left | pick_door left ∩ host_opens right] = 1/3 := by
+  -- Use the definition of conditional probability: P(A|B) = P(A∩B)/P(B)
+  have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
+    apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
+  rw [ProbabilityTheory.cond_apply h_meas]
 
-  -- The relationship should be:
-  -- game_density(g) = P(car=g.car) * P(pick=g.pick|car=g.car) * P(host=g.host|car=g.car,pick=g.pick)
-  -- = 1/3 * 1/3 * likelihood_factor
-
-  -- Where likelihood_factor is:
-  -- - 0 if invalid (host = car or host = pick)
-  -- - 1/2 if car = pick (host has 2 choices)
-  -- - 1 if car ≠ pick (host has 1 choice)
-
-  -- So game_density should be:
-  -- - 0 if invalid
-  -- - 1/3 * 1/3 * 1/2 = 1/18 if car = pick
-  -- - 1/3 * 1/3 * 1 = 1/9 if car ≠ pick
-
-  -- But the actual game_density is:
-  -- - 0 if invalid
-  -- - 1/18 if car = pick
-  -- - 2/18 = 1/9 if car ≠ pick
-
-  -- So they match! The issue is that my likelihood_val already includes the P(pick|car) term.
-  -- Let me recalculate...
-
-  -- Actually, likelihood_val(car, pick, host) represents P(pick, host | car), not just P(host | car, pick)
-  -- So monty_joint(g) = car_prior(g.car) * likelihood_val(g.car, g.pick, g.host)
-  --                   = 1/3 * likelihood_val(g.car, g.pick, g.host)
-
-  -- And we need this to equal game_density(g)
-  -- So likelihood_val should be 3 * game_density
-
-  -- Let's verify:
-  -- When car = pick and valid: likelihood_val = 1/6, game_density = 1/18
-  -- 1/3 * 1/6 = 1/18 ✓
-
-  -- When car ≠ pick and valid: likelihood_val = 1/3, game_density = 1/9
-  -- 1/3 * 1/3 = 1/9 ✓
-
-  -- So the relationship is correct! Let me prove it properly.
-
-  apply Measure.ext
-  intro s hs
-
-  -- Both measures are discrete, so it suffices to check singletons
-  -- For a general measurable set s, both measures decompose as sums over singletons
-
-  -- Actually, let's use a different approach
-  -- Show that for every game g, monty_joint(g) = p(g)
-
-  have h_singleton : ∀ g : Game, monty_joint.toMeasure {g} = p.toMeasure {g} := by
-    intro g
-    rw [PMF.toMeasure_apply_singleton, PMF.toMeasure_apply_singleton]
-
-    -- Expand monty_joint
-    simp only [monty_joint, PMF.bind_apply, PMF.map_apply]
-
-    -- The sum has only one non-zero term: when c = g.car
-    rw [Finset.sum_eq_single g.car]
-    · -- The g.car case
-      simp only [car_prior, PMF.ofFintype_apply]
-      rw [Finset.sum_eq_single (g.pick, g.host)]
-      · -- The (g.pick, g.host) case
-        simp only [monty_likelihood, PMF.ofFintype_apply]
-        simp
-
-        -- Now show: 1/3 * likelihood_val g.car g.pick g.host = game_density g
-        have h_eq : (1:ENNReal)/3 * likelihood_val g.car g.pick g.host = game_density g := by
-          simp only [likelihood_val, game_density]
-          split_ifs with h1 h2
-          · -- Invalid cases: both give 0
-            simp
-          · -- car = pick case
-            push_neg at h1
-            norm_num
-          · -- car ≠ pick case
-            push_neg at h1
-            norm_num
-            eq_as_reals
-
-        -- Use the PMF definition
-        simp only [p, PMF.ofFinset_apply]
-        rw [← h_eq]
-        simp
-
-      · -- Other (pick, host) pairs give different games
-        intro ph hph hph_in
-        simp
-        intro h_eq
-        apply hph
-        ext <;> [exact h_eq.1, exact h_eq.2]
-
-      · -- (g.pick, g.host) is in the support
-        simp [monty_likelihood, PMF.support_ofFintype]
-
-    · -- Other car positions give different games
-      intro c hc _
-      simp only [PMF.map_apply]
-      apply Finset.sum_eq_zero
-      intro ph _
+  -- Calculate P(car=left ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
+  have h_inter : (pick_door left ∩ host_opens right) ∩ car_at left = {⟨left, left, right⟩} := by
+    ext g
+    simp only [car_at, pick_door, host_opens, Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
+    constructor
+    · intro ⟨⟨hp, hh⟩, hc⟩
+      simp [Game.ext_iff, hc, hp, hh]
+    · intro h
+      rw [h]
       simp
-      intro h_contra
-      apply hc
-      exact h_contra
 
-    · -- g.car is in the support
-      simp [car_prior, PMF.support_ofFintype]
+  rw [h_inter]
+  rw [prob_pick_left_host_right_joint]
+  rw [prob_game_joint_measure]
+  simp only [car_prior, PMF.ofFintype_apply, likelihood_val]
+  -- car=left, pick=left, host=right: likelihood is 1/6 (car=pick case)
+  -- The goal is: (if right = left then 0 else 1/6 * 2) = 1/3
+  -- Since right ≠ left, this becomes: 1/6 * 2 = 1/3
+  split_ifs <;> (first | contradiction | eq_as_reals)
 
-  -- Now use the fact that discrete measures are determined by their values on singletons
-  -- We've shown the measures agree on all singletons
-  -- For discrete spaces with countable support, this implies the measures are equal
+lemma prob_switch_wins_given_pick_left_host_right :
+  (monty_joint.toMeasure)[car_at middle | pick_door left ∩ host_opens right] = 2/3 := by
+  -- Use the definition of conditional probability: P(A|B) = P(A∩B)/P(B)
+  have h_meas : MeasurableSet (pick_door left ∩ host_opens right) := by
+    apply MeasurableSet.inter <;> exact MeasurableSet.of_discrete
+  rw [ProbabilityTheory.cond_apply h_meas]
 
-  -- Use the characterization that measures on discrete spaces are determined by singletons
-  have h_discrete : ∀ t : Set Game, MeasurableSet t →
-    monty_joint.toMeasure t = ∑' g : Game, if g ∈ t then monty_joint.toMeasure {g} else 0 := by
-    intro t ht
-    exact PMF.toMeasure_apply_eq_sum_singleton _ t
+  -- Calculate P(car=middle ∩ pick=left ∩ host=right) / P(pick=left ∩ host=right)
+  have h_inter : (pick_door left ∩ host_opens right) ∩ car_at middle = {⟨middle, left, right⟩} := by
+    ext g
+    simp only [car_at, pick_door, host_opens, Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
+    constructor
+    · intro ⟨⟨hp, hh⟩, hc⟩
+      simp [Game.ext_iff, hc, hp, hh]
+    · intro h
+      rw [h]
+      simp
 
-  have h_discrete_p : ∀ t : Set Game, MeasurableSet t →
-    p.toMeasure t = ∑' g : Game, if g ∈ t then p.toMeasure {g} else 0 := by
-    intro t ht
-    exact PMF.toMeasure_apply_eq_sum_singleton _ t
-
-  rw [h_discrete s hs, h_discrete_p s hs]
-  congr 1
-  ext g
-  split_ifs
-  · exact h_singleton g
-  · rfl
-
--- Main result using the Bayesian formulation
-lemma explicit_total_bayesian :
-  ProbabilityTheory.cond (monty_joint.toMeasure) (car_at middle) (pick_door left ∩ host_opens right) *
-    monty_joint.toMeasure (car_at middle) +
-  ProbabilityTheory.cond (monty_joint.toMeasure) (car_at middle)ᶜ (pick_door left ∩ host_opens right) *
-    monty_joint.toMeasure (car_at middle)ᶜ = 1/6 := by
-  -- Use the conditional probability lemmas
-  rw [cond_prob_E_given_H, cond_prob_E_given_not_H]
-  -- Use the prior probabilities
-  rw [prob_car_middle_joint, prob_car_not_middle_joint]
-  -- Simple arithmetic: 1/3 * 1/3 + 1/12 * 2/3 = 1/9 + 2/36 = 1/9 + 1/18 = 1/6
-  norm_num
+  rw [h_inter]
+  rw [prob_pick_left_host_right_joint]
+  rw [prob_game_joint_measure]
+  simp only [car_prior, PMF.ofFintype_apply, likelihood_val]
+  -- car=middle, pick=left, host=right: likelihood is 1/3 (car≠pick case)
+  -- The goal should be: 1/3 * 1/3 * 6 = 2/3
+  -- Since host ≠ car and host ≠ pick and car ≠ pick
+  simp only [if_neg (show ¬(right = middle ∨ right = left) from by simp),
+             if_neg (show ¬(middle = left) from by simp)]
   eq_as_reals
 
--- Connect to the original explicit_total using the fact that monty_joint = p
-theorem explicit_total_from_bayesian :
-  Prob[pick_door left ∩ host_opens right | car_at middle] * p.toMeasure (car_at middle) +
-  Prob[pick_door left ∩ host_opens right | (car_at middle)ᶜ] * p.toMeasure {ω | ω.car = middle}ᶜ = 1/6 := by
-  -- Use the fact that p = monty_joint
-  have h_eq1 : Prob = p.toMeasure := rfl
-  have h_eq2 : monty_joint.toMeasure = p.toMeasure := monty_joint_eq_p
-  rw [h_eq1]
-  rw [← h_eq2]
-  have h_car_eq : (car_at middle)ᶜ = {ω | ω.car = middle}ᶜ := by rfl
-  rw [← h_car_eq]
-  exact explicit_total_bayesian
-
--- Show this equals the marginal probability using law of total probability
-theorem bayesian_total_probability :
-  monty_joint.toMeasure (pick_door left ∩ host_opens right) = 1/6 := by
-  -- Apply law_of_total_probability from Solution.lean
-  have h_meas_event : MeasurableSet (pick_door left ∩ host_opens right) :=
-    MeasurableSet.inter MeasurableSet.of_discrete MeasurableSet.of_discrete
-  have h_meas_car : MeasurableSet (car_at middle) := MeasurableSet.of_discrete
-  have h_prob : IsProbabilityMeasure monty_joint.toMeasure := inferInstance
-  rw [law_of_total_probability monty_joint.toMeasure
-       (pick_door left ∩ host_opens right) (car_at middle)
-       (hA := h_meas_event) (hB := h_meas_car)]
-  exact explicit_total_bayesian
+/-- The Monty Hall theorem: Switching doors doubles your probability of winning.
+This theorem shows that the optimal strategy is to switch doors. -/
+theorem monty_hall_switch_optimal :
+  (monty_joint.toMeasure)[car_at middle | pick_door left ∩ host_opens right] =
+  2 * (monty_joint.toMeasure)[car_at left | pick_door left ∩ host_opens right] := by
+  rw [prob_switch_wins_given_pick_left_host_right, prob_stay_wins_given_pick_left_host_right]
+  eq_as_reals
