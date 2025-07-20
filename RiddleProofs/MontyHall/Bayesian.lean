@@ -96,15 +96,7 @@ def door_to_fin : Door → Fin 3
   | middle => 1
   | right => 2
 
-lemma door_to_fin_to_door (d : Door) : fin_to_door (door_to_fin d) = d := by
-  cases d <;> rfl
 
-lemma fin_to_door_to_fin (i : Fin 3) : door_to_fin (fin_to_door i) = i := by
-  fin_cases i <;> rfl
-
-lemma door_to_fin_injective : Function.Injective door_to_fin := by
-  intro a b h
-  cases a <;> cases b <;> simp [door_to_fin] at h <;> try rfl
 
 def door_tuples := ({0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3) )
 
@@ -124,12 +116,12 @@ lemma equivalence_door_repr: (Finset.univ : Finset (Door × Door)) = door_enumer
 lemma likelihood_val_sum_one (car : Door) :
   ∑ p : Door × Door, likelihood_val car p.1 p.2 = 1 := by
 
-  simp [equivalence_door_repr]
-  simp [door_enumeration]
-  simp [door_tuples]
+  simp only [equivalence_door_repr]
+  simp only [door_enumeration]
+  simp only [door_tuples]
   simp [Finset.sum_product]
-  simp [fin_to_door]
-  simp [likelihood_val]
+  simp only [fin_to_door]
+  simp only [likelihood_val]
   cases car
   case left =>
      split_ifs <;> (first | contradiction | eq_as_reals)
@@ -145,12 +137,12 @@ noncomputable def monty_likelihood (car : Door) : PMF (Door × Door) :=
   (likelihood_val_sum_one car)
 
 
--- Joint distribution over games using the prior and likelihood
+-- Corresponds mathematically to: P(game) = ∑_{car} P(car) × P(game | car)
 noncomputable def monty_joint : PMF Game :=
   car_prior.bind (fun car =>
     (monty_likelihood car).map (fun (pick, host) => ⟨car, pick, host⟩))
 
--- Helper lemma: Measure of singleton for joint distribution
+-- Measure of singleton for joint distribution
 lemma prob_game_joint_measure (g : Game) : monty_joint.toMeasure {g} =
     car_prior g.car * likelihood_val g.car g.pick g.host := by
   rw [PMF.toMeasure_apply_singleton, monty_joint, PMF.bind_apply]
