@@ -173,16 +173,9 @@ lemma prob_game_joint_measure (g : Game) : monty_joint.toMeasure {g} =
         split_ifs with heq
         · exfalso
           have : ph = (g.pick, g.host) := by
-            -- heq says g = ⟨g.car, ph.1, ph.2⟩
-            have h1 : g = (⟨g.car, ph.1, ph.2⟩ : Game) := heq
-            have h2 : g = (⟨g.car, g.pick, g.host⟩ : Game) := by cases g; rfl
-            have h3 : (⟨g.car, ph.1, ph.2⟩ : Game) = (⟨g.car, g.pick, g.host⟩ : Game) := by
-              rw [← h1, h2]
-            injection h3 with _ h4
-            ext
-            . exact h4
-            . (expose_names; exact h_1)
-
+            have ⟨_, _, _⟩ := g
+            cases heq
+            rfl
           exact hph this
         · rfl
     · -- When c ≠ g.car
