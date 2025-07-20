@@ -1,23 +1,10 @@
-import RiddleProofs.MontyHall.Measure
-import RiddleProofs.MontyHall.Enumeration
-import RiddleProofs.MontyHall.Statement
+import RiddleProofs.MontyHall.Frequentist.Measure
+import RiddleProofs.MontyHall.Basic
 import ENNRealArith
 import Mathlib.Probability.Notation
 import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 
 open ProbabilityTheory ENNReal Door ENNRealArith MeasureTheory
-
-
-def host_opens (d : Door) : Set Game := {ω | ω.host = d}
-def car_at (d : Door) : Set Game := {ω | ω.car = d}
-def pick_door (d : Door) : Set Game := {ω | ω.pick = d}
-
-lemma door_cases (d : Door) : d = left ∨ d = middle ∨ d = right := by
-  cases d <;> simp
-
-lemma invalid_host_opens_car (g : Game) : g.host ≠ g.car := by
-  -- This should come from the game_density definition which returns 0 when host = car
-  sorry
 
 
 lemma unique_game_set (car pick host : Door) :

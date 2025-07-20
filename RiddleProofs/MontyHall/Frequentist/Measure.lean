@@ -3,7 +3,7 @@ The key insight is that not all 27 possible games are equally likely - we need
 to account for the host's strategy and the rules of the game.
 -/
 
-import RiddleProofs.MontyHall.Enumeration
+import RiddleProofs.MontyHall.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 import ENNRealArith
 
