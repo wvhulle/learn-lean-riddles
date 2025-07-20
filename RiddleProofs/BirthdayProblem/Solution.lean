@@ -1,14 +1,25 @@
 import RiddleProofs.BirthdayProblem.Statement
 
 /-!
-This file contains the proofs for the birthday problem theorems stated in Statement.lean.
+# Solution to birthday paradox
+
+## Question
+
+In a group of 23 people, what's the probability that at least two people
+share the same birthday? (Assume 365 days in a year and ignore leap years.)
+
+## Answer
+
+More than 50%! The crossover point is between 22 and 23 people.
 -/
 
 
 
+notation "|" x "|" => Finset.card x    -- cardinality of finite sets
+notation "‖" x "‖" => Fintype.card x   -- cardinality of finite types
 
 
-/-- Combinatorial proof showing the crossover point is between 22 and 23 people -/
+
 theorem birthday :
     2 * ‖Fin 23 ↪ Fin 365‖ < ‖Fin 23 → Fin 365‖ ∧ 2 * ‖Fin 22 ↪ Fin 365‖ > ‖Fin 22 → Fin 365‖ := by
   simp only [Fintype.card_fin, Fintype.card_embedding_eq, Fintype.card_fun]

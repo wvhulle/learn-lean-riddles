@@ -97,11 +97,11 @@ lemma fin_to_door_injective : Function.Injective fin_to_door := by
 
 -- All possible triples (car_location, initial_pick, host_choice)
 -- This gives us 3 × 3 × 3 = 27 different scenarios
-def pairs := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3 × Fin 3) )
+def game_triples := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3 × Fin 3) )
 
 -- Alternative enumeration of Game using pairs. `deriving Fintype` already provides something similar.
 def game_enumeration : Finset Game :=
-  pairs.map ⟨(fun x => match x with
+  game_triples.map ⟨(fun x => match x with
     | (car_idx, pick_idx, host_idx) =>
       {car := fin_to_door car_idx, pick := fin_to_door pick_idx, host := fin_to_door host_idx}),
     by
@@ -114,10 +114,6 @@ def game_enumeration : Finset Game :=
 
 theorem equivalence_game_repr : (Finset.univ : Finset Game) = game_enumeration := by
   rfl -- Both sides are definitionally equal by construction.
-
-instance fin_outcome : Finset Game :=
-  Finset.univ
-
 
 
 

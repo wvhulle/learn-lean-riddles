@@ -26,7 +26,7 @@ noncomputable def game_density (ω : Game) : ENNReal :=
 
 theorem density_sum_one : ∑ ω : Game, game_density ω = 1 := by
   simp [game_density]
-  simp [equivalence_game_repr, game_enumeration, pairs]
+  simp [equivalence_game_repr, game_enumeration, game_triples]
   simp [Finset.sum_product]
   simp [fin_to_door]
   eq_as_reals

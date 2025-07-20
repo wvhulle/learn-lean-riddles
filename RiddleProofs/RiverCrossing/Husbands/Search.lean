@@ -65,4 +65,4 @@ def search_solution : Option (List Move) := solve_with_bfs 15
 -- #reduce computes by definitional unfolding (slow but works in proofs)
 -- #reduce search_solution
 -- #eval uses compiled bytecode for efficiency (fast but not usable in proofs)
-#eval search_solution
+-- #eval search_solution
