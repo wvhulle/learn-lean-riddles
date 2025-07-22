@@ -50,13 +50,13 @@ def is_goal_state (state : JealousHusbandsState) : Bool :=
   state == jealous_husbands_final_state
 
 partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
-  RiverCrossing.generic_bfs {
-    initial_state := jealous_husbands_initial_state
-    is_goal := is_goal_state
-    generate_moves := generate_valid_moves
-    apply_move := apply_simple_move
-    is_valid_state := bank_safe
-    max_depth := max_depth
+  RiverCrossing.genericBFS {
+    initialState := jealous_husbands_initial_state
+    isGoal := is_goal_state
+    generateMoves := generate_valid_moves
+    applyMove := apply_simple_move
+    isValidState := bank_safe
+    maxDepth := max_depth
   }
 
 def search_solution : Option (List Move) := solve_with_bfs 15
