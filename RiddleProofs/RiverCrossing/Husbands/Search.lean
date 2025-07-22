@@ -1,14 +1,12 @@
 import RiddleProofs.RiverCrossing.Husbands.Notation
 import RiddleProofs.RiverCrossing.Husbands.Validate
+import RiddleProofs.RiverCrossing.Search
 
 
 open RiverCrossing.Husbands
 
 
 
-
-def get_direction (boat_position : RiverBank) : Direction :=
-  if boat_position == RiverBank.left then Direction.toRight else Direction.toLeft
 
 def generate_single_person_moves (direction : Direction) (couples : List (Fin num_couples)) : List Move :=
   couples.flatMap fun i =>
@@ -39,7 +37,7 @@ def generate_couple_moves (direction : Direction) (couples : List (Fin num_coupl
 
 def generate_valid_moves (s : JealousHusbandsState) : List Move :=
   let couples : List (Fin num_couples) := [0, 1, 2]
-  let direction := get_direction s.boat
+  let direction := if s.boat == RiverBank.left then Direction.toRight else Direction.toLeft
 
   let single_moves := generate_single_person_moves direction couples
   let pair_moves := generate_pair_moves direction couples
@@ -48,42 +46,11 @@ def generate_valid_moves (s : JealousHusbandsState) : List Move :=
   (single_moves ++ pair_moves ++ couple_moves).filter (simple_move_valid · s)
 
 
-structure SearchConfig (State Move : Type) [BEq State] where
-  initial_state : State
-  is_goal : State → Bool
-  generate_moves : State → List Move
-  apply_move : Move → State → State
-  is_valid_state : State → Bool
-  max_depth : Nat := 15
-
-partial def generic_bfs {State Move : Type} [BEq State]
-    (config : SearchConfig State Move) : Option (List Move) :=
-  let rec bfs (queue : List (State × List Move))
-              (visited : List State) : Option (List Move) :=
-    match queue with
-    | [] => none
-    | (current_state, path) :: rest =>
-      if path.length > config.max_depth then
-        bfs rest visited
-      else if config.is_goal current_state then
-        some path.reverse
-      else if visited.contains current_state then
-        bfs rest visited
-      else
-        let new_visited := current_state :: visited
-        let next_states := (config.generate_moves current_state).filterMap fun move => do
-          let new_state := config.apply_move move current_state
-          guard (config.is_valid_state new_state && !new_visited.contains new_state)
-          pure (new_state, move :: path)
-        bfs (rest ++ next_states) new_visited
-
-  bfs [(config.initial_state, [])] []
-
 def is_goal_state (state : JealousHusbandsState) : Bool :=
   state == jealous_husbands_final_state
 
 partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
-  generic_bfs {
+  RiverCrossing.generic_bfs {
     initial_state := jealous_husbands_initial_state
     is_goal := is_goal_state
     generate_moves := generate_valid_moves
