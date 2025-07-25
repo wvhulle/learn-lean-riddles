@@ -86,29 +86,7 @@ lemma fin_to_door_injective : Function.Injective fin_to_door := by
 def game_triples := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × Fin 3 × Fin 3) )
 
 def game_enumeration : Finset Game :=
-  game_triples.filterMap
-    (fun ⟨car_idx, pick_idx, host_idx⟩ =>
-      if h : host_idx ≠ pick_idx ∧ host_idx ≠ car_idx then
-        some {
-          car := fin_to_door car_idx,
-          pick := fin_to_door pick_idx,
-          host := fin_to_door host_idx,
-          host_not_pick := by
-            intro heq
-            have : fin_to_door host_idx = fin_to_door pick_idx := heq
-            have : host_idx = pick_idx := fin_to_door_injective this
-            exact h.1 this,
-          host_not_car := by
-            intro heq
-            have : fin_to_door host_idx = fin_to_door car_idx := heq
-            have : host_idx = car_idx := fin_to_door_injective this
-            exact h.2 this
-        }
-      else none)
-    (by
-      intro ⟨c1, p1, h1⟩ ⟨c2, p2, h2⟩ g
-      intro hg1 hg2
-      sorry)
+  (Finset.univ : Finset Game)
 
 theorem equivalence_game_repr : (Finset.univ : Finset Game) = game_enumeration := by
   rfl
@@ -297,15 +275,26 @@ lemma door_opened_by_host_when_car_equals_pick { pick host : Door} {hnp: host �
   norm_num
   eq_as_reals
 
--- When car ≠ pick, the probability depends on whether host is the third door
 lemma door_opened_by_host_when_car_not_equals_pick { pick host : Door} {hnp: host ≠ pick} :
   Prob[host_opens host | (car_at pick)ᶜ] = 1/2 := by
-  -- When car ≠ pick, there are 8 games total, and host opens each valid door in 4 of them
-  sorry
+  unfold Prob p
+  rw [cond_apply]
+  · simp only [host_opens]
+    rw [measure_compl]
+
+    simp only [PMF.uniformOfFintype_apply (car_at pick)]
+    sorry
+  · trivial
 
 lemma car_not_behind_door {car: Door} : Prob ((car_at car)ᶜ) = 2/3 := by
-  -- use that the probability of the compliment of `door_opened_by_host_knowing_car`
-  sorry
+  -- Use that Prob(car_at car) = 1/3 and Prob(Aᶜ) = 1 - Prob(A)
+  have h_car : Prob (car_at car) = 1/3 := car_behind_door
+  rw [measure_compl (by trivial) (by exact measure_ne_top Prob _)]
+  rw [measure_univ, h_car]
+  rw [ENNReal.sub_eq_of_eq_add_rev]
+  norm_num
+  rw [ENNReal.div_add_div_same]
+  eq_as_reals
 
 theorem monty_hall_stay_probability (pick host : Door) (hnp: host ≠ pick) : Prob[car_at pick | host_opens host] = 1/3 := by
     rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul (by exact trivial) (by exact trivial)]
