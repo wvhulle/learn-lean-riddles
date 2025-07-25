@@ -53,8 +53,6 @@ open Door ProbabilityTheory MeasureTheory
 
 instance measurableSpace : MeasurableSpace Game := ⊤
 
-instance : DiscreteMeasurableSpace Game := ⟨fun _ => trivial⟩
-
 
 
 /-- The set of games where the host opens door d -/
@@ -282,14 +280,40 @@ lemma exists_third_door (pick host: Door) (h: pick ≠ host): ∃ door, door ≠
 lemma total_games : Fintype.card Game = 12 := by
   decide
 
-
 lemma car_finset_card { car: Door} : (Finset.univ.filter (fun (ω : Game) => ω.car = car)).card = 4 := by
   fin_cases car <;> decide
 
--- Direct conversion lemma
-lemma car_set_to_finset { car: Door} : {(ω : Game) | ω.car = car} = ↑(Finset.univ.filter (fun (ω : Game) => ω.car = car)) := by
+-- Count games where host opens a specific door AND car is at a specific position
+lemma host_car_finset_card { host car: Door} (hnc: host ≠ car) :
+  (Finset.univ.filter (fun (ω : Game) => ω.host = host ∧ ω.car = car)).card = 2 := by
+  fin_cases host <;> fin_cases car <;> simp at hnc <;> decide
+
+-- General conversion lemma for sets to finsets
+lemma set_to_finset_conv {P : Game → Prop} [DecidablePred P] :
+  {(ω : Game) | P ω} = ↑(Finset.univ.filter P) := by
   ext ω
   simp [Finset.mem_univ]
+
+-- Direct conversion lemma for car position
+lemma car_set_to_finset { car: Door} : {(ω : Game) | ω.car = car} = ↑(Finset.univ.filter (fun (ω : Game) => ω.car = car)) := by
+  exact set_to_finset_conv
+
+-- Conversion lemma for host and car intersection
+lemma host_car_set_to_finset { host car: Door} :
+  {(ω : Game) | ω.host = host ∧ ω.car = car} = ↑(Finset.univ.filter (fun (ω : Game) => ω.host = host ∧ ω.car = car)) := by
+  exact set_to_finset_conv
+
+-- Conversion lemma for car and host intersection (different order)
+lemma car_host_set_to_finset { car host: Door} :
+  {(ω : Game) | ω.car = car ∧ ω.host = host} = ↑(Finset.univ.filter (fun (ω : Game) => ω.car = car ∧ ω.host = host)) := by
+  exact set_to_finset_conv
+
+-- Conversion lemma for pick, host and car triple
+lemma pick_host_car_set_to_finset { pick host car: Door} :
+  {(ω : Game) | ω.car = car ∧ ω.host = host ∧ ω.pick = pick} = ↑(Finset.univ.filter (fun (ω : Game) => ω.car = car ∧ ω.host = host ∧ ω.pick = pick)) := by
+  exact set_to_finset_conv
+
+
 
 lemma car_behind_door { car: Door}: Prob (car_at car) = 1 / 3 := by
     unfold Prob p car_at
@@ -302,50 +326,83 @@ lemma car_behind_door { car: Door}: Prob (car_at car) = 1 / 3 := by
     norm_num
     eq_as_reals
 
+lemma host_car_card { host car: Door} (hnc: host ≠ car) : (Finset.univ.filter (fun (ω : Game) => ω.host = host ∧ ω.car = car)).card = 2 := by
+  fin_cases host <;> fin_cases car <;> simp at hnc <;> decide
 
-lemma door_opened_by_host_knowing_car { host car: Door} {hnc: host ≠ car} : Prob[host_opens host | car_at car] = 1 := by
-  unfold Prob
+-- Same lemma but with reversed conjunction order
+lemma car_host_card { car host: Door} (hnc: host ≠ car) : (Finset.univ.filter (fun (ω : Game) => ω.car = car ∧ ω.host = host)).card = 2 := by
+  have h : (Finset.univ.filter (fun (ω : Game) => ω.car = car ∧ ω.host = host)) =
+           (Finset.univ.filter (fun (ω : Game) => ω.host = host ∧ ω.car = car)) := by
+    ext ω
+    simp [and_comm]
+  rw [h]
+  exact host_car_card hnc
+
+-- Count games where pick, host, and car are all specified
+lemma pick_host_car_card { pick host car: Door} (hnp: host ≠ pick) (hnc: host ≠ car) :
+  (Finset.univ.filter (fun (ω : Game) => ω.car = car ∧ ω.host = host ∧ ω.pick = pick)).card = 1 := by
+  -- There's exactly one game with these constraints
+  fin_cases pick <;> fin_cases host <;> fin_cases car <;> simp at hnp hnc <;> decide
+
+-- When car = pick, the host cannot open that door, so this probability is 0
+lemma door_opened_by_host_when_car_equals_pick { pick host : Door} {hnp: host ≠ pick} :
+  Prob[host_opens host | car_at pick] = 1/2 := by
+  unfold Prob p
   rw [cond_apply]
+  -- We need to show: Prob (host_opens host ∩ car_at pick) / Prob (car_at pick) = 1/2
+  -- When car = pick, there are 4 games with car at pick
+  -- Host can open either of the 2 other doors, so 2 games have host at specific door
 
-  -- rw [car_behind_door]
-  . sorry
-  . trivial
+  simp only [host_opens, car_at]
+  -- Convert intersection to conjunction
+  have h_inter : {(ω : Game) | ω.car = pick} ∩ {(ω : Game) | ω.host = host} =
+                 {(ω : Game) | ω.car = pick ∧ ω.host = host} := by
+    ext ω
+    simp [Set.mem_inter_iff]
+  rw [h_inter]
+  -- Convert to finsets
+  have h_conv1 : {(ω : Game) | ω.car = pick} = ↑(Finset.univ.filter (fun (ω : Game) => ω.car = pick)) := by
+    exact set_to_finset_conv
+  have h_conv2 : {(ω : Game) | ω.car = pick ∧ ω.host = host} =
+                 ↑(Finset.univ.filter (fun (ω : Game) => ω.car = pick ∧ ω.host = host)) := by
+    exact set_to_finset_conv
+  rw [h_conv1, h_conv2]
+  rw [PMF.toMeasure_apply_finset, PMF.toMeasure_apply_finset]
+  simp only [PMF.uniformOfFintype_apply]
+  rw [Finset.sum_const, Finset.sum_const, nsmul_eq_mul, nsmul_eq_mul]
+  -- Count cardinalities
+  have h_pick_card : (Finset.univ.filter (fun (ω : Game) => ω.car = pick)).card = 4 := by
+    exact car_finset_card
+  have h_pick_host_card : (Finset.univ.filter (fun (ω : Game) => ω.car = pick ∧ ω.host = host)).card = 2 := by
+    -- When car = pick, host ≠ pick, there are 2 games (one for each possible player pick)
+    exact car_host_card hnp
+  rw [h_pick_card, h_pick_host_card, total_games]
+  -- Now we have: (4 * 12⁻¹)⁻¹ * (2 * 12⁻¹) = 1/2
+  norm_num
+  eq_as_reals
 
-
-    -- let game := { pick := pick, host := host, car := car, host_not_car := hnc, host_not_pick := hnp : Game}
-    -- classical
-    -- have: (Finset.univ.filter (fun g => GameEquiv g switch_win_repr)).card = 12 := by
-    --   sorry
-
-
-
-lemma door_opened_by_host_knowing_where_car_isnt { host car: Door} {hnc: host ≠ car} : Prob[host_opens host | (car_at car)ᶜ] = 1 := by
-  -- since host always has access to a door that does not have a car, it is always 1
+-- When car ≠ pick, the probability depends on whether host is the third door
+lemma door_opened_by_host_when_car_not_equals_pick { pick host : Door} {hnp: host ≠ pick} :
+  Prob[host_opens host | (car_at pick)ᶜ] = 1/2 := by
+  -- When car ≠ pick, there are 8 games total, and host opens each valid door in 4 of them
   sorry
 
 lemma car_not_behind_door {car: Door} : Prob ((car_at car)ᶜ) = 2/3 := by
   -- use that the probability of the compliment of `door_opened_by_host_knowing_car`
   sorry
 
-theorem monty_hall_switch_probability (pick host car: Door) (hnp: host ≠ pick) (hnc: host ≠ car): Prob[car_at pick | host_opens host] = 1/3 := by
+theorem monty_hall_stay_probability (pick host : Door) (hnp: host ≠ pick) : Prob[car_at pick | host_opens host] = 1/3 := by
     rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul (by exact trivial) (by exact trivial)]
     nth_rewrite 1 [law_of_total_probability Prob (host_opens host) (car_at pick)]
-    · rw [door_opened_by_host_knowing_car, car_behind_door, door_opened_by_host_knowing_where_car_isnt, car_not_behind_door]
-      have: (1 * (1 / 3) + 1 * (2 / 3))⁻¹ * 1 * (1 / 3) = 1 / (3: ENNReal) := by
-        rw [one_mul]
-        rw [mul_one]
-        rw [mul_one_div]
-        rw [mul_div]
-        rw [ENNReal.div_add_div_same]
-        rw [ENNReal.div_eq_div_iff]
+    · rw [@door_opened_by_host_when_car_equals_pick pick host hnp, car_behind_door,
+          @door_opened_by_host_when_car_not_equals_pick pick host hnp, car_not_behind_door]
+      have: ((1/2) * (1/3) + (1/2) * (2/3))⁻¹ * (1/2) * (1/3) = 1/(3: ENNReal) := by
+        ring_nf
         norm_num
-        rw [ENNReal.div_self]
-        all_goals norm_num
+        eq_as_reals
       rw [this]
-      . assumption
-      . assumption
-    . exact trivial
-    . exact trivial
+    . trivial
+    . trivial
 
 -- theorem card_games_car_eq_pick : games_car_eq_pick.card = 6 := by
 --   sorry
