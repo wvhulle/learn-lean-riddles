@@ -95,20 +95,34 @@ def game_triples := ({0, 1, 2} ×ˢ {0, 1, 2} ×ˢ {0, 1, 2} : Finset (Fin 3 × 
 
 -- Alternative enumeration of Game using pairs. `deriving Fintype` already provides something similar.
 def game_enumeration : Finset Game :=
-  let game_triples_filt := game_triples.filter (fun ⟨ car_idx, pick_idx, host_idx ⟩ => host_idx ≠ pick_idx ∧ host_idx ≠ car_idx)
-  game_triples_filt.map ⟨(fun x => match x with
-    | (car_idx, pick_idx, host_idx) =>
-      {car := fin_to_door car_idx, pick := fin_to_door pick_idx, host := fin_to_door host_idx, host_not_pick := sorry, host_not_car := sorry}),
-    by
-      intro ⟨a1, a2, a3⟩ ⟨b1, b2, b3⟩ h
-      simp at h
-      have h1 : a1 = b1 := fin_to_door_injective h.1
-      have h2 : a2 = b2 := fin_to_door_injective h.2.1
-      have h3 : a3 = b3 := fin_to_door_injective h.2.2
-      simp [h1, h2, h3]⟩
+  game_triples.filterMap
+    (fun ⟨car_idx, pick_idx, host_idx⟩ =>
+      if h : host_idx ≠ pick_idx ∧ host_idx ≠ car_idx then
+        some {
+          car := fin_to_door car_idx,
+          pick := fin_to_door pick_idx,
+          host := fin_to_door host_idx,
+          host_not_pick := by
+            intro heq
+            have : fin_to_door host_idx = fin_to_door pick_idx := heq
+            have : host_idx = pick_idx := fin_to_door_injective this
+            exact h.1 this,
+          host_not_car := by
+            intro heq
+            have : fin_to_door host_idx = fin_to_door car_idx := heq
+            have : host_idx = car_idx := fin_to_door_injective this
+            exact h.2 this
+        }
+      else none)
+    (by
+      intro ⟨c1, p1, h1⟩ ⟨c2, p2, h2⟩ g
+      intro hg1 hg2
+      -- Proof that if two triples map to the same game, they are equal
+      -- This follows from the injectivity of fin_to_door and the Game constructor
+      sorry)
 
 theorem equivalence_game_repr : (Finset.univ : Finset Game) = game_enumeration := by
-  rfl -- Both sides are definitionally equal by construction.
+  rfl -- This requires proving that our enumeration covers all games exactly once
 
 
 
@@ -227,10 +241,6 @@ theorem monty_hall_switch_probability_specific :
 lemma exists_third_door (pick host: Door) (h: pick ≠ host): ∃ door, door ≠ pick ∧ door ≠ host := by
   fin_cases pick <;> fin_cases host <;> (first | (use left; simp; done) | (use middle; simp; done) | (use right; simp))
 
-
-lemma ex_equiv: ∀ g : Game, (GameEquiv g switch_win_repr) ∨ (GameEquiv g dont_switch_win_repr) := by
-  sorry
-
     -- let game := { pick := pick, host := host, car := car, host_not_car := hnc, host_not_pick := hnp : Game}
     -- classical
     -- have: (Finset.univ.filter (fun g => GameEquiv g switch_win_repr)).card = 12 := by
@@ -269,7 +279,49 @@ lemma ex_equiv: ∀ g : Game, (GameEquiv g switch_win_repr) ∨ (GameEquiv g don
       rw [← ProbabilityTheory.cond_mul_eq_inter (by exact MeasurableSet.compl_iff.mpr hB) A μ]
 
 
-lemma door_opened_by_host_knowing_car { host car: Door} {hnc: host ≠ car} : Prob[host_opens host | car_at car] = 1 := by sorry
+lemma car_behind_door { car: Door}: Prob (car_at car) = 1 / 3 := by
+    unfold Prob p car_at
+    -- Convert set to finset and use the finset version
+    let car_finset : Finset Game := Finset.univ.filter (fun g => g.car = car)
+    have h_eq : {(ω : Game) | ω.car = car} = ↑car_finset := by
+      ext g
+      simp only [Set.mem_setOf_eq, Finset.mem_coe]
+      constructor
+      . rw [@Finset.mem_filter]
+        intro h
+        constructor
+        . exact Finset.mem_univ g
+        . exact h
+      . rw [@Finset.mem_filter]
+        intro h
+        exact h.2
+    rw [h_eq]
+    rw [PMF.toMeasure_apply_finset]
+    simp only [PMF.uniformOfFintype_apply]
+    -- Show that the cardinality ratio is 1/3
+    have h_count : car_finset.card = 6 := by
+      rw [@Finset.card_filter]
+      have:  (∑ (i: Game), if i.car = car then 1 else 0) = 6 := by
+        rw [equivalence_game_repr, game_enumeration]
+
+        sorry
+      rw [this] -- There are 6 games with car at any specific door
+    have h_total : Fintype.card Game = 18 := by
+      sorry -- Total 18 games
+    rw [h_total]
+
+    norm_num
+    rw [h_count]
+    rw [inv_eq_one_div]
+    rw [mul_one_div]
+    norm_cast
+
+lemma door_opened_by_host_knowing_car { host car: Door} {hnc: host ≠ car} : Prob[host_opens host | car_at car] = 1 := by
+  unfold Prob
+  rw [cond_apply]
+  -- rw [car_behind_door]
+  . sorry
+  . trivial
 
 
     -- let game := { pick := pick, host := host, car := car, host_not_car := hnc, host_not_pick := hnp : Game}
@@ -277,11 +329,15 @@ lemma door_opened_by_host_knowing_car { host car: Door} {hnc: host ≠ car} : Pr
     -- have: (Finset.univ.filter (fun g => GameEquiv g switch_win_repr)).card = 12 := by
     --   sorry
 
-lemma car_behind_door { car: Door}: Prob (car_at car) = 1 / 3 := by sorry
 
-lemma door_opened_by_host_knowing_where_car_isnt { host car: Door}{hnc: host ≠ car} : Prob[host_opens host | (car_at car)ᶜ] = 1 := sorry
 
-lemma car_not_behind_door {car: Door} : Prob ((car_at car)ᶜ) = 2/3 := sorry
+lemma door_opened_by_host_knowing_where_car_isnt { host car: Door} {hnc: host ≠ car} : Prob[host_opens host | (car_at car)ᶜ] = 1 := by
+  -- since host always has access to a door that does not have a car, it is always 1
+  sorry
+
+lemma car_not_behind_door {car: Door} : Prob ((car_at car)ᶜ) = 2/3 := by
+  -- use that the probability of the compliment of `door_opened_by_host_knowing_car`
+  sorry
 
 theorem monty_hall_switch_probability (pick host car: Door) (hnp: host ≠ pick) (hnc: host ≠ car): Prob[car_at pick | host_opens host] = 1/3 := by
     rw [ProbabilityTheory.cond_eq_inv_mul_cond_mul (by exact trivial) (by exact trivial)]
