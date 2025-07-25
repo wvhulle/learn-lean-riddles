@@ -279,46 +279,34 @@ lemma exists_third_door (pick host: Door) (h: pick ≠ host): ∃ door, door ≠
       rw [← ProbabilityTheory.cond_mul_eq_inter (by exact MeasurableSet.compl_iff.mpr hB) A μ]
 
 
+lemma total_games : Fintype.card Game = 12 := by
+  decide
+
+
+lemma car_finset_card { car: Door} : (Finset.univ.filter (fun (ω : Game) => ω.car = car)).card = 4 := by
+  fin_cases car <;> decide
+
+-- Direct conversion lemma
+lemma car_set_to_finset { car: Door} : {(ω : Game) | ω.car = car} = ↑(Finset.univ.filter (fun (ω : Game) => ω.car = car)) := by
+  ext ω
+  simp [Finset.mem_univ]
+
 lemma car_behind_door { car: Door}: Prob (car_at car) = 1 / 3 := by
     unfold Prob p car_at
-    -- Convert set to finset and use the finset version
-    let car_finset : Finset Game := Finset.univ.filter (fun g => g.car = car)
-    have h_eq : {(ω : Game) | ω.car = car} = ↑car_finset := by
-      ext g
-      simp only [Set.mem_setOf_eq, Finset.mem_coe]
-      constructor
-      . rw [@Finset.mem_filter]
-        intro h
-        constructor
-        . exact Finset.mem_univ g
-        . exact h
-      . rw [@Finset.mem_filter]
-        intro h
-        exact h.2
-    rw [h_eq]
+    rw [car_set_to_finset]
     rw [PMF.toMeasure_apply_finset]
     simp only [PMF.uniformOfFintype_apply]
-    -- Show that the cardinality ratio is 1/3
-    have h_count : car_finset.card = 6 := by
-      rw [@Finset.card_filter]
-      have:  (∑ (i: Game), if i.car = car then 1 else 0) = 6 := by
-        rw [equivalence_game_repr, game_enumeration]
-
-        sorry
-      rw [this] -- There are 6 games with car at any specific door
-    have h_total : Fintype.card Game = 18 := by
-      sorry -- Total 18 games
-    rw [h_total]
-
+    rw [Finset.sum_const, nsmul_eq_mul]
+    rw [car_finset_card]
+    rw [total_games]
     norm_num
-    rw [h_count]
-    rw [inv_eq_one_div]
-    rw [mul_one_div]
-    norm_cast
+    eq_as_reals
+
 
 lemma door_opened_by_host_knowing_car { host car: Door} {hnc: host ≠ car} : Prob[host_opens host | car_at car] = 1 := by
   unfold Prob
   rw [cond_apply]
+
   -- rw [car_behind_door]
   . sorry
   . trivial
