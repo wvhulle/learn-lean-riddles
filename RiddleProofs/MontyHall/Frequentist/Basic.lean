@@ -1,2 +1,0 @@
-import RiddleProofs.MontyHall.Frequentist.Measure
-import RiddleProofs.MontyHall.Frequentist.Solution

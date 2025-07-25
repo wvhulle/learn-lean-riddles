@@ -5,7 +5,10 @@ package «riddle-proofs» where
   version := v!"0.0.2"
 
 @[default_target]
-lean_lib «RiddleProofs»
+lean_lib «RiddleProofs» where
+  leanOptions := #[
+    ⟨`autoImplicit, false⟩,
+  ]
 
 
 /- **Main executable**: Runs welcome message and project info -/
