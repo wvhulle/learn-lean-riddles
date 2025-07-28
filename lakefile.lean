@@ -24,7 +24,7 @@ require mathlib from git
    - Used in advanced probability measure theory sections
    - Provides additional tactics and lemmas for ENNReal computations -/
 require «ennreal-arith» from git
-  "https://github.com/wvhulle/ennreal-arith.git" @ "54558165c5fd602f09f231cf0e5d45d1a40fe8f6"
+  "https://github.com/wvhulle/ennreal-arith.git" @ "73746d6369066c278f41455aac6e3173d81e4965"
 
 -- require «ennreal-arith» from
 --   "../ennreal"
