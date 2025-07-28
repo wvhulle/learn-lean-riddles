@@ -23,6 +23,8 @@ Using automated LLM agents with Lean will not be covered in this workshop (altho
 
 This workshop is suitable for everyone who:
 
+
+
 - is not afraid of mathematics or theorem proving,
 - knows at least one functional programming language,
 - loves mathematical or logical computational problems.
