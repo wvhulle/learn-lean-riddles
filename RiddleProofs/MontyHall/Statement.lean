@@ -46,7 +46,6 @@ inductive Door : Type
   deriving DecidableEq, Repr
 
 instance : Fintype Door := ⟨{.left, .middle, .right}, by intro d; cases d <;> simp⟩
-
 instance : MeasurableSpace Door := ⊤
 instance : Nonempty Door := ⟨.left⟩
 
@@ -65,12 +64,7 @@ def other_door (d₁ d₂ : Door) : Door :=
 
 lemma other_door_is_other {d₁ d₂ : Door} (h : d₁ ≠ d₂) :
     other_door d₁ d₂ ≠ d₁ ∧ other_door d₁ d₂ ≠ d₂ := by
-  sorry
+  revert d₁ d₂ h; decide
 
 abbrev CarLocation := Door
 abbrev HostAction := Door
-
-/-- **The Monty Hall Theorem**: The probability of winning by switching doors is 2/3. -/
-theorem switch_wins_prob_bayes (p h : Door) (h_ne_p : h ≠ p) :
-    True := by
-  sorry

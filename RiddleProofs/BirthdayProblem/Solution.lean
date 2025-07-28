@@ -4,10 +4,6 @@ import RiddleProofs.BirthdayProblem.Statement
 This file contains the proofs for the birthday problem theorems stated in Statement.lean.
 -/
 
-
-
-
-
 /-- Combinatorial proof showing the crossover point is between 22 and 23 people -/
 theorem birthday :
     2 * ‖Fin 23 ↪ Fin 365‖ < ‖Fin 23 → Fin 365‖ ∧ 2 * ‖Fin 22 ↪ Fin 365‖ > ‖Fin 22 → Fin 365‖ := by

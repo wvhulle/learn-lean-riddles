@@ -1,8 +1,10 @@
 import RiddleProofs.MontyHall.Statement
-import RiddleProofs.MontyHall.Probability
+import RiddleProofs.MontyHall.MeasureTheory
 import ENNRealArith
 
 /-! Written by Matteo Cipollina
+
+Edited by Willem Vanhulle
 
 This file contains the Monty Hall specific computations and proof of the main theorem.
 -/
@@ -10,9 +12,6 @@ This file contains the Monty Hall specific computations and proof of the main th
 open PMF ProbabilityTheory MeasureTheory Filter Finset
 open scoped ENNReal
 
-private lemma Kernel.ofFunOfCountable_apply [MeasurableSpace α] [MeasurableSpace β] [Countable α]
-    [MeasurableSingletonClass α] (f : α → Measure β) (a : α) :
-    Kernel.ofFunOfCountable f a = f a := rfl
 
 /-! ## Monty Hall Specific Definitions -/
 
@@ -50,14 +49,14 @@ instance (p : Door) : IsMarkovKernel (likelihood p) :=
 ⟨fun c => by
   by_cases hc : c = p
   · -- uniform case: push-forward of a uniform PMF on the subtype
-    simp only [likelihood, hc, Kernel.ofFunOfCountable_apply]
+    simp only [likelihood, hc, ProbabilityTheory.Kernel.ofFunOfCountable_apply]
     haveI : IsProbabilityMeasure ((PMF.uniformOfFintype { d // d ≠ p }).toMeasure) :=
       PMF.toMeasure.isProbabilityMeasure _
     exact
       MeasureTheory.isProbabilityMeasure_map
         measurable_subtype_coe.aemeasurable
   · -- deterministic case: `pure` PMF is a probability measure
-    simp only [likelihood, hc, Kernel.ofFunOfCountable_apply]
+    simp only [likelihood, hc, ProbabilityTheory.Kernel.ofFunOfCountable_apply]
     exact PMF.toMeasure.isProbabilityMeasure _
 ⟩
 
@@ -73,23 +72,6 @@ lemma other_door_involutive {p h : Door} (h_ne_p : h ≠ p) :
 
 open scoped BigOperators
 
-namespace Finset
-
-/-- Sum over a finite type with exactly three pairwise-different elements. -/
-lemma sum_univ_of_three {α β : Type*} [Fintype α] [DecidableEq α]
-    [AddCommMonoid β] (f : α → β) {a b c : α}
-    (ha : a ≠ b) (hb : a ≠ c) (hc : b ≠ c)
-    (hcover : Finset.univ = {a, b, c}) :
-    (∑ x, f x) = f a + f b + f c := by
-  rw [hcover]
-  have h₁ : (a : α) ∉ ({b, c} : Finset α) := by
-    simp [ha, hb]
-  have h₂ : (b : α) ∉ ({c} : Finset α) := by
-    simp [hc]
-  simp [Finset.sum_insert h₁, Finset.sum_insert h₂, Finset.sum_singleton,
-        add_comm, add_left_comm]
-
-end Finset
 
 lemma Door.card_eq_three : Fintype.card Door = 3 := by
   decide
@@ -171,14 +153,14 @@ remaining doors, so the probability that he opens `h ≠ p` is `1 / 2`. -/
 lemma likelihood_at_p (h_ne_p : h ≠ p) :
     (likelihood p) p {h} = (1 : ℝ≥0∞) / 2 := by
   classical
-  simpa [likelihood, Kernel.ofFunOfCountable_apply]
+  simpa [likelihood, ProbabilityTheory.Kernel.ofFunOfCountable_apply]
         using Measure.map_uniform_subtype_singleton (p := p) (h := h) h_ne_p
 
 /-- If the car is behind door `h`, the host cannot open `h`. -/
 lemma likelihood_at_h (h_ne_p : h ≠ p) :
     (likelihood p) h {h} = 0 := by
   have h_ne : other_door p h ≠ h := (other_door_is_other h_ne_p.symm).2
-  rw [likelihood, Kernel.ofFunOfCountable_apply]
+  rw [likelihood, ProbabilityTheory.Kernel.ofFunOfCountable_apply]
   simp only [h_ne_p]
   simp [PMF.pure_apply,]
   exact id (Ne.symm h_ne)
@@ -189,7 +171,7 @@ lemma likelihood_at_o (h_ne_p : h ≠ p) :
   have c_ne_p : o p h ≠ p := o_ne_p p h h_ne_p
   have h_forced : other_door p (o p h) = h := by
     rw [o, other_door_involutive h_ne_p]
-  rw [likelihood,Kernel.ofFunOfCountable_apply]
+  rw [likelihood,ProbabilityTheory.Kernel.ofFunOfCountable_apply]
   simp only [c_ne_p]
   rw [h_forced]
   have : (PMF.pure h).toMeasure {h} = 1 := by
@@ -232,7 +214,7 @@ lemma marginal_prob_h (h_ne_p : h ≠ p) :
   rw [ProbabilityTheory.comp_apply _ _ (by simp)]
   have h_cover := door_univ_eq_three h_ne_p
   have h_doors_distinct := doors_pairwise_distinct h_ne_p
-  rw [Finset.sum_univ_of_three _ h_doors_distinct.1 h_doors_distinct.2.1
+  rw [ProbabilityTheory.Finset.sum_univ_of_three _ h_doors_distinct.1 h_doors_distinct.2.1
         h_doors_distinct.2.2 h_cover]
   rw [likelihood_at_p h_ne_p, likelihood_at_h h_ne_p, likelihood_at_o h_ne_p]
   rw [prior_uniform p, prior_uniform h, prior_uniform (o p h)]
