@@ -1,5 +1,11 @@
 import Mathlib.Probability.Notation
 
+/-! Written by Eric Rodriguez
+
+Edited by Willem Vanhulle
+
+-/
+
 set_option warningAsError false
 
 /-!

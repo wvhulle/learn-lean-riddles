@@ -1,57 +1,70 @@
-import Mathlib.Probability.Notation
+
+import Mathlib.Data.Fintype.Basic
+import Mathlib.MeasureTheory.MeasurableSpace.Basic
+
+/-! Written by Matteo Cipollina
+
+The Monty Hall Problem: Statement and Basic Setup
+-/
 
 /-!
 # The Monty Hall Problem
 
-This file formalizes the Monty Hall problem, a classic probability puzzle.
+This file contains the problem statement and basic definitions for the Monty Hall problem.
 
-## Statement**
+## The Problem
 
-You are a contestant on a game show. You are presented with three closed doors. Behind one door is a car (the prize), and behind the other two are goats.
+In the Monty Hall game show:
+1. There are three doors, behind one of which is a car (the prize)
+2. The contestant initially picks one door
+3. The host, who knows where the car is, opens one of the remaining doors that contains no car
+4. The contestant is then given the choice to stick with their original choice or switch to the remaining unopened door
 
-   ┌───────┐   ┌───────┐   ┌───────┐
-   │ Door 1│   │ Door 2│   │ Door 3│
-   │  ???  │   │  ???  │   │  ???  │
-   └───────┘   └───────┘   └───────┘
-      ^           ^           ^
-   [Goat/Car]  [Goat/Car]  [Goat/Car]
+## The Question
 
-You complete the following steps:
-1. You choose one door.
-2. The host, who knows where the car is, opens one of the other two doors to reveal a goat.
-3. The host asks if you want to switch your choice to the remaining closed door.
+What is the probability of winning if the contestant switches doors?
 
-## Question
+## The Answer
 
-Is it to your advantage to switch doors?
+**2/3** - The contestant should always switch! This counterintuitive result is proven rigorously using measure theory and Bayesian inference.
 
+## Mathematical Approach
+
+We model this as a Bayesian inference problem:
+- **Prior**: Uniform distribution over the three door locations for the car
+- **Likelihood**: The probability distribution of the host's actions given the car location
+- **Posterior**: Using Bayes' rule to compute the probability distribution after observing the host's action
+
+The key insight is that the host's action provides information that updates our beliefs about where the car is located.
 -/
 
+/-! ## Basic Setup -/
+
+
 inductive Door : Type
-| left    -- Door 1
-| middle  -- Door 2
-| right   -- Door 3
-deriving DecidableEq, Repr, Fintype
+| left | middle | right
+  deriving DecidableEq, Repr
 
-open Door
+instance : Fintype Door := ⟨{.left, .middle, .right}, by intro d; cases d <;> simp⟩
+instance : MeasurableSpace Door := ⊤
+instance : Nonempty Door := ⟨.left⟩
 
-structure Game where
-  car   : Door  -- which door has the car behind it
-  pick  : Door  -- which door the contestant initially picks
-  host  : Door  -- which door the host opens (must have a goat)
-  deriving DecidableEq, Repr, Fintype
 
-instance : Nonempty Door := ⟨Door.left⟩
+@[simp]
+def other_door (d₁ d₂ : Door) : Door :=
+  if d₁ = d₂ then d₁ else
+  match d₁, d₂ with
+  | .left,  .middle => .right
+  | .left,  .right  => .middle
+  | .middle, .left  => .right
+  | .middle, .right => .left
+  | .right, .left   => .middle
+  | .right, .middle => .left
+  | _, _ => d₁
 
--- Get the third door (the one that's neither door1 nor door2)
-def other_door (door1 door2 : Door) : Door :=
-  if door1 = left ∧ door2 = middle then right
-  else if door1 = left ∧ door2 = right then middle
-  else if door1 = middle ∧ door2 = left then right
-  else if door1 = middle ∧ door2 = right then left
-  else if door1 = right ∧ door2 = left then middle
-  else if door1 = right ∧ door2 = middle then left
-  else left  -- fallback case (shouldn't happen in valid games)
+lemma other_door_is_other {d₁ d₂ : Door} (h : d₁ ≠ d₂) :
+    other_door d₁ d₂ ≠ d₁ ∧ other_door d₁ d₂ ≠ d₂ := by
+  revert d₁ d₂ h; decide
 
-example : other_door left middle = right := by rfl
-example : other_door left right = middle := by rfl
+abbrev CarLocation := Door
+abbrev HostAction := Door
