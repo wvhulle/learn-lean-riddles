@@ -2,11 +2,16 @@ import RiddleProofs.MontyHall.Statement
 import RiddleProofs.MontyHall.MeasureTheory
 import ENNRealArith
 
-/-! Written by Matteo Cipollina
+/-!
 
-Edited by Willem Vanhulle
+Bayesian proof written by Matteo Cipollina.
+Edited by Willem Vanhulle.
 
-This file contains the Monty Hall specific computations and proof of the main theorem.
+Conventions:
+- We use `p` for the door chosen by the participant.
+- We use `h` for the door opened by the host.
+- We use `o` for the remaining door.
+
 -/
 
 open PMF ProbabilityTheory MeasureTheory Filter Finset
@@ -15,7 +20,6 @@ open scoped ENNReal
 
 /-! ## Monty Hall Specific Definitions -/
 
-variable {p h c d : Door}
 
 instance : StandardBorelSpace Door := inferInstance
 
@@ -24,7 +28,6 @@ noncomputable def prior : Measure CarLocation :=
   (PMF.uniformOfFintype CarLocation).toMeasure
 
 instance : IsProbabilityMeasure prior := by
-  classical
   simpa [prior] using
     (PMF.toMeasure.isProbabilityMeasure (PMF.uniformOfFintype _))
 
