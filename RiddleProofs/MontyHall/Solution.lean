@@ -19,7 +19,7 @@ variable {p h c d : Door}
 
 instance : StandardBorelSpace Door := inferInstance
 
-/- Prior: uniform on three doors (as a measure). -/
+/-- Prior: uniform distribution on three doors (as a measure). -/
 noncomputable def prior : Measure CarLocation :=
   (PMF.uniformOfFintype CarLocation).toMeasure
 
@@ -35,34 +35,35 @@ instance subtype_ne_nonempty (p : Door) : Nonempty { d : Door // d ≠ p } :=
   | .middle => ⟨⟨.left,   by decide⟩⟩
   | .right  => ⟨⟨.left,   by decide⟩⟩
 
-/-- Definition of a kernel representing conditional distributions of host actions given car locations. -/
+/-- Definition of a kernel representing conditional distributions of host actions given car locations.
+
+A kernel κ : α → Measure β assigns a measure on β for any a ∈ α.
+In the context of probability theory, a is the value of a random variable X and κ(a) represents the conditional probability distribution of some random variable Y given X = a. -/
 noncomputable def likelihood (p : Door) : Kernel CarLocation HostAction :=
-  /- A kernel κ : α -> Measure β assigns a measure on β for any a ∈ α.
-  In the context of probability theory, a is the value of a random variable X and κ(a) represents the conditional probability distribution of some random variable Y given X = a. -/
   Kernel.ofFunOfCountable fun c =>
     if  c = p then
-      -- host chooses uniformly on the two doors not equal to p
+      -- Host chooses uniformly among the two doors not equal to p
       -- Map the measure from the subtype to HostAction
-      let f : { d // d ≠ p } → Door :=  λ x : { d // d ≠ p } => x.val -- push-forward function
-      Measure.map f -- Computes push-forward of measure on codomain `HostAction`.
+      let f : { d // d ≠ p } → Door := λ x : { d // d ≠ p } => x.val -- push-forward function
+      Measure.map f -- Computes push-forward of measure on codomain `HostAction`
         ((PMF.uniformOfFintype { d // d ≠ p }).toMeasure)
-        -- `Measure.map` works by defining with the inverse map (f₊μ)(A) = μ(f⁻¹(A)).
-        -- _Remark_: `f` is not necessarily surjective, but should be measurable
+        -- `Measure.map` works by defining the inverse map (f₊μ)(A) = μ(f⁻¹(A))
+        -- Remark: `f` is not necessarily surjective, but should be measurable
     else
-      -- if c ≠ p, host must open the unique other door
+      -- If c ≠ p, host must open the unique other door
       (PMF.pure (remaining_door p c)).toMeasure
-      -- `PMF.pure` creates a PMF that assigns 1 to the singleton set `{remaining_door p c}`
+      -- `PMF.pure` creates a PMF that assigns probability 1 to the singleton set `{remaining_door p c}`
 
-/- The kernel `likelihood` must yield an actual probability measure for every `p` door and sum to one. This requirement is captured by the `IsMarkovKernel` type class. -/
+/-- The kernel `likelihood` must yield an actual probability measure for every `p` door and sum to one. This requirement is captured by the `IsMarkovKernel` type class. -/
 instance (p : Door) : IsMarkovKernel (likelihood p) :=
--- For any car location, we prove that `likelihood(p)(c)` is a probability measure over `HostAction`.
+-- For any car location, we prove that `likelihood p c` is a probability measure over `HostAction`.
 ⟨fun c => by
   -- Consider each possible car location.
   by_cases p_eq_c : c = p
   · -- uniform case: push-forward of a uniform PMF on the subtype
     show IsProbabilityMeasure ((likelihood p) c)
     simp only [likelihood, p_eq_c, ProbabilityTheory.Kernel.ofFunOfCountable_apply]
-    -- We evaluate the kernel at `likelihood(p)(c)` with `ofFunOfCountable_apply`.
+    -- We evaluate the kernel at `likelihood p c` with `ofFunOfCountable_apply`.
     haveI : IsProbabilityMeasure ((PMF.uniformOfFintype { d // d ≠ p }).toMeasure) :=
       PMF.toMeasure.isProbabilityMeasure _ -- We can leave out `(PMF.uniformOfFintype { d // d ≠ p })`.
     exact
@@ -74,18 +75,18 @@ instance (p : Door) : IsMarkovKernel (likelihood p) :=
   · -- deterministic case: `pure` PMF is a probability measure
     show IsProbabilityMeasure ((likelihood p) c)
     simp only [likelihood, p_eq_c, ProbabilityTheory.Kernel.ofFunOfCountable_apply]
-    -- We evaluate the kernel at `likelihood(p)(c)` with `ofFunOfCountable_apply`.
+    -- We evaluate the kernel at `likelihood p c` with `ofFunOfCountable_apply`.
     exact PMF.toMeasure.isProbabilityMeasure _
 ⟩
 
 
-/- The \dagger computes an application of the `posterior` operator on kernel `likelihood p` with respect to prior distribution of cars in `prior`.
+/-- The † operator computes an application of the `posterior` operator on kernel `likelihood p` with respect to prior distribution of cars in `prior`.
 
-It works by applying a generalized version of the Bayes theorem that reduces to the more familiar discrete form of Bayes' theorem:
+It works by applying a generalized version of Bayes' theorem that reduces to the more familiar discrete form of Bayes' theorem:
 
 P(Car=X | Host=Y) = P(Host=Y | Car=X) × P(Car=X) / P(Host=Y)
 
-Where the marginal probability is computed like:
+Where the marginal probability is computed as:
 
 P(Host=Y) = Σ_X P(Host=Y | Car=X) × P(Car=X)
 
@@ -117,7 +118,7 @@ Probability that the push-forward of the uniform measure on the subtype
 Since the subtype has exactly two elements, this value is `1 / 2`. -/
 lemma map_uniform_subtype_singleton {p h : Door} (h_ne_p : h ≠ p) :
     (Measure.map (fun x : { d // d ≠ p } => (x : Door))
-        -- This lemma is only used when `pick = car` and the host has to choose uniformly between the two remaining doors.
+        -- This lemma is only used when `p = c` and the host has to choose uniformly between the two remaining doors.
         ((PMF.uniformOfFintype { d // d ≠ p }).toMeasure)) {h}
       = (1 : ℝ≥0∞) / 2 := by
   have h_map :
@@ -228,22 +229,18 @@ In our Monty Hall context:
 - α = CarLocation (the space/type)
 - a ranges over specific car locations (door1, door2, door3)
 - μ = prior (uniform measure on car locations)
-- κ = likelihood pick (kernel giving host behavior for each car location)
+- κ = likelihood p (kernel giving host behavior for each car location)
 
 Integrate over all possible car locations, weighted by the prior probability of each location.
 
 -/
 
 
-/--
-What is the probability that the host will open door `h`.
--/
+/-- What is the probability that the host will open door `h`? -/
 lemma marginal_prob_h (h_ne_p : h ≠ p) :
     ((likelihood p) ∘ₘ prior) {h} = (1 : ℝ≥0∞) / 2 := by
-  /-
-  We first apply a general measure-theoretic version of law of total probability `comp_apply`. In a discrete probability space this becomes:
-  Σ_car P(h opens | car location) × P(car location)
-  -/
+  -- We first apply a general measure-theoretic version of the law of total probability `comp_apply`. In a discrete probability space this becomes:
+  -- Σ_car P(host opens h | car location) × P(car location)
   rw [ProbabilityTheory.comp_apply _ _ (by simp)]
   have h_cover := door_univ_eq_three h_ne_p
   have h_doors_distinct := doors_pairwise_distinct h_ne_p
@@ -263,20 +260,19 @@ lemma marginal_prob_h (h_ne_p : h ≠ p) :
   rw [likelihood_at_h_when_part_not_pick_car h_ne_p, eval_uniform_prior (remaining_door p h)]
   eq_as_reals
 
-/- The probability of winning by switching doors. -/
+/-- The probability of winning by switching doors. -/
 theorem switch_wins_prob_bayes (p h : Door) (h_ne_p : h ≠ p) :
     (postK p h) {remaining_door p h} = (2 : ℝ≥0∞) / 3 := by
   set o : Door := remaining_door p h with ho
   -- The denominator in Bayes’ formula is non-zero
   have hpos : ((likelihood p) ∘ₘ prior) {h} ≠ 0 := by
     rw [marginal_prob_h h_ne_p]
-    norm_num
-  -- Bayes’ rule specialised to singletons
-  -- Direct calculation: (1/3 * 1) / (1/2) = 2/3
+    eq_as_reals
   calc (postK p h) {remaining_door p h}
     = (postK p h) {o} := by rw [ho]
     _ = (prior {o} * (likelihood p) o {h}) / ((likelihood p) ∘ₘ prior) {h} := by
       rw [postK]
+      -- Bayes’ rule specialised to singletons
       exact posterior_apply_singleton (likelihood p) prior h o hpos
     _ = ((1 : ℝ≥0∞) / 3 * (likelihood p) o {h}) / ((1 : ℝ≥0∞) / 2) := by
       rw [eval_uniform_prior, marginal_prob_h h_ne_p]
