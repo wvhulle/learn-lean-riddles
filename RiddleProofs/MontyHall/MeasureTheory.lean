@@ -124,7 +124,9 @@ lemma comp_apply {Ω 𝓧 : Type*} [Fintype Ω]
   congr with ω
   exact CommMonoid.mul_comm ((κ ω) s) (μ {ω})
 
+/- Constructing a kernel from an arbitrary function requires measurability. A direct proof of measurability is much easier when the domain is countable. A measurable countable space with measurable singletons turns any function `f: α -> β` into a measurable function. -/
 lemma Kernel.ofFunOfCountable_apply [MeasurableSpace α] [MeasurableSpace β] [Countable α]
+    /- `MeasurableSingletonClass is required when you need to evaluate kernel at a point. -/
     [MeasurableSingletonClass α] (f : α → Measure β) (a : α) :
     Kernel.ofFunOfCountable f a = f a := rfl
 

@@ -51,7 +51,7 @@ instance : Nonempty Door := ⟨.left⟩
 
 
 @[simp]
-def other_door (d₁ d₂ : Door) : Door :=
+def remaining_door (d₁ d₂ : Door) : Door :=
   if d₁ = d₂ then d₁ else
   match d₁, d₂ with
   | .left,  .middle => .right
@@ -63,8 +63,18 @@ def other_door (d₁ d₂ : Door) : Door :=
   | _, _ => d₁
 
 lemma other_door_is_other {d₁ d₂ : Door} (h : d₁ ≠ d₂) :
-    other_door d₁ d₂ ≠ d₁ ∧ other_door d₁ d₂ ≠ d₂ := by
+    remaining_door d₁ d₂ ≠ d₁ ∧ remaining_door d₁ d₂ ≠ d₂ := by
   revert d₁ d₂ h; decide
 
 abbrev CarLocation := Door
 abbrev HostAction := Door
+
+
+lemma other_door_involutive {p h : Door} (h_ne_p : h ≠ p) :
+    remaining_door p (remaining_door p h) = h := by
+  cases p <;> cases h <;> simp [remaining_door]
+
+
+
+lemma Door.card_eq_three : Fintype.card Door = 3 := by
+  decide
