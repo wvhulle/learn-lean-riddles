@@ -74,7 +74,5 @@ lemma other_door_involutive {p h : Door} (h_ne_p : h ≠ p) :
     remaining_door p (remaining_door p h) = h := by
   cases p <;> cases h <;> simp [remaining_door]
 
-
-
 lemma Door.card_eq_three : Fintype.card Door = 3 := by
   decide
