@@ -3,8 +3,7 @@ import Mathlib.Probability.Kernel.Posterior
 
 /-! Written by Matteo Cipollina
 
-This file contains generic measure theory, probability theory, and general Bayesian methods.
-This includes all probability theory infrastructure that could be reused for other problems.
+This file contains generic measure theory and probability theory.
 -/
 
 set_option linter.unusedVariables false
@@ -124,7 +123,9 @@ lemma comp_apply {Ω 𝓧 : Type*} [Fintype Ω]
   congr with ω
   exact CommMonoid.mul_comm ((κ ω) s) (μ {ω})
 
+/- Constructing a kernel from an arbitrary function requires measurability. A direct proof of measurability is much easier when the domain is countable. A measurable countable space with measurable singletons turns any function `f: α -> β` into a measurable function. -/
 lemma Kernel.ofFunOfCountable_apply [MeasurableSpace α] [MeasurableSpace β] [Countable α]
+    /- `MeasurableSingletonClass is required when you need to evaluate kernel at a point. -/
     [MeasurableSingletonClass α] (f : α → Measure β) (a : α) :
     Kernel.ofFunOfCountable f a = f a := rfl
 
@@ -143,6 +144,7 @@ lemma sum_univ_of_three {α β : Type*} [Fintype α] [DecidableEq α]
     simp [hc]
   simp [Finset.sum_insert h₁, Finset.sum_insert h₂, Finset.sum_singleton,
         add_comm, add_left_comm]
+
 
 end Finset
 
