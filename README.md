@@ -18,6 +18,7 @@ This workshop is suitable for everyone who:
 
 See [INSTALL.md](./INSTALL.md).
 
-## Learning
 
-See [docs](./docs/).
+## Learning material
+
+A course is in preparation. Ask me for more information.
