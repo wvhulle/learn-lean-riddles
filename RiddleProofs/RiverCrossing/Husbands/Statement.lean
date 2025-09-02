@@ -66,10 +66,8 @@ def wife_alone_with_other_husband (s : JealousHusbandsState) (wife_i : Fin num_c
 
 /-- Checks if a state satisfies the jealousy constraint.-/
 def bank_safe (s : JealousHusbandsState) : Bool :=
-  let pairs : List (Fin num_couples) := List.finRange num_couples
-  pairs.all (fun wife_i =>
-    pairs.all (fun husband_j =>
-      wife_i = husband_j || !wife_alone_with_other_husband s wife_i husband_j))
+  decide (∀ (wife_i : Fin num_couples), ∀ (husband_j : Fin num_couples),
+    wife_i = husband_j ∨ ¬wife_alone_with_other_husband s wife_i husband_j)
 
 def state_safe_prop (s : JealousHusbandsState) : Prop := bank_safe s = true
 
