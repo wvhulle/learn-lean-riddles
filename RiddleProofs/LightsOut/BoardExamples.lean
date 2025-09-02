@@ -66,3 +66,25 @@ def allOn3x3_solution : LightState 3 3 → LightState 3 3 :=
   fun initial =>
     let corners : Finset (Button 3 3) := {(0, 0), (0, 2), (2, 0), (2, 2)}
     applyButtons initial corners
+
+
+/-
+
+## Challenges
+
+- Can you write a brute-force function (in Lean) to search solutions?
+- Which start configurations are solvable?
+- Which start configurations are insolvable?
+
+
+Frontend:
+
+- Define a way to visualize steps, one at a time, while manually testing the puzzle.
+- Make cells in the widget clickable.
+
+Group theory:
+
+- Try to read and understand the lemmas used in `GroupTheory.lean`.
+- Try to compute a product of two matrices.
+
+-/

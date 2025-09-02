@@ -24,22 +24,6 @@ neighborhood (orthogonally adjacent cells).
 Turn all lights off by pressing buttons according to the rules.
 
 
-## Challenges
-
-- Can you write a brute-force function (in Lean) to search solutions?
-- Which start configurations are solvable?
-- Which start configurations are insolvable?
-
-
-Frontend:
-
-- Define a way to visualize steps, one at a time, while manually testing the puzzle.
-- Make cells in the widget clickable.
-
-Group theory:
-
-- Try to read and understand the lemmas used in `GroupTheory.lean`.
-- Try to compute a product of two matrices.
 
 -/
 
@@ -55,22 +39,20 @@ notation "𝔽₂" => ZMod 2
 
 def Button (m n : ℕ) := Fin m × Fin n
 
-instance [Fintype (Fin m)] [Fintype (Fin n)] : Fintype (Button m n) :=
-  inferInstanceAs (Fintype (Fin m × Fin n))
 
-instance : DecidableEq (Button m n) :=
-  inferInstanceAs (DecidableEq (Fin m × Fin n))
+
 
 def LightState (m n : ℕ) := Matrix (Fin m) (Fin n) 𝔽₂
 
 instance : Add (LightState m n) := inferInstanceAs (Add (Matrix (Fin m) (Fin n) 𝔽₂))
-instance : AddCommMonoid (LightState m n) :=
-  inferInstanceAs (AddCommMonoid (Matrix (Fin m) (Fin n) 𝔽₂))
+
+
+
 instance : DecidableEq (LightState m n) := inferInstanceAs (DecidableEq (Matrix (Fin m) (Fin n) 𝔽₂))
 
 def allOff : LightState m n := fun _ _ => 0
 
-def isWin (state : LightState m n) : Prop := state = allOff
+
 
 -- Check if two positions are adjacent (Manhattan distance = 1)
 def areAdjacent (pos1 pos2 : Button m n) : Bool :=
@@ -78,6 +60,10 @@ def areAdjacent (pos1 pos2 : Button m n) : Bool :=
   let (i2, j2) := pos2
   (i1 = i2 ∧ Int.natAbs (j1.val - j2.val) = 1) ∨
   (j1 = j2 ∧ Int.natAbs (i1.val - i2.val) = 1)
+
+instance : DecidableEq (Button m n) :=
+  inferInstanceAs (DecidableEq (Fin m × Fin n))
+
 
 -- Von Neumann neighborhood: button affects itself and orthogonally adjacent cells
 def isAffected (button : Button m n) (pos : Button m n) : Bool :=
@@ -92,8 +78,6 @@ def press (state : LightState m n) (button : Button m n) : LightState m n :=
 
 def pressAt (state : LightState m n) (i : Fin m) (j : Fin n) : LightState m n :=
   press state (i, j)
-
-
 
 
 /-!
@@ -121,6 +105,9 @@ def buttonMatrix : Matrix (Button m n) (Button m n) (ZMod 2) :=
 
 def ButtonSelection (m n : ℕ) := Button m n → ZMod 2
 
+instance [Fintype (Fin m)] [Fintype (Fin n)] : Fintype (Button m n) :=
+  inferInstanceAs (Fintype (Fin m × Fin n))
+
 def applySelection (initial : LightState m n) (selection : ButtonSelection m n) : LightState m n :=
   initial + fromVector (buttonMatrix.mulVec selection)
 
@@ -134,6 +121,9 @@ def isSolvable (initial : LightState m n) : Prop :=
 /-!
 ## Computational verification
 -/
+
+instance : AddCommMonoid (LightState m n) :=
+  inferInstanceAs (AddCommMonoid (Matrix (Fin m) (Fin n) 𝔽₂))
 
 /-- Apply button set (exploiting idempotence) -/
 def applyButtons (initial : LightState m n) (buttons : Finset (Button m n)) : LightState m n :=
