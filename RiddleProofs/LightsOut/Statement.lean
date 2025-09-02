@@ -29,7 +29,7 @@ Turn all lights off by pressing buttons according to the rules.
 
 import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 
-
+section Statement
 
 variable {m n : ℕ} [NeZero m] [NeZero n]
 
@@ -93,14 +93,45 @@ def applySelection (initial : LightState m n) (selection : ButtonSelection m n) 
 def isSolvable (initial : LightState m n) : Prop :=
   ∃ selection : ButtonSelection m n, applySelection initial selection = allOff
 
+end Statement
+
 
 
 /-!
 ## Computational verification
 -/
 
-def applyButtons (initial : LightState m n) (buttons : Finset (Button m n)) : LightState m n :=
-  initial + buttons.sum effect
 
-def isSolvableCompute (initial : LightState m n) [DecidableEq (LightState m n)] : Bool :=
-  (Finset.univ.powerset.filter fun buttons => applyButtons initial buttons = allOff).Nonempty
+
+instance [Fintype (Fin m)] [Fintype (Fin n)] :
+    DecidablePred (isSolvable : LightState m n → Prop) := by
+  intro initial
+  unfold isSolvable
+  have : Fintype (ButtonSelection m n) := by
+    unfold ButtonSelection
+    infer_instance
+  apply Fintype.decidableExistsFintype
+
+
+
+section ButtonProperties
+
+theorem press_involution (button : Button m n) (state : LightState m n) :
+  press (press state button) button = state := by
+  funext i j
+  have h : effect button i j + effect button i j = 0 := by
+    rw [← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
+  calc press (press state button) button i j
+    = state i j + effect button i j + effect button i j := by
+        rw [press, press, Matrix.add_apply, Matrix.add_apply, add_assoc]
+    _ = state i j + (effect button i j + effect button i j) := by rw [add_assoc]
+    _ = state i j + 0 := by rw [h]
+    _ = state i j := add_zero _
+
+theorem press_commute (button₁ button₂ : Button m n) (state : LightState m n) :
+  press (press state button₁) button₂ = press (press state button₂) button₁ := by
+  funext i j
+  simp only [press, Matrix.add_apply]
+  ring
+
+end ButtonProperties

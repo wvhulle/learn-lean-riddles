@@ -27,7 +27,6 @@ section LinearAlgebraStructure
 def effectsLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
   Matrix.toLin' buttonMatrix
 
-
 theorem puzzle_solvable_iff_in_span (initial : LightState m n) :
   isSolvable initial ↔
   toVector initial ∈ Set.range effectsLinearMap := by
@@ -57,39 +56,3 @@ theorem puzzle_solvable_iff_in_span (initial : LightState m n) :
           rfl
 
 end LinearAlgebraStructure
-
-section ButtonProperties
-
-
-theorem press_involution (button : Button m n) (state : LightState m n) :
-  press (press state button) button = state := by
-  funext i j
-  have h : effect button i j + effect button i j = 0 := by
-    rw [← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
-  calc press (press state button) button i j
-    = state i j + effect button i j + effect button i j := by
-        rw [press, press, Matrix.add_apply, Matrix.add_apply, add_assoc]
-    _ = state i j + (effect button i j + effect button i j) := by rw [add_assoc]
-    _ = state i j + 0 := by rw [h]
-    _ = state i j := add_zero _
-
-theorem press_commute (button₁ button₂ : Button m n) (state : LightState m n) :
-  press (press state button₁) button₂ = press (press state button₂) button₁ := by
-  funext i j
-  simp only [press, Matrix.add_apply]
-  ring
-
-end ButtonProperties
-
-section Decidability
-
-instance [Fintype (Fin m)] [Fintype (Fin n)] :
-    DecidablePred (isSolvable : LightState m n → Prop) := by
-  intro initial
-  unfold isSolvable
-  have : Fintype (ButtonSelection m n) := by
-    unfold ButtonSelection
-    infer_instance
-  apply Fintype.decidableExistsFintype
-
-end Decidability

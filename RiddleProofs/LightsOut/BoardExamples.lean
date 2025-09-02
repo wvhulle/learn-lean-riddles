@@ -1,5 +1,9 @@
 import RiddleProofs.LightsOut.Statement
 
+def applyButtons (initial : LightState m n) (buttons : Finset (Button m n)) : LightState m n :=
+  initial + buttons.sum effect
+
+
 def buttonSet {m n : ℕ} (s : Finset (Button m n)) : ButtonSelection m n :=
   fun btn => if btn ∈ s then 1 else 0
 
