@@ -1,5 +1,4 @@
-import RiddleProofs.LightsOut.GroupTheory
 import RiddleProofs.LightsOut.Statement
 import RiddleProofs.LightsOut.Widget
-import RiddleProofs.LightsOut.LinearAlgebra
+import RiddleProofs.LightsOut.Solution
 import RiddleProofs.LightsOut.BoardExamples

@@ -20,7 +20,7 @@ def hardwired_solution : List Move := [
 ]
 
 
-theorem hardwired_solution_correct : validate_solution hardwired_solution = true := by decide
+theorem hardwired_solution_correct : validate_solution hardwired_solution := by decide
 
 
 /-

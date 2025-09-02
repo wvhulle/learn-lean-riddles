@@ -53,36 +53,22 @@ abbrev JealousHusbandsState := RiverCrossingState Person Person num_couples
 /-- Get the current bank location of a person in the given state. -/
 def Person.bank (p : Person) (s : JealousHusbandsState) : RiverBank :=
 match p with
-| .husband i => s.owner.get i
-| .wife i => s.possession.get i
+| .husband i => s.owner_bank.get i
+| .wife i => s.possession_bank.get i
 
 /-- Helper function to check if a wife is alone with another husband.
     Returns true if wife i is on the same bank as husband j, but husband i is not. -/
-def wife_alone_with_other_husband (s : JealousHusbandsState) (wife_i : Fin num_couples) (husband_j : Fin num_couples) : Bool :=
-  let wife_bank := s.possession[wife_i]!
-  let other_husband_bank := s.owner[husband_j]!
-  let husband_bank := s.owner[wife_i]!
-  wife_bank = other_husband_bank && husband_bank ≠ other_husband_bank
+def wife_safe (s : JealousHusbandsState) : Bool :=
+  decide (∀ (wife_couple_idx : Fin num_couples) (husband_couple_idx : Fin num_couples),
+  let wife_bank := s.possession_bank[wife_couple_idx]!
+  let other_husband_bank := s.owner_bank[husband_couple_idx]!
+  let husband_bank := s.owner_bank[wife_couple_idx]!
+  wife_bank = other_husband_bank -> husband_bank = other_husband_bank)
 
-/-- Checks if a state satisfies the jealousy constraint.-/
-def bank_safe (s : JealousHusbandsState) : Bool :=
-  decide (∀ (wife_i : Fin num_couples), ∀ (husband_j : Fin num_couples),
-    wife_alone_with_other_husband s wife_i husband_j → wife_i = husband_j)
 
-def state_safe_prop (s : JealousHusbandsState) : Prop := bank_safe s = true
 
-instance : DecidablePred state_safe_prop := by
-  unfold state_safe_prop
-  infer_instance
-
-def jealous_husbands_initial_state : JealousHusbandsState :=
-  initial_state Person Person num_couples
-
-def jealous_husbands_final_state : JealousHusbandsState :=
-  final_state Person Person num_couples
-
-theorem final_safe : bank_safe jealous_husbands_final_state = true := by
-  unfold bank_safe jealous_husbands_final_state
+theorem final_safe : wife_safe final_state  := by
+  unfold wife_safe
   decide
 
 instance {n: Nat} : OfNat (Fin num_couples) n := mkFinOfNat num_couples (by decide)

@@ -38,9 +38,8 @@ We provide two equivalent formulations of the birthday problem.
 -/
 
 /-- Combinatorial version: comparing cardinalities of injective vs all functions -/
-private theorem birthday :
-    2 * ‖Fin 23 ↪ Fin 365‖ < ‖Fin 23 → Fin 365‖ ∧ 2 * ‖Fin 22 ↪ Fin 365‖ > ‖Fin 22 → Fin 365‖ := by
-  sorry
+private axiom birthday :
+    2 * ‖Fin 23 ↪ Fin 365‖ < ‖Fin 23 → Fin 365‖ ∧ 2 * ‖Fin 22 ↪ Fin 365‖ > ‖Fin 22 → Fin 365‖
 
 /-!
 ## Measure Theory Setup
@@ -67,11 +66,9 @@ instance : IsProbabilityMeasure (ℙ : Measure (Fin n → Fin (m + 1))) :=
   uniformOn_isProbabilityMeasure Set.finite_univ Set.univ_nonempty
 
 /-- Helper lemma: probability equals cardinality ratio -/
-private theorem FinFin.measure_apply {s : Set <| Fin n → Fin m} :
-    ℙ s = |s.toFinite.toFinset| / ‖Fin n → Fin m‖ := by
-  sorry
+private axiom FinFin.measure_apply {s : Set <| Fin n → Fin m} :
+    ℙ s = |s.toFinite.toFinset| / ‖Fin n → Fin m‖
 
 /-- Probabilistic version: probability of all different birthdays < 1/2 -/
-private theorem birthday_measure :
-    ℙ ({f | Function.Injective f} : Set (Fin 23 → Fin 365)) < 1 / 2 := by
-  sorry
+private axiom birthday_measure :
+    ℙ ({f | Function.Injective f} : Set (Fin 23 → Fin 365)) < 1 / 2

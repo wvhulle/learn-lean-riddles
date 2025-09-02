@@ -2,9 +2,7 @@ import RiddleProofs.RiverCrossing.Husbands.Notation
 
 open RiverCrossing.Husbands
 
-instance : SafetyConstraint Person Person num_couples where
-  is_safe := bank_safe
-  is_safe_decidable := by infer_instance
+
 
 def opposite_bank : RiverBank → RiverBank
 | .left => .right
@@ -75,12 +73,12 @@ def simple_move_valid (m : Move) (s : JealousHusbandsState) : Bool :=
 def validate_solution (moves : List Move) : Bool :=
   let rec check_moves (s : JealousHusbandsState) (ms : List Move) : Bool :=
     match ms with
-    | [] => s == jealous_husbands_final_state
+    | [] => s == final_state
     | m :: rest =>
       if simple_move_valid m s then
         let new_state := apply_simple_move m s
-        if bank_safe new_state then
+        if wife_safe new_state then
           check_moves new_state rest
         else false
       else false
-  check_moves jealous_husbands_initial_state moves
+  check_moves initial_state moves

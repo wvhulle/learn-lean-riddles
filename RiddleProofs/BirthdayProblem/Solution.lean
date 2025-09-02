@@ -2,7 +2,12 @@ import RiddleProofs.BirthdayProblem.Statement
 
 /-!
 This file contains the proofs for the birthday problem theorems stated in Statement.lean.
+
+Based on the solution by Eric Rodriguez.
 -/
+
+
+
 
 /-- Combinatorial proof showing the crossover point is between 22 and 23 people -/
 theorem birthday :
