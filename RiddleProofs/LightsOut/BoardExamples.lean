@@ -1,5 +1,7 @@
 import RiddleProofs.LightsOut.Statement
 
+section TwoByTwo
+
 /-- A simple 2×2 puzzle: single light at top-left corner (0,0)
     Visual representation:
     ┌───┬───┐
@@ -29,21 +31,38 @@ theorem example2x2_press_00 :
     simp only [isAffected, areAdjacent]
     decide }
 
-/-- The correct solution for 2×2 single light: press buttons (0,0), (0,1), (1,0)
-    Why this works: Each button toggles overlapping regions, and the overlaps
-    cancel out, leaving only the original light toggled off -/
+theorem example2x2_solution :
+  applyButtons example2x2 ({(0, 0), (0, 1), (1, 0)} : Finset (Button 2 2)) = allOff := by
+  funext i j
+  fin_cases i <;> fin_cases j <;>
+  { simp only [applyButtons, effect, isAffected,
+    areAdjacent, example2x2, allOff]
+    simp
+    decide }
+
 theorem example2x2_solvable : isSolvable example2x2 := by
-  -- Solution: press (0,0), (0,1), (1,0)
   use fun btn => if btn ∈ ({(0, 0), (0, 1), (1, 0)} : Finset (Button 2 2)) then 1 else 0
   simp [applySelection, fromVector, buttonMatrix, toVector]
   funext i j
   fin_cases i <;> fin_cases j <;>
-  { simp only [example2x2, allOff, effect, isAffected,
-    areAdjacent]
+  { simp only [example2x2, allOff, effect, isAffected, areAdjacent]
     decide }
 
+end TwoByTwo
 
 
+section ThreeByThree
+
+/-- 3×3 cross pattern: lights on in middle row and column
+    Visual representation:
+    ┌───┬───┬───┐
+    │ ○ │ ● │ ○ │
+    ├───┼───┼───┤
+    │ ● │ ● │ ● │
+    ├───┼───┼───┤
+    │ ○ │ ● │ ○ │
+    └───┴───┴───┘
+-/
 def cross3x3 : LightState 3 3 :=
   Matrix.of fun i j => if i = 1 ∨ j = 1 then 1 else 0
 
@@ -56,23 +75,23 @@ theorem cross3x3_solvable : isSolvable cross3x3 := by
     decide }
 
 
-/-
+end ThreeByThree
+
+
+/-!
+## Example Solutions
+
+### 2×2 Examples
+- Single light at corner: Press 3 buttons in L-shape
+- Solution exploits symmetry and overlapping effects
+
+### 3×3 Examples  
+- Cross pattern: Press center button only
+- All lights on: Press all 4 corners
+- Corner solutions work due to non-overlapping effects
 
 ## Challenges
-
-- Can you write a brute-force function (in Lean) to search solutions?
-- Which start configurations are solvable?
-- Which start configurations are insolvable?
-
-
-Frontend:
-
-- Define a way to visualize steps, one at a time, while manually testing the puzzle.
-- Make cells in the widget clickable.
-
-Group theory:
-
-- Try to read and understand the lemmas used in `GroupTheory.lean`.
-- Try to compute a product of two matrices.
-
+- Implement brute-force solution finder
+- Characterize solvable vs unsolvable configurations
+- Explore larger grid patterns
 -/
