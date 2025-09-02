@@ -61,13 +61,13 @@ match p with
 def wife_alone_with_other_husband (s : JealousHusbandsState) (wife_i : Fin num_couples) (husband_j : Fin num_couples) : Bool :=
   let wife_bank := s.entities_type_b[wife_i]!
   let other_husband_bank := s.entities_type_a[husband_j]!
-  let own_husband_bank := s.entities_type_a[wife_i]!
-  wife_bank = other_husband_bank && own_husband_bank ≠ other_husband_bank
+  let husband_bank := s.entities_type_a[wife_i]!
+  wife_bank = other_husband_bank && husband_bank ≠ other_husband_bank
 
 /-- Checks if a state satisfies the jealousy constraint.-/
 def bank_safe (s : JealousHusbandsState) : Bool :=
   decide (∀ (wife_i : Fin num_couples), ∀ (husband_j : Fin num_couples),
-    wife_i = husband_j ∨ ¬wife_alone_with_other_husband s wife_i husband_j)
+    wife_alone_with_other_husband s wife_i husband_j → wife_i = husband_j)
 
 def state_safe_prop (s : JealousHusbandsState) : Prop := bank_safe s = true
 
