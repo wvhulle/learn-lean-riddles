@@ -16,32 +16,28 @@ deriving DecidableEq, Repr, Inhabited, BEq
 
 /-- Generic river crossing state with two types of entities -/
 structure RiverCrossingState (α β : Type) (n : Nat) where
-  boat : RiverBank
-  entities_a : Vector RiverBank n
-  entities_b : Vector RiverBank n
+  boat_bank : RiverBank
+  entities_type_a : Vector RiverBank n
+  entities_type_b : Vector RiverBank n
 deriving DecidableEq, Repr
 
-/-- Number of transfers needed for the standard 3-couple solution -/
-def n_transfers : Nat := 11
 
-/-- Number of states in the solution path -/
-def n_states : Nat := n_transfers + 1
 
 /-- Generic OfNat instance creator for Fin types -/
-def mkFinOfNat (n : Nat) (h : 0 < n) : OfNat (Fin n) k := 
+def mkFinOfNat (n : Nat) (h : 0 < n) : OfNat (Fin n) k :=
   ⟨⟨k % n, Nat.mod_lt k h⟩⟩
 
 /-- Create initial state with all entities on the left bank -/
 def initial_state (α β : Type) (n : Nat) : RiverCrossingState α β n :=
-  { boat := RiverBank.left,
-    entities_a := Vector.replicate n RiverBank.left,
-    entities_b := Vector.replicate n RiverBank.left }
+  { boat_bank := RiverBank.left,
+    entities_type_a := Vector.replicate n RiverBank.left,
+    entities_type_b := Vector.replicate n RiverBank.left }
 
 /-- Create final state with all entities on the right bank -/
 def final_state (α β : Type) (n : Nat) : RiverCrossingState α β n :=
-  { boat := RiverBank.right,
-    entities_a := Vector.replicate n RiverBank.right,
-    entities_b := Vector.replicate n RiverBank.right }
+  { boat_bank := RiverBank.right,
+    entities_type_a := Vector.replicate n RiverBank.right,
+    entities_type_b := Vector.replicate n RiverBank.right }
 
 /-- Abstract safety constraint for river crossing puzzles -/
 class SafetyConstraint (α β : Type) (n : Nat) where
@@ -57,14 +53,14 @@ namespace RiverCrossing
 /-- Generic state manipulation functions -/
 def move_entity_a (i : Fin n) (bank : RiverBank) (s : RiverCrossingState α β n) :
   RiverCrossingState α β n :=
-  { s with entities_a := s.entities_a.set i bank }
+  { s with entities_type_a := s.entities_type_a.set i bank }
 
 def move_entity_b (i : Fin n) (bank : RiverBank) (s : RiverCrossingState α β n) :
   RiverCrossingState α β n :=
-  { s with entities_b := s.entities_b.set i bank }
+  { s with entities_type_b := s.entities_type_b.set i bank }
 
 def move_boat (bank : RiverBank) (s : RiverCrossingState α β n) :
   RiverCrossingState α β n :=
-  { s with boat := bank }
+  { s with boat_bank := bank }
 
 end RiverCrossing

@@ -31,7 +31,7 @@ def update_if_present (p : Person) (people : Finset Person) (new_bank : RiverBan
 
 /-- Check if a person is on the same bank as the boat (boarding requirement). -/
 def person_on_boat_side (p : Person) (people : Finset Person) (s : JealousHusbandsState) : Bool :=
-  if p ∈ people then Person.bank p s == s.boat else true
+  if p ∈ people then Person.bank p s == s.boat_bank else true
 
 
 
@@ -41,7 +41,7 @@ Apply a move to a state, producing the new state after the move.
 2. All people in the move travel with the boat to the new bank
 3. People not in the move stay where they are -/
 def apply_simple_move (m : Move) (s : JealousHusbandsState) : JealousHusbandsState :=
-  let new_boat := opposite_bank s.boat
+  let new_boat := opposite_bank s.boat_bank
   let base_state := RiverCrossing.move_boat new_boat s
   let people := m.people_in_boat
   all_people.foldl (fun acc_state p => update_if_present p people new_boat acc_state)

@@ -53,15 +53,15 @@ abbrev JealousHusbandsState := RiverCrossingState Person Person num_couples
 /-- Get the current bank location of a person in the given state. -/
 def Person.bank (p : Person) (s : JealousHusbandsState) : RiverBank :=
 match p with
-| .husband i => s.entities_a.get i
-| .wife i => s.entities_b.get i
+| .husband i => s.entities_type_a.get i
+| .wife i => s.entities_type_b.get i
 
 /-- Helper function to check if a wife is alone with another husband.
     Returns true if wife i is on the same bank as husband j, but husband i is not. -/
 def wife_alone_with_other_husband (s : JealousHusbandsState) (wife_i : Fin num_couples) (husband_j : Fin num_couples) : Bool :=
-  let wife_bank := s.entities_b[wife_i]!
-  let other_husband_bank := s.entities_a[husband_j]!
-  let own_husband_bank := s.entities_a[wife_i]!
+  let wife_bank := s.entities_type_b[wife_i]!
+  let other_husband_bank := s.entities_type_a[husband_j]!
+  let own_husband_bank := s.entities_type_a[wife_i]!
   wife_bank = other_husband_bank && own_husband_bank ≠ other_husband_bank
 
 /-- Checks if a state satisfies the jealousy constraint.-/

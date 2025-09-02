@@ -37,7 +37,7 @@ def generate_couple_moves (direction : Direction) (couples : List (Fin num_coupl
 
 def generate_valid_moves (s : JealousHusbandsState) : List Move :=
   let couples : List (Fin num_couples) := [0, 1, 2]
-  let direction := if s.boat == RiverBank.left then Direction.toRight else Direction.toLeft
+  let direction := if s.boat_bank == RiverBank.left then Direction.toRight else Direction.toLeft
 
   let single_moves := generate_single_person_moves direction couples
   let pair_moves := generate_pair_moves direction couples

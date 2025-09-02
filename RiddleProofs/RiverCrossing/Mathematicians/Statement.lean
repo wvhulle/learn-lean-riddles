@@ -20,25 +20,19 @@ open RiverBank
 
 abbrev MathematicianState := RiverCrossingState Unit Unit num_mathematicians
 
--- Safety condition: no notebook is ever with another mathematician unless its owner is present
--- (i.e., notebook i cannot be with mathematician j unless mathematician i is also present, for i ≠ j)
-def no_notebook_left_behind (s : MathematicianState) : Prop :=
-  ∀ i j : Fin num_mathematicians, (i ≠ j) →
-    let mathematician_i_note_bank := s.entities_b[i]
-    let mathematician_j_bank := s.entities_a[j]
-    let mathematician_i_bank := s.entities_a[i]
-    mathematician_i_note_bank = mathematician_j_bank → mathematician_i_bank = mathematician_j_bank
 
--- Boolean version of the safety condition for decidable computations
 def notebook_safe (s : MathematicianState) : Bool :=
   let indices : List (Fin num_mathematicians) := List.finRange num_mathematicians
-  indices.all (fun i =>
-    indices.all (fun j =>
-      i = j ||
-      let mathematician_i_note_bank := s.entities_b[i]!
-      let mathematician_j_bank := s.entities_a[j]!
-      let mathematician_i_bank := s.entities_a[i]!
-      mathematician_i_note_bank ≠ mathematician_j_bank || mathematician_i_bank = mathematician_j_bank))
+  indices.all (fun owner =>
+    let notebook_bank := s.entities_type_b[owner]!
+    let owner_bank := s.entities_type_a[owner]!
+    -- If notebook is on boat, then owner must be on boat too
+    (notebook_bank = s.boat_bank → owner_bank = s.boat_bank) &&
+    -- If notebook is with another mathematician, then owner must be there too
+    indices.all (fun other =>
+      owner = other ||
+      let other_bank := s.entities_type_a[other]!
+      (notebook_bank = other_bank → owner_bank = other_bank)))
 
 -- SafetyConstraint instance for MathematicianState
 instance : SafetyConstraint Unit Unit num_mathematicians where
@@ -50,21 +44,17 @@ instance : SafetyConstraint Unit Unit num_mathematicians where
 
 Whether a property is decidable depends on how it is defined. If it is built from decidable operations and quantifies only over finite/enumerable types, Lean can often infer it (with infer_instance), but it cannot always do so automatically without being told to try.
  -/
-instance : DecidablePred no_notebook_left_behind := by
-  unfold no_notebook_left_behind
-  infer_instance
 
 -- Everyone and everything on the left bank
 def mathematicians_initial_state : MathematicianState :=
   initial_state Unit Unit num_mathematicians
 
--- Everyone and everything on the right bank  
+-- Everyone and everything on the right bank
 def mathematicians_final_state : MathematicianState :=
   final_state Unit Unit num_mathematicians
 
-theorem final_safe: no_notebook_left_behind mathematicians_final_state := by
-  unfold no_notebook_left_behind mathematicians_final_state final_state
-  intro i j ineqj
+theorem final_safe: notebook_safe mathematicians_final_state = true := by
+  unfold notebook_safe mathematicians_final_state final_state
   simp
 
 theorem fly_safe :

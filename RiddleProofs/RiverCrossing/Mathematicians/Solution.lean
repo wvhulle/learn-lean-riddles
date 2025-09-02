@@ -15,6 +15,12 @@ open RiverBank
 
 section Solution
 
+/-- Number of transfers needed for the standard 3-couple solution -/
+def n_transfers : Nat := 11
+
+/-- Number of states in the solution path -/
+def n_states : Nat := n_transfers + 1
+
 -- OfNat instance for Fin n_states
 instance {n: Nat} : OfNat (Fin n_states) n := mkFinOfNat n_states (by decide)
 
@@ -65,7 +71,7 @@ def intermediate_states_structural : Fin n_states → MathematicianState := (fun
 end StructuralRecursion
 
 /-
-## Well-founded recusion
+## Well-founded recursion
 
 Some types of recursion may lead to infinite loops. Well-founded recursion is a recursive closure with a proof that the recursive closure terminates.
 
@@ -90,8 +96,7 @@ example : intermediate_states 0 = mathematicians_initial_state := by
 example : intermediate_states ⟨n_states - 1, by decide⟩ = mathematicians_final_state := by
   decide
 
--- We implemented decidability for `no_notebook_left_behind`, so we can use `decide`
-theorem all_states_safe : ∀ i : Fin n_states, no_notebook_left_behind (intermediate_states  i) := by
+theorem all_states_safe : ∀ i : Fin n_states, notebook_safe (intermediate_states i) = true := by
   decide
 
 end RiverCrossing.Mathematicians
