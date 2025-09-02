@@ -25,9 +25,11 @@ def notebook_safe (s : MathematicianState) : Bool :=
   decide (∀ (owner : Fin num_mathematicians),
     let notebook_bank := s.entities_type_b[owner]!
     let owner_bank := s.entities_type_a[owner]!
-    -- Owner must be with their notebook, OR notebook must be alone (no other mathematician on same bank)
-    (notebook_bank = owner_bank) ∨ 
-    (∀ (other : Fin num_mathematicians), other ≠ owner → s.entities_type_a[other]! ≠ notebook_bank))
+    -- If notebook is on boat, then owner must be on boat too
+    (notebook_bank = s.boat_bank → owner_bank = s.boat_bank) ∧
+    -- Owner must be with their notebook, OR no other mathematician can access it
+    ((notebook_bank = owner_bank) ∨ 
+     (∀ (other : Fin num_mathematicians), other ≠ owner → s.entities_type_a[other]! ≠ notebook_bank)))
 
 -- SafetyConstraint instance for MathematicianState
 instance : SafetyConstraint Unit Unit num_mathematicians where
