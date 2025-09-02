@@ -31,21 +31,21 @@ In each step we will transfer a mathematician and a notebook across the river.
 
  -/
 
-open RiverCrossing (move_boat move_entity_a move_entity_b)
+open RiverCrossing (move_boat move_owner move_possession)
 
 def transfers : Vector (MathematicianState → MathematicianState) n_states :=
   Vector.ofFn (fun ⟨ k, _ ⟩  => match k with
-    | 0 => move_boat right ∘ move_entity_b 0 right ∘ move_entity_a 0 right
-    | 1 => move_boat left ∘ move_entity_b 0 left ∘ move_entity_a 0 left
-    | 2 => move_boat right ∘ move_entity_b 1 right ∘ move_entity_a 1 right
-    | 3 => move_boat right ∘ move_entity_b 0 right ∘ move_entity_a 0 right
-    | 4 => move_boat right ∘ move_entity_b 2 right ∘ move_entity_a 2 right
-    | 5 => move_boat left ∘ move_entity_b 0 left ∘ move_entity_a 0 left
-    | 6 => move_boat right ∘ move_entity_b 0 right ∘ move_entity_a 0 right
-    | 7 => move_boat left ∘ move_entity_b 1 left ∘ move_entity_a 1 left
-    | 8 => move_boat right ∘ move_entity_b 1 right ∘ move_entity_a 1 right
-    | 9 => move_boat left ∘ move_entity_b 0 left ∘ move_entity_a 0 left
-    | 10 => move_boat right ∘ move_entity_b 0 right ∘ move_entity_a 0 right
+    | 0 => move_boat right ∘ move_possession 0 right ∘ move_owner 0 right
+    | 1 => move_boat left ∘ move_possession 0 left ∘ move_owner 0 left
+    | 2 => move_boat right ∘ move_possession 1 right ∘ move_owner 1 right
+    | 3 => move_boat right ∘ move_possession 0 right ∘ move_owner 0 right
+    | 4 => move_boat right ∘ move_possession 2 right ∘ move_owner 2 right
+    | 5 => move_boat left ∘ move_possession 0 left ∘ move_owner 0 left
+    | 6 => move_boat right ∘ move_possession 0 right ∘ move_owner 0 right
+    | 7 => move_boat left ∘ move_possession 1 left ∘ move_owner 1 left
+    | 8 => move_boat right ∘ move_possession 1 right ∘ move_owner 1 right
+    | 9 => move_boat left ∘ move_possession 0 left ∘ move_owner 0 left
+    | 10 => move_boat right ∘ move_possession 0 right ∘ move_owner 0 right
     | _ => id)
 
 end Solution
