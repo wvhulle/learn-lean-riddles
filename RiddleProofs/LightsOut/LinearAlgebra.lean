@@ -5,12 +5,12 @@ variable {m n : ℕ}
 
 section BasicProperties
 
-lemma toVector_injective : Function.Injective (@toVector m n) := by
-  intros M N eq
+lemma matrix_to_vector_injective : Function.Injective (@toVector m n) := by
+  intros state1 state2 eq
   funext i j
   exact congr_fun eq ⟨i, j⟩
 
-lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
+lemma binary_add_cancel {a b : ZMod 2} : a + b = 0 ↔ a = b := by
   constructor
   · intro h
     calc a = a + 0 := by rw [add_zero]
@@ -24,13 +24,13 @@ end BasicProperties
 
 section LinearAlgebraStructure
 
-def buttonLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
+def effectsLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
   Matrix.toLin' buttonMatrix
 
 
-theorem solvable_iff_in_image (initial : LightState m n) :
+theorem puzzle_solvable_iff_in_span (initial : LightState m n) :
   isSolvable initial ↔
-  toVector initial ∈ Set.range buttonLinearMap := by
+  toVector initial ∈ Set.range effectsLinearMap := by
     calc isSolvable initial
       ↔ ∃ selection, applySelection initial selection = allOff := Iff.rfl
       _ ↔ ∃ selection, initial + fromVector (buttonMatrix.mulVec selection) = allOff := by
@@ -39,7 +39,7 @@ theorem solvable_iff_in_image (initial : LightState m n) :
             toVector allOff := by
           constructor
           · rintro ⟨selection, h⟩; use selection; rw [h]
-          · rintro ⟨selection, h⟩; use selection; exact toVector_injective h
+          · rintro ⟨selection, h⟩; use selection; exact matrix_to_vector_injective h
       _ ↔ ∃ selection, toVector initial + buttonMatrix.mulVec selection = 0 := by
           simp only [fromVector]
           constructor
@@ -48,12 +48,12 @@ theorem solvable_iff_in_image (initial : LightState m n) :
       _ ↔ ∃ selection, buttonMatrix.mulVec selection = toVector initial := by
           constructor
           · rintro ⟨selection, h⟩; use selection; funext pos
-            exact add_eq_zero_iff_eq_ZMod2.mp (by rw [add_comm]; exact congr_fun h pos)
+            exact binary_add_cancel.mp (by rw [add_comm]; exact congr_fun h pos)
           · rintro ⟨selection, h⟩; use selection; funext pos
-            rw [← h]; exact add_eq_zero_iff_eq_ZMod2.mpr rfl
+            rw [← h]; exact binary_add_cancel.mpr rfl
       _ ↔ toVector initial ∈ Set.range (buttonMatrix.mulVec) := Set.mem_range.symm
-      _ ↔ toVector initial ∈ Set.range buttonLinearMap := by
-          simp only [buttonLinearMap]
+      _ ↔ toVector initial ∈ Set.range effectsLinearMap := by
+          simp only [effectsLinearMap]
           rfl
 
 end LinearAlgebraStructure
@@ -61,7 +61,7 @@ end LinearAlgebraStructure
 section ButtonProperties
 
 
-theorem button_self_inverse (button : Button m n) (state : LightState m n) :
+theorem press_involution (button : Button m n) (state : LightState m n) :
   press (press state button) button = state := by
   funext i j
   have h : effect button i j + effect button i j = 0 := by
@@ -73,7 +73,7 @@ theorem button_self_inverse (button : Button m n) (state : LightState m n) :
     _ = state i j + 0 := by rw [h]
     _ = state i j := add_zero _
 
-theorem button_press_comm (button₁ button₂ : Button m n) (state : LightState m n) :
+theorem press_commute (button₁ button₂ : Button m n) (state : LightState m n) :
   press (press state button₁) button₂ = press (press state button₂) button₁ := by
   funext i j
   simp only [press, Matrix.add_apply]

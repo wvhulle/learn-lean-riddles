@@ -34,8 +34,8 @@ def buttonVectorIso : ButtonSelection m n ≃ₗ[ZMod 2] (Button m n → ZMod 2)
 
 theorem solvability_characterization [NeZero m] [NeZero n] (initial : LightState m n) :
   isSolvable initial ↔
-  toVector initial ∈ Set.range (buttonLinearMap : (Button m n → ZMod 2) →ₗ[ZMod 2] (Button m n → ZMod 2)) :=
-  solvable_iff_in_image initial
+  toVector initial ∈ Set.range (effectsLinearMap : (Button m n → ZMod 2) →ₗ[ZMod 2] (Button m n → ZMod 2)) :=
+  puzzle_solvable_iff_in_span initial
 
 @[ext]
 theorem ButtonSelection.ext {sel1 sel2 : ButtonSelection m n}
@@ -131,9 +131,9 @@ theorem button_effect_as_matrix_vector (btn : Button m n) :
   - The kernel element by itself applied to the all-off state keeps it all-off
 -/
 theorem kernel_characterization (sel : ButtonSelection m n) :
-  sel ∈ LinearMap.ker buttonLinearMap ↔
+  sel ∈ LinearMap.ker effectsLinearMap ↔
   applySelection allOff sel = allOff := by
-  simp only [LinearMap.mem_ker, buttonLinearMap, applySelection]
+  simp only [LinearMap.mem_ker, effectsLinearMap, applySelection]
   constructor
   · intro h
     -- If buttonLinearMap sel = 0, then applying sel to allOff gives allOff
