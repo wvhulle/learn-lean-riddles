@@ -55,7 +55,7 @@ partial def solve_with_bfs (max_depth : Nat := 15) : Option (List Move) :=
     isGoal := is_goal_state
     generateMoves := generate_valid_moves
     applyMove := apply_simple_move
-    isValidState := bank_safe
+    isValidState := wife_safe
     maxDepth := max_depth
   }
 

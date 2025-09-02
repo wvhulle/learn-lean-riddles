@@ -77,7 +77,7 @@ def validate_solution (moves : List Move) : Bool :=
     | m :: rest =>
       if simple_move_valid m s then
         let new_state := apply_simple_move m s
-        if bank_safe new_state then
+        if wife_safe new_state then
           check_moves new_state rest
         else false
       else false

@@ -58,27 +58,17 @@ match p with
 
 /-- Helper function to check if a wife is alone with another husband.
     Returns true if wife i is on the same bank as husband j, but husband i is not. -/
-def wife_alone_with_other_husband (s : JealousHusbandsState) (wife_i : Fin num_couples) (husband_j : Fin num_couples) : Bool :=
-  let wife_bank := s.possession_bank[wife_i]!
-  let other_husband_bank := s.owner_bank[husband_j]!
-  let husband_bank := s.owner_bank[wife_i]!
-  wife_bank = other_husband_bank && husband_bank ≠ other_husband_bank
-
-/-- Checks if a state satisfies the jealousy constraint.-/
-def bank_safe (s : JealousHusbandsState) : Bool :=
-  decide (∀ (wife_i : Fin num_couples), ∀ (husband_j : Fin num_couples),
-    wife_alone_with_other_husband s wife_i husband_j → wife_i = husband_j)
-
-def state_safe_prop (s : JealousHusbandsState) : Prop := bank_safe s = true
-
-instance : DecidablePred state_safe_prop := by
-  unfold state_safe_prop
-  infer_instance
+def wife_safe (s : JealousHusbandsState) : Bool :=
+  decide (∀ (wife_couple_idx : Fin num_couples) (husband_couple_idx : Fin num_couples),
+  let wife_bank := s.possession_bank[wife_couple_idx]!
+  let other_husband_bank := s.owner_bank[husband_couple_idx]!
+  let husband_bank := s.owner_bank[wife_couple_idx]!
+  wife_bank = other_husband_bank -> husband_bank = other_husband_bank)
 
 
 
-theorem final_safe : bank_safe final_state  := by
-  unfold bank_safe
+theorem final_safe : wife_safe final_state  := by
+  unfold wife_safe
   decide
 
 instance {n: Nat} : OfNat (Fin num_couples) n := mkFinOfNat num_couples (by decide)
