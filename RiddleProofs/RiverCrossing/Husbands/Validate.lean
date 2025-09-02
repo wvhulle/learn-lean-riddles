@@ -13,8 +13,8 @@ def opposite_bank : RiverBank → RiverBank
 def update_person_state (p : Person) (new_bank : RiverBank)
     (s : JealousHusbandsState) : JealousHusbandsState :=
   match p with
-  | .husband i => RiverCrossing.move_entity_a i new_bank s
-  | .wife i => RiverCrossing.move_entity_b i new_bank s
+  | .husband i => RiverCrossing.move_owner i new_bank s
+  | .wife i => RiverCrossing.move_possession i new_bank s
 
 /-- List of all people in the puzzle for iteration purposes. -/
 def all_people : List Person := [
