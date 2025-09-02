@@ -1,14 +1,14 @@
 namespace RiverCrossing
 
-class MoveState (State Move : Type) where
+class StateTransition (State Move : Type) where
   initial : State
   generateMoves : State → List Move
   applyMove : Move → State → State
 
-class GoalGraph (State Move : Type) extends MoveState State Move where
+class GoalOrientedGraph (State Move : Type) extends StateTransition State Move where
   isGoal : State → Bool
 
-class SearchProblem (State Move : Type) extends GoalGraph State Move where
+class ConstrainedSearch (State Move : Type) extends GoalOrientedGraph State Move where
   isValid : State → Bool := fun _ => true
 
 structure SearchParams where
@@ -16,53 +16,53 @@ structure SearchParams where
   deriving Repr
 
 
-def expandNeighbors {State Move : Type} [MoveState State Move]
-    (state : State) (path : List Move) : List (State × List Move) :=
-  MoveState.generateMoves state |>.map fun move =>
-    (MoveState.applyMove move state, move :: path)
+def expandNeighbors {State Move : Type} [StateTransition State Move]
+    (currentState : State) (currentPath : List Move) : List (State × List Move) :=
+  StateTransition.generateMoves currentState |>.map fun move =>
+    (StateTransition.applyMove move currentState, move :: currentPath)
 
-def expandFrontier {State Move : Type} [BEq State] [inst : SearchProblem State Move]
-    (state : State) (path : List Move) (visited : List State) : List (State × List Move) :=
-  expandNeighbors state path |>.filter fun (newState, _) =>
-    inst.isValid newState && !visited.contains newState
+def expandFrontier {State Move : Type} [BEq State] [problem : ConstrainedSearch State Move]
+    (currentState : State) (currentPath : List Move) (visitedStates : List State) : List (State × List Move) :=
+  expandNeighbors currentState currentPath |>.filter fun (newState, _) =>
+    problem.isValid newState && !visitedStates.contains newState
 
 abbrev SearchNode (State Move : Type) := State × List Move
 
 def shouldProcess {State Move : Type} [BEq State]
-    (state : State) (path : List Move) (params : SearchParams) (visited : List State) : Bool :=
-  path.length ≤ params.maxDepth && !visited.contains state
+    (currentState : State) (currentPath : List Move) (params : SearchParams) (visitedStates : List State) : Bool :=
+  currentPath.length ≤ params.maxDepth && !visitedStates.contains currentState
 
 
 
-partial def bfs {State Move : Type} [BEq State] [inst : SearchProblem State Move]
+partial def bfs {State Move : Type} [BEq State] [problem : ConstrainedSearch State Move]
     (params : SearchParams := {}) : Option (List Move) :=
   let rec search : List (SearchNode State Move) → List State → Option (List Move)
     | [], _ => none
-    | (state, path) :: rest, visited =>
-      if inst.isGoal state then
-        some path.reverse
-      else if shouldProcess state path params visited then
-        let newVisited := state :: visited
-        let newNodes := expandFrontier state path newVisited
-        search (rest ++ newNodes) newVisited
+    | (currentState, currentPath) :: remainingQueue, visitedStates =>
+      if problem.isGoal currentState then
+        some currentPath.reverse
+      else if shouldProcess currentState currentPath params visitedStates then
+        let newVisited := currentState :: visitedStates
+        let newNodes := expandFrontier currentState currentPath newVisited
+        search (remainingQueue ++ newNodes) newVisited
       else
-        search rest visited
+        search remainingQueue visitedStates
 
-  search [(inst.initial, [])] []
+  search [(problem.initial, [])] []
 
-structure GraphConfig (State Move : Type) where
+structure StateTransitionConfig (State Move : Type) where
   initialState : State
   generateMoves : State → List Move
   applyMove : Move → State → State
 
-structure GoalGraphConfig (State Move : Type) extends GraphConfig State Move where
+structure GoalOrientedConfig (State Move : Type) extends StateTransitionConfig State Move where
   isGoal : State → Bool
 
-structure SearchConfig (State Move : Type) extends GoalGraphConfig State Move where
+structure ConstrainedSearchConfig (State Move : Type) extends GoalOrientedConfig State Move where
   isValidState : State → Bool
   maxDepth : Nat := 15
 
-instance {State Move : Type} [BEq State] : Coe (SearchConfig State Move) (SearchProblem State Move) where
+instance {State Move : Type} [BEq State] : Coe (ConstrainedSearchConfig State Move) (ConstrainedSearch State Move) where
   coe config := {
     initial := config.initialState
     generateMoves := config.generateMoves
@@ -72,29 +72,10 @@ instance {State Move : Type} [BEq State] : Coe (SearchConfig State Move) (Search
   }
 
 def genericBFS {State Move : Type} [BEq State]
-    (config : SearchConfig State Move) : Option (List Move) :=
-  letI inst : SearchProblem State Move := config
-  @bfs State Move _ inst ⟨config.maxDepth⟩
+    (config : ConstrainedSearchConfig State Move) : Option (List Move) :=
+  let problem : ConstrainedSearch State Move := config
+  @bfs State Move _ problem ⟨config.maxDepth⟩
 
-def generic_bfs := @genericBFS
 
-def solve {State Move : Type} [BEq State] [inst : SearchProblem State Move]
-    (params : SearchParams := {}) : Option (List Move) :=
-  @bfs State Move _ inst params
-
-partial def findPathOfLength {State Move : Type} [BEq State] [inst : MoveState State Move]
-    (targetLength : Nat) : Option (List Move) :=
-  let rec search : List (State × List Move) → List State → Option (List Move)
-    | [], _ => none
-    | (state, path) :: rest, visited =>
-      if path.length == targetLength then
-        some path.reverse
-      else if path.length > targetLength || visited.contains state then
-        search rest visited
-      else
-        let newVisited := state :: visited
-        let newNodes := expandNeighbors state path
-        search (rest ++ newNodes.filter (fun (s, _) => !newVisited.contains s)) newVisited
-  search [(inst.initial, [])] []
 
 end RiverCrossing
