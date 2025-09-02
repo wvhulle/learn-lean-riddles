@@ -1,14 +1,14 @@
 namespace RiverCrossing
 
-class Graph (State Move : Type) [BEq State] where
+class MoveState (State Move : Type) where
   initial : State
   generateMoves : State → List Move
   applyMove : Move → State → State
 
-class GoalGraph (State Move : Type) [BEq State] extends Graph State Move where
+class GoalGraph (State Move : Type) extends MoveState State Move where
   isGoal : State → Bool
 
-class SearchProblem (State Move : Type) [BEq State] extends GoalGraph State Move where
+class SearchProblem (State Move : Type) extends GoalGraph State Move where
   isValid : State → Bool := fun _ => true
 
 structure SearchParams where
@@ -16,10 +16,10 @@ structure SearchParams where
   deriving Repr
 
 
-def expandNeighbors {State Move : Type} [BEq State] [Graph State Move]
+def expandNeighbors {State Move : Type} [MoveState State Move]
     (state : State) (path : List Move) : List (State × List Move) :=
-  Graph.generateMoves state |>.map fun move =>
-    (Graph.applyMove move state, move :: path)
+  MoveState.generateMoves state |>.map fun move =>
+    (MoveState.applyMove move state, move :: path)
 
 def expandFrontier {State Move : Type} [BEq State] [inst : SearchProblem State Move]
     (state : State) (path : List Move) (visited : List State) : List (State × List Move) :=
@@ -59,28 +59,21 @@ structure GoalGraphConfig (State Move : Type) extends GraphConfig State Move whe
   isGoal : State → Bool
 
 structure SearchConfig (State Move : Type) extends GoalGraphConfig State Move where
-  isValidState : State → Bool := fun _ => true
+  isValidState : State → Bool
   maxDepth : Nat := 15
 
-def GraphConfig.toInstance {State Move : Type} [BEq State]
-    (config : GraphConfig State Move) : Graph State Move :=
-  { initial := config.initialState
+instance {State Move : Type} [BEq State] : Coe (SearchConfig State Move) (SearchProblem State Move) where
+  coe config := {
+    initial := config.initialState
     generateMoves := config.generateMoves
-    applyMove := config.applyMove }
-
-def GoalGraphConfig.toInstance {State Move : Type} [BEq State]
-    (config : GoalGraphConfig State Move) : GoalGraph State Move :=
-  { toGraph := config.toGraphConfig.toInstance
-    isGoal := config.isGoal }
-
-def SearchConfig.toInstance {State Move : Type} [BEq State]
-    (config : SearchConfig State Move) : SearchProblem State Move :=
-  { toGoalGraph := config.toGoalGraphConfig.toInstance
-    isValid := config.isValidState }
+    applyMove := config.applyMove
+    isGoal := config.isGoal
+    isValid := config.isValidState
+  }
 
 def genericBFS {State Move : Type} [BEq State]
     (config : SearchConfig State Move) : Option (List Move) :=
-  letI inst : SearchProblem State Move := config.toInstance
+  letI inst : SearchProblem State Move := config
   @bfs State Move _ inst ⟨config.maxDepth⟩
 
 def generic_bfs := @genericBFS
@@ -89,7 +82,7 @@ def solve {State Move : Type} [BEq State] [inst : SearchProblem State Move]
     (params : SearchParams := {}) : Option (List Move) :=
   @bfs State Move _ inst params
 
-partial def findPathOfLength {State Move : Type} [BEq State] [inst : Graph State Move]
+partial def findPathOfLength {State Move : Type} [BEq State] [inst : MoveState State Move]
     (targetLength : Nat) : Option (List Move) :=
   let rec search : List (State × List Move) → List State → Option (List Move)
     | [], _ => none
