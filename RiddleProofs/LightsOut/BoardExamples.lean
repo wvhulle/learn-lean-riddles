@@ -69,16 +69,7 @@ end ThreeByThree
 
 
 /-!
-## Example Solutions
 
-### 2×2 Examples
-- Single light at corner: Press 3 buttons in L-shape
-- Solution exploits symmetry and overlapping effects
-
-### 3×3 Examples  
-- Cross pattern: Press center button only
-- All lights on: Press all 4 corners
-- Corner solutions work due to non-overlapping effects
 
 ## Challenges
 - Implement brute-force solution finder

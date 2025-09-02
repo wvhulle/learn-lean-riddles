@@ -1,27 +1,14 @@
 import Mathlib.LinearAlgebra.Matrix.ToLin
 import RiddleProofs.LightsOut.Statement
 
-
-instance [Fintype (Fin m)] [Fintype (Fin n)] :
-    DecidablePred (isSolvable : LightState m n → Prop) := by
-  intro initial
-  unfold isSolvable
-  have : Fintype (ButtonSelection m n) := by
-    unfold ButtonSelection
-    infer_instance
-  apply Fintype.decidableExistsFintype
-
-
 variable {m n : ℕ}
+
+section BasicProperties
 
 lemma toVector_injective : Function.Injective (@toVector m n) := by
   intros M N eq
   funext i j
   exact congr_fun eq ⟨i, j⟩
-
-/-- Linear map induced by button matrix -/
-def buttonLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
-  Matrix.toLin' buttonMatrix
 
 lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
   constructor
@@ -33,8 +20,14 @@ lemma add_eq_zero_iff_eq_ZMod2 {a b : ZMod 2} : a + b = 0 ↔ a = b := by
          _ = b := by rw [zero_add]
   · intro h; rw [h, ← two_mul, (by decide : (2 : ZMod 2) = 0), zero_mul]
 
+end BasicProperties
 
-/-- Solvability criterion: initial state in button linear map image -/
+section LinearAlgebraStructure
+
+def buttonLinearMap : ((Fin m × Fin n) → ZMod 2) →ₗ[ZMod 2] ((Fin m × Fin n) → ZMod 2) :=
+  Matrix.toLin' buttonMatrix
+
+
 theorem solvable_iff_in_image (initial : LightState m n) :
   isSolvable initial ↔
   toVector initial ∈ Set.range buttonLinearMap := by
@@ -63,8 +56,11 @@ theorem solvable_iff_in_image (initial : LightState m n) :
           simp only [buttonLinearMap]
           rfl
 
+end LinearAlgebraStructure
 
-/-- Involution property: press^2 = id -/
+section ButtonProperties
+
+
 theorem button_self_inverse (button : Button m n) (state : LightState m n) :
   press (press state button) button = state := by
   funext i j
@@ -77,13 +73,23 @@ theorem button_self_inverse (button : Button m n) (state : LightState m n) :
     _ = state i j + 0 := by rw [h]
     _ = state i j := add_zero _
 
-/-- Commutativity: button group is abelian -/
 theorem button_press_comm (button₁ button₂ : Button m n) (state : LightState m n) :
   press (press state button₁) button₂ = press (press state button₂) button₁ := by
   funext i j
-  calc press (press state button₁) button₂ i j
-    = state i j + effect button₁ i j + effect button₂ i j := by
-        rw [press, press, Matrix.add_apply, Matrix.add_apply, add_assoc]
-    _ = state i j + effect button₂ i j + effect button₁ i j := by ring
-    _ = press (press state button₂) button₁ i j := by
-        rw [press, press, Matrix.add_apply, Matrix.add_apply, add_assoc]
+  simp only [press, Matrix.add_apply]
+  ring
+
+end ButtonProperties
+
+section Decidability
+
+instance [Fintype (Fin m)] [Fintype (Fin n)] :
+    DecidablePred (isSolvable : LightState m n → Prop) := by
+  intro initial
+  unfold isSolvable
+  have : Fintype (ButtonSelection m n) := by
+    unfold ButtonSelection
+    infer_instance
+  apply Fintype.decidableExistsFintype
+
+end Decidability
