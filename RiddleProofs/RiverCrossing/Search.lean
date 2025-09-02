@@ -16,32 +16,35 @@ structure SearchParams where
   deriving Repr
 
 
-def expandNeighbors {State Move : Type} [StateTransition State Move]
+@[inline]
+def expandNeighbors {State Move : Type} [g : StateTransition State Move]
     (currentState : State) (currentPath : List Move) : List (State × List Move) :=
-  StateTransition.generateMoves currentState |>.map fun move =>
-    (StateTransition.applyMove move currentState, move :: currentPath)
+  g.generateMoves currentState |>.map fun move =>
+    (g.applyMove move currentState, move :: currentPath)
 
+@[inline]
 def expandFrontier {State Move : Type} [BEq State] [problem : ConstrainedSearch State Move]
     (currentState : State) (currentPath : List Move) (visitedStates : List State) : List (State × List Move) :=
-  expandNeighbors currentState currentPath |>.filter fun (newState, _) =>
-    problem.isValid newState && !visitedStates.contains newState
+  expandNeighbors currentState currentPath |>.filter (fun (newState, _) =>
+    problem.isValid newState && !visitedStates.contains newState)
 
 abbrev SearchNode (State Move : Type) := State × List Move
 
-def shouldProcess {State Move : Type} [BEq State]
+@[inline]
+def withinBounds {State Move : Type} [BEq State]
     (currentState : State) (currentPath : List Move) (params : SearchParams) (visitedStates : List State) : Bool :=
   currentPath.length ≤ params.maxDepth && !visitedStates.contains currentState
 
 
 
-partial def bfs {State Move : Type} [BEq State] [problem : ConstrainedSearch State Move]
+partial def bfs {State Move} [BEq State] [problem : ConstrainedSearch State Move]
     (params : SearchParams := {}) : Option (List Move) :=
   let rec search : List (SearchNode State Move) → List State → Option (List Move)
     | [], _ => none
     | (currentState, currentPath) :: remainingQueue, visitedStates =>
       if problem.isGoal currentState then
         some currentPath.reverse
-      else if shouldProcess currentState currentPath params visitedStates then
+      else if withinBounds currentState currentPath params visitedStates then
         let newVisited := currentState :: visitedStates
         let newNodes := expandFrontier currentState currentPath newVisited
         search (remainingQueue ++ newNodes) newVisited
@@ -71,10 +74,9 @@ instance {State Move : Type} [BEq State] : Coe (ConstrainedSearchConfig State Mo
     isValid := config.isValidState
   }
 
-def genericBFS {State Move : Type} [BEq State]
+def genericBFS {State Move} [BEq State]
     (config : ConstrainedSearchConfig State Move) : Option (List Move) :=
-  let problem : ConstrainedSearch State Move := config
-  @bfs State Move _ problem ⟨config.maxDepth⟩
+  @bfs State Move _ (config : ConstrainedSearch State Move) ⟨config.maxDepth⟩
 
 
 
