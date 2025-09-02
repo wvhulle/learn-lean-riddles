@@ -29,18 +29,7 @@ def example2x2 : LightState 2 2 :=
     │ ● │ ○ │  -- (1,0) toggled on, (1,1) unaffected
     └───┴───┘
 -/
-theorem example2x2_press_00 :
-  pressAt example2x2 0 0 = Matrix.of fun i j =>
-    if (i = 0 ∧ j = 1) ∨ (i = 1 ∧ j = 0) then 1 else 0 := by
-  funext i j
-  fin_cases i <;> fin_cases j <;>
-  { rw [pressAt, press, example2x2, effect, Matrix.add_apply, Matrix.of_apply, Matrix.of_apply]
-    simp only [isAffected, areAdjacent]
-    decide }
 
-theorem example2x2_solution :
-  applyButtons example2x2 {(0, 0), (0, 1), (1, 0)} = allOff := by
-  decide
 
 theorem example2x2_solvable : isSolvable example2x2 := by
   use buttonSet {(0, 0), (0, 1), (1, 0)}

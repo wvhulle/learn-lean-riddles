@@ -16,21 +16,17 @@ def stateCell (value : ZMod 2) : ProofWidgets.Html :=
   </td>
 
 
-def stateToHtml {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) : ProofWidgets.Html :=
-  let rows := (List.range m).map fun i =>
-    if h1 : i < m then
-      let cells := (List.range n).map fun j =>
-        if h2 : j < n then
-          let cellValue := state ⟨i, h1⟩ ⟨j, h2⟩;
-          stateCell cellValue
-        else
-          <td></td>;
-      <tr>
-        {...cells.toArray}
-      </tr>
-    else
-      <tr></tr>;
+def generateRowCells {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) (i : Fin m) : Array ProofWidgets.Html :=
+  ((List.finRange n).map fun j =>
+    stateCell (state i j)).toArray
 
+def generateTableRow {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) (i : Fin m) : ProofWidgets.Html :=
+  let cells := generateRowCells state i;
+  <tr>
+    {...cells}
+  </tr>
+
+def wrapInGameBoard (rows : List ProofWidgets.Html) : ProofWidgets.Html :=
   <div style={json% {
     display: "inline-block",
     border: "2px solid black",
@@ -42,6 +38,10 @@ def stateToHtml {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) : Pro
       {...rows.toArray}
     </table>
   </div>
+
+def stateToHtml {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) : ProofWidgets.Html :=
+  let rows := (List.finRange m).map (generateTableRow state);
+  wrapInGameBoard rows
 
 
 def generateStateSequence {m n : ℕ} [NeZero m] [NeZero n] (initial : LightState m n)
