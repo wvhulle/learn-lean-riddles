@@ -17,10 +17,9 @@ deriving DecidableEq, Repr, Inhabited, BEq
 /-- Generic river crossing state with two types of entities -/
 structure RiverCrossingState (α β : Type) (n : Nat) where
   boat_bank : RiverBank
-  owner : Vector RiverBank n
-  possession : Vector RiverBank n
+  owner_bank : Vector RiverBank n
+  possession_bank : Vector RiverBank n
 deriving DecidableEq, Repr
-
 
 
 /-- Generic OfNat instance creator for Fin types -/
@@ -28,16 +27,16 @@ def mkFinOfNat (n : Nat) (h : 0 < n) : OfNat (Fin n) k :=
   ⟨⟨k % n, Nat.mod_lt k h⟩⟩
 
 /-- Create initial state with all entities on the left bank -/
-def initial_state (α β : Type) (n : Nat) : RiverCrossingState α β n :=
+abbrev initial_state {α β : Type} {n : Nat} : RiverCrossingState α β n :=
   { boat_bank := RiverBank.left,
-    owner := Vector.replicate n RiverBank.left,
-    possession := Vector.replicate n RiverBank.left }
+    owner_bank := Vector.replicate n RiverBank.left,
+    possession_bank := Vector.replicate n RiverBank.left }
 
 /-- Create final state with all entities on the right bank -/
-def final_state (α β : Type) (n : Nat) : RiverCrossingState α β n :=
+abbrev final_state {α β : Type} {n : Nat} : RiverCrossingState α β n :=
   { boat_bank := RiverBank.right,
-    owner := Vector.replicate n RiverBank.right,
-    possession := Vector.replicate n RiverBank.right }
+    owner_bank := Vector.replicate n RiverBank.right,
+    possession_bank := Vector.replicate n RiverBank.right }
 
 /-- Abstract safety constraint for river crossing puzzles -/
 class SafetyConstraint (α β : Type) (n : Nat) where
@@ -48,16 +47,23 @@ class SafetyConstraint (α β : Type) (n : Nat) where
   is_safe_decidable : DecidablePred (fun s => is_safe s = true)
 
 
+
+/-
+## Decidability
+
+Whether a property is decidable depends on how it is defined. If it is built from decidable operations and quantifies only over finite/enumerable types, Lean can often infer it (with infer_instance), but it cannot always do so automatically without being told to try.
+ -/
+
 namespace RiverCrossing
 
 /-- Generic state manipulation functions -/
 def move_owner (i : Fin n) (bank : RiverBank) (s : RiverCrossingState α β n) :
   RiverCrossingState α β n :=
-  { s with owner := s.owner.set i bank }
+  { s with owner_bank := s.owner_bank.set i bank }
 
 def move_possession (i : Fin n) (bank : RiverBank) (s : RiverCrossingState α β n) :
   RiverCrossingState α β n :=
-  { s with possession := s.possession.set i bank }
+  { s with possession_bank := s.possession_bank.set i bank }
 
 def move_boat (bank : RiverBank) (s : RiverCrossingState α β n) :
   RiverCrossingState α β n :=

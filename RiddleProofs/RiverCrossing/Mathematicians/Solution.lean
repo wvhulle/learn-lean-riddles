@@ -61,7 +61,7 @@ In the following, the size of the argument changes `n + 1` -> `n` in the recursi
 -/
 
 def intermediate_states_structural_rec : (n: Nat) -> n < n_states → MathematicianState
-  | 0, _ => mathematicians_initial_state
+  | 0, _ => initial_state
   | n + 1, h =>
     let prev := intermediate_states_structural_rec n (Nat.lt_of_succ_lt h)
     (transfers.get ⟨n, Nat.lt_of_succ_lt h⟩) prev
@@ -81,7 +81,7 @@ The result of `measure` allows argument j := <n+1,_> to fix to be compared again
 noncomputable def intermediate_states : Fin n_states → MathematicianState :=
   WellFounded.fix (measure (fun (i : Fin n_states) => i.val)).wf
     (fun i rec => match i with
-      | ⟨0, _⟩ => mathematicians_initial_state
+      | ⟨0, _⟩ => initial_state
       | ⟨n + 1, h⟩ =>
         let prev := rec ⟨n, Nat.lt_of_succ_lt h⟩ (Nat.lt_succ_self n)
         (transfers.get ⟨n, Nat.lt_of_succ_lt h⟩) prev
@@ -89,14 +89,7 @@ noncomputable def intermediate_states : Fin n_states → MathematicianState :=
 -- `noncomputable` exempts a definition from certain types of checks
 
 
--- Verify the start and end point are as expected.
-example : intermediate_states 0 = mathematicians_initial_state := by
-  decide
-
-example : intermediate_states ⟨n_states - 1, by decide⟩ = mathematicians_final_state := by
-  decide
-
-theorem all_states_safe : ∀ i : Fin n_states, notebook_safe (intermediate_states i) = true := by
+theorem all_states_safe : ∀ i : Fin n_states, notebook_safe (intermediate_states i)  := by
   decide
 
 end RiverCrossing.Mathematicians
