@@ -41,15 +41,12 @@ def stateToHtml {m n : ℕ} [NeZero m] [NeZero n] (state : LightState m n) : Pro
   </div>
 
 
-def showSequence : ProofWidgets.Html :=
-  let s0 := cross3x3;
-  let coordinates := #[
-    (0, 0), (0, 2), (2, 0), (2, 2)
-  ];
+def showSequence {m n : ℕ} [NeZero m] [NeZero n] (initial : LightState m n) 
+    (coordinates : Array (Fin m × Fin n)) (title : String := "Button Sequence") : ProofWidgets.Html :=
   let states := coordinates.foldl (fun acc (i, j) =>
     let lastState := acc[acc.size - 1]!;
     let newState := press lastState (i, j);
-    acc.push newState) #[s0];
+    acc.push newState) #[initial];
 
   let elements := (states.toList.zipIdx.map (fun (s, idx) =>
     <div style={json% {textAlign: "center", display: "inline-block"}}>
@@ -62,7 +59,7 @@ def showSequence : ProofWidgets.Html :=
   )).toArray;
 
   <div>
-    <h3>{.text "Solving the Cross Pattern"}</h3>
+    <h3>{.text title}</h3>
     <div style={json% {
       display: "flex", flexDirection: "row", gap: "15px",
       alignItems: "center", flexWrap: "wrap"
@@ -72,4 +69,7 @@ def showSequence : ProofWidgets.Html :=
     </div>
   </div>
 
-#html showSequence
+def crossSequenceExample : ProofWidgets.Html :=
+  showSequence cross3x3 #[(0, 0), (0, 2), (2, 0), (2, 2)] "Solving the Cross Pattern"
+
+#html crossSequenceExample
