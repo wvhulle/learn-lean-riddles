@@ -22,15 +22,14 @@ abbrev MathematicianState := RiverCrossingState Unit Unit num_mathematicians
 
 
 def notebook_safe (s : MathematicianState) : Bool :=
-  let indices : List (Fin num_mathematicians) := List.finRange num_mathematicians
-  indices.all (fun owner =>
+  decide (∀ (owner : Fin num_mathematicians),
     let notebook_bank := s.entities_type_b[owner]!
     let owner_bank := s.entities_type_a[owner]!
     -- If notebook is on boat, then owner must be on boat too
-    (notebook_bank = s.boat_bank → owner_bank = s.boat_bank) &&
+    (notebook_bank = s.boat_bank → owner_bank = s.boat_bank) ∧
     -- If notebook is with another mathematician, then owner must be there too
-    indices.all (fun other =>
-      owner = other ||
+    (∀ (other : Fin num_mathematicians),
+      owner = other ∨
       let other_bank := s.entities_type_a[other]!
       (notebook_bank = other_bank → owner_bank = other_bank)))
 
