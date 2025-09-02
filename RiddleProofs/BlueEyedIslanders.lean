@@ -1,2 +1,0 @@
-import RiddleProofs.BlueEyedIslanders.Statement
-import RiddleProofs.BlueEyedIslanders.Solution
