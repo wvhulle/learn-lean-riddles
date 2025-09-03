@@ -16,7 +16,13 @@ notation "W" n:max => Person.wife ⟨n, by decide⟩
 example : Person := H 0
 example : Person := W 1
 
-/- ## Abbreviated peron output
+
+-- Test that notation and direct construction are equivalent
+example : H 0 = Person.husband ⟨0, by decide⟩ := by rfl
+example : W 2 = Person.wife ⟨2, by decide⟩ := by rfl
+
+
+/- ## Abbreviated person output
 -/
 
 instance : ToString Person where
@@ -24,11 +30,7 @@ instance : ToString Person where
   | .husband i => s!"H{i.val}"
   | .wife i => s!"W{i.val}"
 
-
-
--- Test that notation and direct construction are equivalent
-example : H 0 = Person.husband ⟨0, by decide⟩ := by rfl
-example : W 2 = Person.wife ⟨2, by decide⟩ := by rfl
+#eval s!"I am {(Person.husband 0)}"  -- Shows "H0"
 
 
 /- ## Abbreviated persons in proof state
@@ -37,7 +39,7 @@ example : W 2 = Person.wife ⟨2, by decide⟩ := by rfl
 @[app_unexpander Person.husband]
 def unexpandHusband : Lean.PrettyPrinter.Unexpander
   | `($_ ⟨$n, $_⟩) => `(H $n)
-  | `($_ $n) => `(W $n)
+  | `($_ $n) => `(H $n)
   | _ => throw ()
 
 @[app_unexpander Person.wife]
@@ -55,7 +57,7 @@ example : Person.wife ⟨1, by decide⟩ = Person.wife ⟨1, by decide⟩ := rfl
 
 
 
-/-! ## Direction display methods
+/-! ## Abbreviated direction in output
 
 Two display methods for Direction type:
 1. ToString instance: Use for compact string output (R/L)
@@ -72,6 +74,8 @@ instance : ToString Direction where
   toString
   | .toRight => "R"
   | .toLeft => "L"
+
+#eval s!"Going {Direction.toRight}"
 
 /-! ## Move structure and constructors
 
